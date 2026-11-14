@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Air Traffic Control: screen mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sea:#1f7a8c; --deep:#145566; --lagoon:#bfe3df; --sand:#f2d9a0; --grass:#8fbf7a;
+  --tarmac:#2b3440; --chart:#c2337b; --beacon:#ffc93c; --paper:#f3f8f7; --ink:#1c2630;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.5 Barlow,"Segoe UI",system-ui,sans-serif}
+h1,h2,.d{font-family:"Barlow Condensed","Arial Narrow",Barlow,sans-serif}
+header{max-width:1240px;margin:0 auto;padding:40px 24px 8px}
+header h1{font-size:44px;line-height:1.05;font-weight:700;margin:0 0 12px}
+header p{max-width:68ch;margin:0 0 8px}
+nav{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+nav a{color:var(--deep);font-weight:600;text-decoration:none;border:2px solid var(--deep);border-radius:999px;padding:2px 14px}
+nav a:hover{background:var(--deep);color:#fff}
+a:focus-visible,button:focus-visible{outline:3px solid var(--chart);outline-offset:2px}
+main{max-width:1240px;margin:0 auto;padding:24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr));gap:40px 32px}
+section h2{font-size:26px;font-weight:600;margin:0}
+section>p{margin:0 0 12px;color:#44535f;max-width:60ch}
+section:target .screen{box-shadow:0 0 0 4px var(--chart)}
+
+/* one phone screen, landscape. Everything inside scales with the frame width. */
+.screen{container-type:inline-size;aspect-ratio:19.5/9;border-radius:22px;overflow:hidden;position:relative;background:var(--sea);border:6px solid var(--tarmac)}
+.in{position:absolute;inset:0;font-size:2.4cqw;line-height:1.35;color:#fff;padding:2.4cqw 3.6cqw}
+.d{font-weight:700;line-height:1}
+.row{display:flex;align-items:center;gap:2cqw}
+.sp{justify-content:space-between}
+.btn{display:inline-block;white-space:nowrap;font:600 3cqw "Barlow Condensed",Barlow,sans-serif;text-decoration:none;color:var(--tarmac);background:var(--beacon);border-radius:1.6cqw;padding:1.2cqw 3.2cqw;border:0}
+.btn.big{font-size:3.8cqw;padding:1.2cqw 5cqw}
+.btn.ghost{background:rgba(255,255,255,.16);color:#fff}
+.btn.chart{background:var(--chart);color:#fff}
+.pill{background:rgba(20,40,50,.45);border-radius:99px;padding:.5cqw 2cqw;font-weight:600}
+.coin::before{content:"";display:inline-block;width:2.2cqw;height:2.2cqw;border-radius:50%;background:var(--beacon);border:.35cqw solid #c9930a;vertical-align:-.3cqw;margin-right:.8cqw}
+.panel{background:var(--paper);color:var(--ink);border-radius:2.4cqw;padding:2.4cqw 3cqw}
+.stars{color:var(--beacon);letter-spacing:.3cqw}
+.stars i{color:rgba(0,0,0,.2);font-style:normal}
+svg.map{position:absolute;inset:0;width:100%;height:100%}
+
+/* level select */
+.levels{display:grid;grid-template-columns:repeat(5,1fr);gap:1.2cqw;margin-top:1.6cqw}
+.lv{background:var(--paper);color:var(--ink);border-radius:1.8cqw;text-align:center;padding:1cqw 0 .6cqw;text-decoration:none}
+.lv b{display:block;font:700 4cqw/1 "Barlow Condensed",sans-serif}
+.lv.lock{background:rgba(255,255,255,.2);color:rgba(255,255,255,.75)}
+.lv.now{outline:.6cqw solid var(--beacon)}
+.tabs span{padding:.6cqw 2.4cqw;border-radius:99px;font-weight:600}
+.tabs .on{background:var(--paper);color:var(--ink)}
+.tabs .off{background:rgba(255,255,255,.14);color:rgba(255,255,255,.8)}
+
+/* hangar */
+.shop{display:grid;grid-template-columns:repeat(4,1fr);gap:1.6cqw;margin-top:1.6cqw}
+.item{background:var(--paper);color:var(--ink);border-radius:1.8cqw;padding:1.4cqw;text-align:center;font-size:2.2cqw}
+.item svg{width:48%;display:block;margin:0 auto .6cqw}
+.item .own{color:var(--deep);font-weight:600}
+footer{max-width:1240px;margin:0 auto;padding:8px 24px 48px;color:#44535f}
+</style>
+</head>
+<body>
+<header>
+  <h1>Air Traffic Control: screen mockups</h1>
+  <p>Eight screens for the first release, drawn in landscape. Buttons inside each screen jump to the screen they open, so the flow can be clicked through. Names, colours and layout are a starting point to react to, not final art.</p>
+  <p>Item numbers such as C6 refer to section 11 of <a href="../docs/BLUEPRINT.md">docs/BLUEPRINT.md</a>.</p>
+  <nav aria-label="Screens">
+    <a href="#home">Home</a><a href="#levels">Level select</a><a href="#game">In flight</a><a href="#result">Level result</a>
+    <a href="#collision">Collision</a><a href="#daily">Daily Flight</a><a href="#tower">Tower Shift</a><a href="#hangar">Hangar</a>
+  </nav>
+</header>
+
+<main>
+<section id="home">
+  <h2>Home</h2>
+  <p>One main button. Rank and coins are always visible (C8, C9).</p>
+  <div class="screen"><svg class="map" viewBox="0 0 650 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <rect width="650" height="300" fill="#1f7a8c"/>
+    <path d="M380 60c70-30 190-10 230 60s-10 150-110 160-190-30-200-100 20-95 80-120z" fill="#f2d9a0"/>
+    <path d="M400 85c60-22 150-8 180 45s-10 110-90 118-150-24-158-76 18-68 68-87z" fill="#8fbf7a"/>
+    <rect x="395" y="150" width="190" height="26" rx="4" fill="#2b3440" transform="rotate(-18 490 163)"/>
+    <path d="M60 250C160 240 250 230 330 190" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="2 9" stroke-linecap="round"/>
+  </svg>
+  <div class="in">
+    <div class="row sp"><span class="pill">Rank: Controller</span><span class="row"><a class="btn ghost" href="#hangar">Hangar</a><span class="btn ghost">Settings</span><span class="pill coin">1,240</span></span></div>
+    <div class="d" style="font-size:7.5cqw;margin-top:4cqw;max-width:44cqw">Air Traffic Control</div>
+    <div class="row" style="margin-top:3cqw"><a class="btn big" href="#levels">Play</a><a class="btn ghost" href="#daily">Daily Flight</a><a class="btn ghost" href="#tower">Tower Shift</a></div>
+  </div></div>
+</section>
+
+<section id="levels">
+  <h2>Level select</h2>
+  <p>Island Airport ships first. City and Desert show as coming in a free update (C16).</p>
+  <div class="screen"><div class="in">
+    <div class="row sp"><a class="btn ghost" href="#home">Back</a><span class="pill"><span class="stars">★</span> 14 of 30</span></div>
+    <div class="row tabs" style="margin-top:1.6cqw"><span class="on">Island Airport</span><span class="off">City, coming soon</span><span class="off">Desert, coming soon</span></div>
+    <div class="levels">
+      <a class="lv" href="#game"><b>1</b><span class="stars">★★★</span></a><a class="lv" href="#game"><b>2</b><span class="stars">★★★</span></a>
+      <a class="lv" href="#game"><b>3</b><span class="stars">★★<i>★</i></span></a><a class="lv" href="#game"><b>4</b><span class="stars">★★★</span></a>
+      <a class="lv" href="#game"><b>5</b><span class="stars">★★<i>★</i></span></a><a class="lv now" href="#game"><b>6</b><span class="stars">★<i>★★</i></span></a>
+      <span class="lv lock"><b>7</b>Locked</span><span class="lv lock"><b>8</b>Locked</span><span class="lv lock"><b>9</b>Locked</span><span class="lv lock"><b>10</b>Locked</span>
+    </div>
+    <div class="row" style="margin-top:1.6cqw"><span class="pill">Level 6: land the medical flight before 0:45</span></div>
+  </div></div>
+</section>
+
+<section id="game">
+  <h2>In flight</h2>
+  <p>Wind arrow shows the landing direction (C1). A ring warns before a collision. Shapes carry the meaning as well as colour.</p>
+  <div class="screen"><svg class="map" viewBox="0 0 650 300" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Island map with a runway, three aircraft and their drawn paths">
+    <rect width="650" height="300" fill="#1f7a8c"/>
+    <path d="M190 70c90-45 250-25 300 50s0 130-120 150-250-20-270-95 20-70 90-105z" fill="#f2d9a0"/>
+    <path d="M215 92c80-36 215-20 258 42s0 105-104 120-214-17-230-76 16-56 76-86z" fill="#8fbf7a"/>
+    <g transform="rotate(-14 340 165)"><rect x="230" y="150" width="220" height="30" rx="4" fill="#2b3440"/>
+      <path d="M245 165h190" stroke="#fff" stroke-width="2" stroke-dasharray="12 10"/>
+      <path d="M236 155v20M242 155v20" stroke="#ffc93c" stroke-width="3"/></g>
+    <path d="M60 105C110 130 170 170 232 190" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="2 9" stroke-linecap="round"/>
+    <path d="M590 250C520 270 330 280 232 192" fill="none" stroke="#ffc93c" stroke-width="3" stroke-dasharray="2 9" stroke-linecap="round"/>
+    <defs><g id="pl"><path d="M0-13l4 9 12 7v4l-12-3-1 8 4 3v3l-7-2-7 2v-3l4-3-1-8-12 3v-4l12-7z"/></g></defs>
+    <use href="#pl" fill="#fff" transform="translate(60 105) rotate(115)"/>
+    <use href="#pl" fill="#ffc93c" transform="translate(590 250) rotate(-100)"/>
+    <use href="#pl" fill="#fff" transform="translate(120 235) rotate(70)"/>
+    <circle cx="120" cy="235" r="26" fill="none" stroke="#c2337b" stroke-width="4" stroke-dasharray="7 5"/>
+    <path d="M120 200v-14M113 193h14" stroke="#c2337b" stroke-width="4"/>
+    <g transform="translate(595 105)"><circle r="24" fill="rgba(20,40,50,.45)"/><path d="M-12 6L10-8M10-8l-9 0M10-8l-3 9" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></g>
+  </svg>
+  <div class="in" style="pointer-events:none">
+    <div class="row sp"><span class="pill">Landed 3 of 8</span><span class="pill">1:12</span><a class="btn ghost" href="#home" style="pointer-events:auto">Pause</a></div>
+    <div style="position:absolute;right:5.6cqw;top:21cqw;font-size:2cqw;font-weight:600">Wind</div>
+    <div class="row" style="position:absolute;left:3.6cqw;bottom:2.4cqw;pointer-events:auto"><a class="btn" href="#result">Preview: level cleared</a><a class="btn chart" href="#collision">Preview: collision</a></div>
+  </div></div>
+</section>
+
+<section id="result">
+  <h2>Level result</h2>
+  <p>Landed, closest separation, stars and coins, then one button onward (C10).</p>
+  <div class="screen"><div class="in" style="display:grid;place-items:center">
+    <div class="panel" style="width:66cqw;text-align:center;padding:1.8cqw 3cqw">
+      <div class="d" style="font-size:4.6cqw">Level 6 cleared</div>
+      <div class="stars" style="font-size:5cqw;line-height:1.2">★★<i>★</i></div>
+      <div class="row sp" style="margin:.6cqw 1cqw 1cqw;white-space:nowrap"><span>Landed <b>8 of 8</b></span><span>Closest pass <b>42 m</b></span><span class="coin"><b>+60</b></span></div>
+      <div style="font-size:2.2cqw;color:#44535f;margin-bottom:1.4cqw">Third star: finish with no danger warnings.</div>
+      <div class="row" style="justify-content:center"><a class="btn ghost" href="#game" style="background:#dfe9e8;color:var(--ink)">Replay</a><a class="btn big" href="#game">Next level</a></div>
+    </div>
+  </div></div>
+</section>
+
+<section id="collision">
+  <h2>Collision</h2>
+  <p>Retry is the only large button and restarts in under two seconds. No lives, no waiting (C3).</p>
+  <div class="screen" style="background:var(--deep)"><div class="in" style="display:grid;place-items:center">
+    <div class="panel" style="width:62cqw;text-align:center">
+      <div class="d" style="font-size:4.6cqw;color:var(--chart)">Two aircraft collided</div>
+      <div style="margin:1.4cqw 0 2.4cqw">They met north of the runway after 1:12. You had landed 3 of 8.</div>
+      <div class="row" style="justify-content:center"><a class="btn ghost" href="#levels" style="background:#dfe9e8;color:var(--ink)">Levels</a><a class="btn big" href="#game">Retry</a></div>
+    </div>
+  </div></div>
+</section>
+
+<section id="daily">
+  <h2>Daily Flight</h2>
+  <p>One level a day, made on the device from the date. A missed day does not reset the streak (C7).</p>
+  <div class="screen"><div class="in">
+    <div class="row sp"><a class="btn ghost" href="#home">Back</a><span class="pill coin">1,240</span></div>
+    <div class="row" style="margin-top:3cqw;gap:4cqw;align-items:flex-start">
+      <div style="flex:1"><div class="d" style="font-size:5cqw">Saturday 14 November</div>
+        <div style="margin:1.2cqw 0 2.2cqw">Island Airport. Keep the airspace safe for 90 seconds in a strong crosswind.</div>
+        <a class="btn big" href="#game">Fly today's level</a> <span class="coin" style="margin-left:2cqw;font-weight:600">+40</span></div>
+      <div class="panel" style="width:30cqw;text-align:center"><div class="d" style="font-size:7cqw;color:var(--deep)">5</div><div>days flown in a row</div>
+        <div style="font-size:2cqw;color:#44535f;margin-top:1cqw">Miss one day and the count stays.</div></div>
+    </div>
+  </div></div>
+</section>
+
+<section id="tower">
+  <h2>Tower Shift</h2>
+  <p>Endless traffic until the first collision. Unlocks when a map's ten levels are finished (C6).</p>
+  <div class="screen"><div class="in">
+    <div class="row sp"><a class="btn ghost" href="#home">Back</a><span class="pill">Rank: Controller</span></div>
+    <div class="d" style="font-size:4.4cqw;margin-top:1.8cqw">How long can you hold the tower?</div>
+    <div class="row" style="margin-top:1.8cqw;align-items:stretch">
+      <div class="panel" style="flex:1"><b>Island Airport</b><div class="d" style="font-size:4.6cqw;color:var(--deep);white-space:nowrap;margin:.6cqw 0">47 landed</div><div style="font-size:2.2cqw;margin-bottom:1.2cqw">Your best, in 6:20</div><a class="btn" href="#game">Start shift</a></div>
+      <div class="panel" style="flex:1;opacity:.6"><b>City Airport</b><div style="margin-top:1.4cqw">Arrives in a free update.</div></div>
+      <div class="panel" style="flex:1;opacity:.6"><b>Desert Airport</b><div style="margin-top:1.4cqw">Arrives in a free update.</div></div>
+    </div>
+  </div></div>
+</section>
+
+<section id="hangar">
+  <h2>Hangar</h2>
+  <p>Cosmetics only, all earnable with coins. One optional Supporter Pack and no ads (C9, C12).</p>
+  <div class="screen"><div class="in">
+    <div class="row sp"><a class="btn ghost" href="#home">Back</a><div class="row tabs"><span class="on">Aircraft</span><span class="off">Path colours</span><span class="off">Night maps</span></div><span class="pill coin">1,240</span></div>
+    <div class="shop">
+      <div class="item"><svg viewBox="-20 -20 40 40"><use href="#pl" fill="#2b3440"/></svg><span class="own">In use</span></div>
+      <div class="item"><svg viewBox="-20 -20 40 40"><use href="#pl" fill="#c2337b"/></svg><span class="own">Owned</span></div>
+      <div class="item"><svg viewBox="-20 -20 40 40"><use href="#pl" fill="#1f7a8c"/></svg><span class="coin">400</span></div>
+      <div class="item"><svg viewBox="-20 -20 40 40"><use href="#pl" fill="#e08a1e"/></svg><span class="coin">900</span></div>
+    </div>
+    <div class="panel row sp" style="margin-top:1.6cqw;padding:1.2cqw 2.4cqw;font-size:2.2cqw"><span><b>Supporter Pack.</b> Six extra skins and four path colours. Helps keep the game ad-free.</span><span class="btn chart">Buy for $2.99</span></div>
+  </div></div>
+</section>
+</main>
+<footer>Mockup only: static HTML and SVG, no game logic. Open this file in a browser to view it.</footer>
+</body>
+</html>
