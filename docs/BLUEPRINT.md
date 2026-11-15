@@ -215,7 +215,7 @@ Wind and slow-time on/off switches — OPEN: a player setting in the release, or
 
 15 Nov 2026 — AGREED: Android testing on a real phone starts once the iOS version is ready (changes C18).
 
-15 Nov 2026 — AGREED: The game is developed under the name MHC Studio. The credit appears in the repository, the app's company name and the in-game credits. The game will be listed on the MHC website and resume site as in development (MHC inbox draft task 190); the link goes to the GitHub repository until the App Store link exists.
+15 Nov 2026 — AGREED: The game is developed under the name MHC Studio. The credit appears in the repository, the app's company name and the in-game credits. The game will be listed on the MHC website and resume site as in development (MHC inbox draft tasks 190 for the website and 191 for the resume site, which also adds Android and iOS development); the link goes to the GitHub repository until the App Store link exists.
 
 ## 11. ENGAGEMENT, GAMIFICATION AND BUSINESS MODEL
 
