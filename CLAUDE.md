@@ -26,16 +26,16 @@ The owner decided on 15 Nov 2026 that this game is developed under the name **MH
 
 ## Current priority
 
-M0 is done. M1 is in progress, one step at a time, each built, installed and checked on the iPad before the next starts:
+M0 is done. M1 is done: passed on 15 Nov 2026, verified by the owner on the iPad. Its steps were:
 
 1. Plane follows a finger-drawn path (done).
 2. Runway and landing detection (LandingSystem) (done).
 3. A second aircraft with danger warnings and collisions (AirspaceSafety) (done).
 4. Landing counter and restart in under two seconds (C3) (done).
-5. Island wind rule (C1), with an on/off switch (built 15 Nov 2026, waiting for the owner's iPad check).
-6. Slow time while drawing (C4), with an on/off switch (built 15 Nov 2026, waiting for the owner's iPad check).
+5. Island wind rule (C1), with an on/off switch (done).
+6. Slow time while drawing (C4), with an on/off switch (done).
 
-All six M1 steps are built. M1 passes when the owner plays one complete session on the iPad: draw, land 8 aircraft to clear the level (or collide and retry), with the wind and slow-draw switches tried both ways. The level also gained a landing target of 8 (C2 objective "land a set number of aircraft") so that a session has an end; the owner can change the number in `Assets/Levels/IslandPrototype.asset`.
+The owner played a complete session on the iPad and passed M1 on 15 Nov 2026. Next is M2 (fun and UX); do not start it until the owner asks. The level also gained a landing target of 8 (C2 objective "land a set number of aircraft") so that a session has an end; the owner can change the number in `Assets/Levels/IslandPrototype.asset`.
 
 Gameplay rules the owner has decided while testing M1 (details in the commit messages):
 
