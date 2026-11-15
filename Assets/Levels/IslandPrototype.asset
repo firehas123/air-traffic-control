@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 504e8ed608b2f4118819fc640587bacf, type: 3}
+  m_Name: IslandPrototype
+  m_EditorClassIdentifier: AirTrafficControl::AirTrafficControl.LevelData
+  mapId: island
+  islandCentre: {x: 1, y: -0.8}
+  islandRadii: {x: 3.8, y: 2.1}
+  runways:
+  - centre: {x: 1, y: -0.8}
+    landingHeadingDegrees: 0
+    length: 3.2
+    width: 0.6
+    touchdownZoneStart: 0.1
+    touchdownZoneLength: 0.7
+  spawnPosition: {x: -5, y: 3}
+  spawnHeadingDegrees: 0

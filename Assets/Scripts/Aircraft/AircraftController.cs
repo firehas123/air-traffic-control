@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -5,7 +6,9 @@ namespace AirTrafficControl
 {
     /// <summary>
     /// The Unity side of one aircraft. Each frame it steps its <see cref="AircraftMotion"/>,
-    /// places the plane shape, and draws the part of the path still ahead of it.
+    /// places the plane shape, and draws the part of the path still ahead of it. When its path ends,
+    /// it asks the <see cref="LandingSystem"/> whether it lands, and if so rolls out along the runway
+    /// and is removed.
     /// </summary>
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public sealed class AircraftController : MonoBehaviour
@@ -13,21 +16,43 @@ namespace AirTrafficControl
         const int PlaneSortingOrder = 10;
         const int PathSortingOrder = 0;
 
+        const float RollDuration = 1f;      // seconds from touchdown to gone
+        const float RollEndScale = 0.4f;
+
         static readonly List<AircraftController> active = new List<AircraftController>();
 
         Camera worldCamera;
+        LandingSystem landing;
+        Mesh normalMesh;
+        Mesh clearedMesh;
+        bool isLanding;
+        float rollTime;
+        Vector2 touchdownPoint;
+        Vector2 rollDirection;
         float edgeMargin;
         LineRenderer pathLine;
         Vector3[] linePoints = new Vector3[64];
 
         public AircraftMotion Motion { get; private set; }
 
-        public static AircraftController Spawn(AircraftMotion motion, Camera camera, Material material, Color color, float edgeMargin)
+        /// <summary>True from touchdown until the aircraft is removed. A landing aircraft cannot be selected.</summary>
+        public bool IsLanding => isLanding;
+
+        /// <summary>Raised once the landing roll has finished, just before the aircraft is removed.</summary>
+        public event Action<AircraftController> Landed;
+
+        /// <summary>True when the current line connects to a runway, so the aircraft will land at its end.</summary>
+        public bool IsClearedToLand { get; private set; }
+
+        public static AircraftController Spawn(AircraftMotion motion, Camera camera, LandingSystem landing,
+                                               Material material, Color color, Color clearedColor, float edgeMargin)
         {
             var go = new GameObject("Aircraft");
             go.AddComponent<MeshFilter>();
             go.AddComponent<MeshRenderer>();
             var aircraft = go.AddComponent<AircraftController>();
+            aircraft.landing = landing;
+            aircraft.clearedMesh = AircraftShape.CreateMesh(clearedColor);
             aircraft.Initialise(motion, camera, material, color, edgeMargin);
             return aircraft;
         }
@@ -39,7 +64,7 @@ namespace AirTrafficControl
             float bestDistance = maxDistance;
             foreach (AircraftController aircraft in active)
             {
-                if (aircraft.Motion == null)
+                if (aircraft.Motion == null || aircraft.isLanding)
                     continue;
                 float distance = Vector2.Distance(aircraft.Motion.Position, point);
                 if (distance <= bestDistance)
@@ -57,7 +82,8 @@ namespace AirTrafficControl
             worldCamera = camera;
             edgeMargin = margin;
 
-            GetComponent<MeshFilter>().sharedMesh = AircraftShape.CreateMesh(color);
+            normalMesh = AircraftShape.CreateMesh(color);
+            GetComponent<MeshFilter>().sharedMesh = normalMesh;
             var meshRenderer = GetComponent<MeshRenderer>();
             meshRenderer.sharedMaterial = material;
             meshRenderer.sortingOrder = PlaneSortingOrder;
@@ -77,6 +103,13 @@ namespace AirTrafficControl
             ApplyTransform();
         }
 
+        /// <summary>Shows whether the aircraft's line connects to a runway (green) or not (normal colour).</summary>
+        public void SetClearedToLand(bool cleared)
+        {
+            IsClearedToLand = cleared;
+            GetComponent<MeshFilter>().sharedMesh = cleared && clearedMesh != null ? clearedMesh : normalMesh;
+        }
+
         void OnEnable() => active.Add(this);
         void OnDisable() => active.Remove(this);
 
@@ -85,9 +118,49 @@ namespace AirTrafficControl
             if (Motion == null)
                 return;
 
+            if (isLanding)
+            {
+                UpdateLandingRoll();
+                return;
+            }
+
+            bool wasFollowing = Motion.HasPath;
             Motion.Step(Time.deltaTime, TurnBackBounds());
+
+            if (wasFollowing && !Motion.HasPath && landing != null && landing.TryLand(Motion.Path, out Runway runway))
+            {
+                StartLandingRoll(runway);
+                return;
+            }
+
             ApplyTransform();
             UpdatePathLine();
+        }
+
+        void StartLandingRoll(Runway runway)
+        {
+            isLanding = true;
+            rollTime = 0f;
+            touchdownPoint = Motion.Path[Motion.Path.Count - 1];
+            rollDirection = runway.Direction;
+            pathLine.positionCount = 0;
+            transform.SetPositionAndRotation(touchdownPoint, Quaternion.Euler(0f, 0f, runway.LandingHeadingDegrees));
+        }
+
+        // Line up with the runway at touchdown, slow evenly to a stop, and shrink away.
+        void UpdateLandingRoll()
+        {
+            rollTime += Time.deltaTime;
+            float t = Mathf.Clamp01(rollTime / RollDuration);
+            float rolled = Motion.Speed * RollDuration * (t - t * t / 2f); // even deceleration to zero
+            transform.position = touchdownPoint + rollDirection * rolled;
+            transform.localScale = Vector3.one * Mathf.Lerp(1f, RollEndScale, t);
+
+            if (t >= 1f)
+            {
+                Landed?.Invoke(this);
+                Destroy(gameObject);
+            }
         }
 
         void ApplyTransform()

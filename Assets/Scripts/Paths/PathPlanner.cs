@@ -10,6 +10,9 @@ namespace AirTrafficControl
     ///
     /// The aircraft follows exactly the line drawn. After every new point, the followed path is checked
     /// against the drawn line, and any difference throws <see cref="PathAlteredException"/>.
+    ///
+    /// When the line reaches a runway in a way that lands (see <see cref="LandingRules"/>), it connects:
+    /// the line ends there, the rest of the stroke is ignored, and the aircraft shows it is cleared to land.
     /// </summary>
     public sealed class PathPlanner : MonoBehaviour
     {
@@ -21,11 +24,13 @@ namespace AirTrafficControl
 
         readonly List<Vector2> newPoints = new List<Vector2>();
         InputAdapter input;
+        LandingSystem landing;
         PathRecorder recorder;
         AircraftController selected;
 
-        public void Initialise(InputAdapter inputAdapter)
+        public void Initialise(InputAdapter inputAdapter, LandingSystem landingSystem)
         {
+            landing = landingSystem;
             recorder = new PathRecorder(minSampleDistance);
             input = inputAdapter;
             input.PressStarted += OnPressStarted;
@@ -51,6 +56,7 @@ namespace AirTrafficControl
             // The line starts at the aircraft, so the aircraft is on it from the first frame,
             // then runs to where the finger touched down.
             selected.Motion.BeginPath();
+            selected.SetClearedToLand(false);
             recorder.Begin(selected.Motion.Position);
             AddPoint(worldPosition);
         }
@@ -86,6 +92,13 @@ namespace AirTrafficControl
             }
 
             PathIntegrity.CheckSameLine(recorder.Points, selected.Motion.Path);
+
+            if (landing != null && landing.TryLand(recorder.Points, out _))
+            {
+                // Connected to the runway: end the line here and ignore the rest of the stroke.
+                selected.SetClearedToLand(true);
+                EndStroke();
+            }
         }
 
         void EndStroke()

@@ -1,4 +1,5 @@
-// Sets up SampleScene for M1 step 1. Safe to run again: it replaces its own objects.
+// Sets up SampleScene for the M1 prototype. Safe to run again: it replaces its own objects
+// and keeps an existing level asset (Assets/Levels/IslandPrototype.asset).
 // Menu: Tools > Air Traffic Control > Set Up Prototype Scene
 // Command line (Unity closed):
 //   Unity -batchmode -quit -projectPath . -executeMethod PrototypeSceneSetup.Run -logFile -
@@ -13,6 +14,7 @@ public static class PrototypeSceneSetup
     const string ScenePath = "Assets/Scenes/SampleScene.unity";
     const string ShaderPath = "Assets/Shaders/UnlitVertexColor.shader";
     const string MaterialPath = "Assets/Materials/UnlitVertexColor.mat";
+    const string LevelPath = "Assets/Levels/IslandPrototype.asset";
     const string RootName = "Prototype";
 
     [MenuItem("Tools/Air Traffic Control/Set Up Prototype Scene")]
@@ -27,16 +29,40 @@ public static class PrototypeSceneSetup
         if (existing != null)
             Object.DestroyImmediate(existing);
 
+        LevelData level = LoadOrCreateLevel();
+
         var root = new GameObject(RootName);
         var setup = root.AddComponent<PrototypeSetup>();
         var serialized = new SerializedObject(setup);
         serialized.FindProperty("shapeMaterial").objectReferenceValue = material;
+        serialized.FindProperty("level").objectReferenceValue = level;
         serialized.ApplyModifiedPropertiesWithoutUndo();
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
         AssetDatabase.SaveAssets();
         Debug.Log("PrototypeSceneSetup: SampleScene is ready.");
+    }
+
+    // Creates the Island prototype level with LevelData's default values, if it does not exist yet.
+    // An existing asset is kept, so edits made in the Inspector survive re-running this setup. It is
+    // saved again so that fields added to LevelData since it was created appear in the file.
+    static LevelData LoadOrCreateLevel()
+    {
+        var level = AssetDatabase.LoadAssetAtPath<LevelData>(LevelPath);
+        if (level != null)
+        {
+            EditorUtility.SetDirty(level);
+            AssetDatabase.SaveAssetIfDirty(level);
+            return level;
+        }
+
+        if (!AssetDatabase.IsValidFolder("Assets/Levels"))
+            AssetDatabase.CreateFolder("Assets", "Levels");
+
+        level = ScriptableObject.CreateInstance<LevelData>();
+        AssetDatabase.CreateAsset(level, LevelPath);
+        return level;
     }
 
     static Material LoadOrCreateMaterial()
