@@ -2,6 +2,12 @@
 
 Read `docs/BLUEPRINT.md` before proposing or building anything. It is a copy of the planning Google Doc, which stays the source of truth.
 
+## Working with the other assistants
+
+- The planning Google Doc is shared by the owner, Claude (chat) and ChatGPT. They update it from this repository's commit history, and Claude (chat) regenerates `docs/BLUEPRINT.md` from it. Do not edit `docs/BLUEPRINT.md` by hand.
+- Write every commit message so someone who has not seen the session can update the plan from it: what was built, what was verified on which device, and any decision the owner made.
+- Run `git pull` before committing, because other sessions also push to `main`.
+
 ## Decisions
 
 - Items marked AGREED are requirements. Do not change them without asking the owner.

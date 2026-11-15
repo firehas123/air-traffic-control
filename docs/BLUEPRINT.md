@@ -1,9 +1,9 @@
 # AIR TRAFFIC CONTROL — MASTER GAME DEVELOPMENT BLUEPRINT
 
-> Markdown copy of the planning document, exported 14 November 2026. The Google Doc is the source of truth:
+> Markdown copy of the planning document, exported 15 November 2026. The Google Doc is the source of truth:
 > https://docs.google.com/document/d/1grpGR4kCDI6xIENAf8Av_w_nv_V3wDn8k-94nV7S0ZY/edit
 
-Version 0.1 | 14 November 2026 | Living game design document
+Version 0.2 | 15 November 2026 | Living game design document
 
 ## STATUS KEY
 
@@ -35,7 +35,7 @@ Prototype scope: One Island Airport runway, basic airplane silhouette, touch sel
 
 Prototype success criterion: A first-time player can understand the interaction without written instructions; drawing feels precise and responsive.
 
-PROPOSED RULES TO TEST: Landing zones require correct aircraft type; runway alignment and approach angle could be introduced later. Danger warnings precede aircraft collisions. Paths can be redrawn in flight without impossible instantaneous turns. Initially, collisions may restart the level. Difficulty should rise gradually through spawn density, aircraft speed, crossing routes, runway conflicts and type diversity.
+PROPOSED RULES TO TEST: Landing zones require correct aircraft type; runway alignment and approach angle could be introduced later. Danger warnings precede aircraft collisions. Paths can be redrawn in flight. CHANGED 15 Nov 2026 by owner: aircraft follow the drawn line exactly, with instant turns at corners (previously: no impossible instantaneous turns). Initially, collisions may restart the level. Difficulty should rise gradually through spawn density, aircraft speed, crossing routes, runway conflicts and type diversity.
 
 ## 3. MAPS & 30 LEVELS
 
@@ -55,7 +55,7 @@ Stars (1–3), milestones (first landing, 100 successful landings, perfect world
 
 PROPOSED VISUAL DIRECTION: Clean, colorful original 2D art, readable aircraft silhouettes, distinct landing zones, easy-to-see flight paths, restrained success/warning animations. Do not copy another game's maps, art, logos or branding.
 
-ACCESSIBILITY: Generous touch targets; status communicated by shape/icon as well as color; support multiple device ratios and safe areas. Portrait vs. landscape remains OPEN pending iPad and phone-size testing.
+ACCESSIBILITY: Generous touch targets; status communicated by shape/icon as well as color; support multiple device ratios and safe areas. Landscape only for the prototype (15 Nov 2026); final orientation after phone-size testing.
 
 ## 5. TECHNICAL DESIGN & PLATFORM READINESS
 
@@ -99,9 +99,9 @@ Initial custom server hosting: US$0; marketing, art, sound, device purchases, st
 
 ## 7. MILESTONES AND ACCEPTANCE
 
-M0 — Setup: Unity project, version control and iPad build workflow. Pass: blank game scene launches on iPad.
+M0 — Setup: Unity project, version control and iPad build workflow. Pass: blank game scene launches on iPad. STATUS: DONE 15 Nov 2026, verified on iPad Pro 12.9 (6th gen).
 
-M1 — Flight prototype: one map, path drawing, route following, landing, collision, restart. Pass: one complete playable session.
+M1 — Flight prototype: one map, path drawing, route following, landing, collision, restart. Pass: one complete playable session. STATUS: IN PROGRESS, step 1 of 4 done 15 Nov 2026 (see section 12).
 
 M2 — Fun/UX: controls, danger warnings, tutorial, balance and visual/audio feedback. Pass: a new tester understands play without coaching.
 
@@ -115,11 +115,11 @@ LATER — PC/consoles: mouse/controller UX, performance, SDK/porting feasibility
 
 **IMMEDIATE BACKLOG**
 
-- [ ] Create Unity 2D project and Git repository.
-- [ ] Build a blank Unity scene onto the iPad from the MacBook.
+- [x] Create Unity 2D project and Git repository.
+- [x] Build a blank Unity scene onto the iPad from the MacBook.
 
-- [ ] Implement finger path drawing and debug route line.
-- [ ] Move an aircraft smoothly along waypoints with adjustable turning/speed.
+- [x] Implement finger path drawing and debug route line.
+- [x] Move an aircraft along the drawn path at constant speed (follows the line exactly, per owner decision 15 Nov 2026).
 
 - [ ] Add Island Airport and valid landing detection.
 - [ ] Spawn multiple aircraft; warning and collision system.
@@ -167,7 +167,7 @@ Owner decision/date/rationale:
 
 Game title and branding — OPEN; choose original title after prototype.
 
-Portrait vs landscape — OPEN; test on iPad and phone layout.
+Portrait vs landscape — Landscape only for the prototype (15 Nov 2026, C19); confirm after phone testing.
 
 Visual style — PROPOSED colorful minimalist 2D.
 
@@ -200,6 +200,14 @@ Android device testing strategy — OPEN; validate on real phones.
 14 Nov 2026 — AGREED: Owner accepted section 11 items C1 to C21. Where they differ from sections 1 to 7, section 11 applies: no advertising in the first release (C12), staged release starting with Island Airport (C16), one rule per map (C1).
 
 15 Nov 2026 — AGREED: Unity 6.3 LTS (6000.3.28f1) with C# as the development stack. Project created in the GitHub repository firehas123/air-traffic-control.
+
+15 Nov 2026 — DONE: M0 passed. Blank scene runs on iPad Pro 12.9 (6th gen). App name Air Traffic Control, bundle ID com.firehas123.atcprototype.
+
+15 Nov 2026 — AGREED: Aircraft follow the drawn path exactly with instant turns at corners. Replaces the PROPOSED rule against instantaneous turns in section 2.
+
+15 Nov 2026 — AGREED for the prototype: landscape orientation only (C19). Final choice after phone testing.
+
+15 Nov 2026 — DONE: M1 step 1. One aircraft follows a finger-drawn path on the iPad, verified by the owner.
 
 ## 11. ENGAGEMENT, GAMIFICATION AND BUSINESS MODEL
 
@@ -259,6 +267,28 @@ C21 NOTE: Unity Personal is free while revenue and funding stay under US$200,000
 
 All items C1 to C21 were accepted on 14 November 2026. C16 changes the release order agreed in section 1. C12 and C14 replace the rewarded-ad proposal in section 6 for the first release. C1, C4 and C5 apply from the M1 prototype.
 
+## 12. PROGRESS AND CODE STATUS
+
+Updated by Claude on 15 November 2026 from the GitHub repository. Read this section before suggesting code, so suggestions build on what already exists.
+
+Repository: https://github.com/firehas123/air-traffic-control (private, branch main). It holds the code and a markdown copy of this document (docs/BLUEPRINT.md). This Google Doc stays the source of truth for decisions. The repository is the source of truth for code.
+
+Who works where: the owner tests on the iPad and approves decisions. Claude Code (CLI) writes, builds and installs the code, following CLAUDE.md in the repository. Claude (chat) and ChatGPT review, propose and update this document. Before suggesting code, check the latest commits in the repository.
+
+M0, done 15 Nov 2026: app name Air Traffic Control, bundle ID com.firehas123.atcprototype. Assets/Editor/BuildScript.cs exports the Xcode project to Builds/iOS, so builds run from the command line. Verified on iPad Pro 12.9 (6th gen).
+
+M1 step 1, done 15 Nov 2026: one aircraft follows a path drawn with a finger. Verified on the iPad by the owner.
+
+Code in place (Assets/Scripts): InputAdapter turns touch and mouse into press, drag and release in world coordinates. PathRecorder and PathPlanner record the line from the aircraft and replace it when it is redrawn in flight. AircraftMotion and AircraftController move the aircraft exactly along the line at constant speed. PathIntegrity checks that the aircraft never leaves the drawn line. PrototypeSetup creates the scene objects for now and will be replaced by LevelDirector.
+
+Rules already built: C5 (with no path the aircraft flies straight and turns back at the screen edge; when a path ends it keeps its last heading), landscape only (C19), 60 FPS target.
+
+Tests: 33 EditMode unit tests for path recording, exact following and edge turn-back (Assets/Tests/EditMode).
+
+M1 remaining steps: 2. runway and landing detection (LandingSystem). 3. a second aircraft with danger warnings and collisions (AirspaceSafety). 4. landing counter and restart in under two seconds (C3). M1 passes when one complete session is playable.
+
+Not yet scheduled inside M1, although CLAUDE.md lists them for the M1 prototype: the Island wind rule (C1), the slow-time-while-drawing test (C4) and a test on a real Android phone (C18). The owner should decide where these go.
+
 ## NEXT STEP
 
-Build the initial Unity project, launch a blank scene on the iPad, and prototype a plane following a finger-drawn path before expanding to complete maps and progression.
+Continue M1 one step at a time, each built, installed and checked on the iPad before the next starts. Step 2: Island Airport runway and landing detection (LandingSystem). Step 3: a second aircraft with danger warnings and collisions (AirspaceSafety). Step 4: landing counter and restart in under two seconds (C3).
