@@ -1,5 +1,7 @@
 # Air Traffic Control (working title)
 
+**Developed by MHC Studio.** © 2026 MHC Studio. All rights reserved.
+
 An original top-down 2D aircraft-routing game. The player draws flight paths to land aircraft safely and avoid collisions.
 
 - Platforms: mobile first (Android, then iOS). PC and consoles later.

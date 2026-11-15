@@ -8,6 +8,15 @@ Read `docs/BLUEPRINT.md` before proposing or building anything. It is a copy of 
 - Write every commit message so someone who has not seen the session can update the plan from it: what was built, what was verified on which device, and any decision the owner made.
 - Run `git pull` before committing, because other sessions also push to `main`.
 
+## Developer name: MHC Studio
+
+The owner decided on 15 Nov 2026 that this game is developed under the name **MHC Studio**. Stamp it wherever a developer or company name appears:
+
+- Unity Player Settings: Company Name `MHC Studio` (Product Name stays `Air Traffic Control` until the title is decided).
+- In-game credits or about screen, when one is built: "Developed by MHC Studio".
+- Store listings later: developer name MHC Studio.
+- Keep the bundle ID `com.firehas123.atcprototype` unless the owner asks to change it. A new bundle ID installs as a separate app.
+
 ## Decisions
 
 - Items marked AGREED are requirements. Do not change them without asking the owner.

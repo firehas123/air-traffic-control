@@ -3,7 +3,7 @@
 > Markdown copy of the planning document, exported 15 November 2026. The Google Doc is the source of truth:
 > https://docs.google.com/document/d/1grpGR4kCDI6xIENAf8Av_w_nv_V3wDn8k-94nV7S0ZY/edit
 
-Version 0.2 | 15 November 2026 | Living game design document
+Version 0.2 | 15 November 2026 | Living game design document | Developed by MHC Studio
 
 ## STATUS KEY
 
@@ -214,6 +214,8 @@ Wind and slow-time on/off switches — OPEN: a player setting in the release, or
 15 Nov 2026 — AGREED: M1 gains step 5, the Island wind rule (C1), and step 6, slowing time while drawing (C4). Both are built with an on/off switch.
 
 15 Nov 2026 — AGREED: Android testing on a real phone starts once the iOS version is ready (changes C18).
+
+15 Nov 2026 — AGREED: The game is developed under the name MHC Studio. The credit appears in the repository, the app's company name and the in-game credits. The game will be listed on the MHC website and resume site as in development (MHC inbox draft task 190); the link goes to the GitHub repository until the App Store link exists.
 
 ## 11. ENGAGEMENT, GAMIFICATION AND BUSINESS MODEL
 
