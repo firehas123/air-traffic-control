@@ -181,7 +181,7 @@ Rewarded-ad choice — OPEN; cosmetics/retry, not mandatory.
 
 Supporter purchase — OPEN; optional.
 
-Android device testing strategy — Android Emulator (Android Studio) on the MacBook for day-to-day Android checks; a real phone once the iOS version is ready and before release (owner, 15 Nov 2026).
+Android device testing strategy — No Android work until M4. Then: Android Emulator (Android Studio) on the MacBook first, a real phone before release (owner, 15 Nov 2026).
 
 Wind and slow-time on/off switches — OPEN: a player setting in the release, or test switches only.
 
@@ -217,7 +217,7 @@ Wind and slow-time on/off switches — OPEN: a player setting in the release, or
 
 15 Nov 2026 — AGREED: The game is developed under the name MHC Studio. The credit appears in the repository, the app's company name and the in-game credits. The game will be listed on the MHC website and resume site as in development (MHC inbox draft tasks 190 for the website and 191 for the resume site, which also adds Android and iOS development); the link goes to the GitHub repository until the App Store link exists.
 
-15 Nov 2026 — AGREED: Android is checked on the Android Emulator (Android Studio) on the MacBook. The emulator shows whether the game works on Android, but it does not replace a real phone for touch feel and performance; a real phone is still needed before release, and Google Play's closed test needs real testers anyway.
+15 Nov 2026 — AGREED: No Android work in M1 to M3; it starts in M4 (Android release). Android is then checked on the Android Emulator (Android Studio) on the MacBook. The emulator shows whether the game works on Android, but it does not replace a real phone for touch feel and performance; a real phone is still needed before release, and Google Play's closed test needs real testers anyway.
 
 ## 11. ENGAGEMENT, GAMIFICATION AND BUSINESS MODEL
 
