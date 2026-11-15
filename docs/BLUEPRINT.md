@@ -279,7 +279,7 @@ All items C1 to C21 were accepted on 14 November 2026. C16 changes the release o
 
 Updated by Claude on 15 November 2026 from the GitHub repository. Read this section before suggesting code, so suggestions build on what already exists.
 
-Repository: https://github.com/firehas123/air-traffic-control (private, branch main). It holds the code and a markdown copy of this document (docs/BLUEPRINT.md). This Google Doc stays the source of truth for decisions. The repository is the source of truth for code.
+Repository: https://github.com/firehas123/air-traffic-control (public, branch main). It holds the code and a markdown copy of this document (docs/BLUEPRINT.md). This Google Doc stays the source of truth for decisions. The repository is the source of truth for code.
 
 Who works where: the owner tests on the iPad and approves decisions. Claude Code (CLI) writes, builds and installs the code, following CLAUDE.md in the repository. Claude (chat) and ChatGPT review, propose and update this document. Before suggesting code, check the latest commits in the repository.
 
