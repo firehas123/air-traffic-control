@@ -77,6 +77,13 @@ namespace AirTrafficControl
             if (selected == null)
                 return;
 
+            // The aircraft crashed (its path is cleared) or is rolling out: this stroke no longer belongs to anything.
+            if (!selected.IsAirborne)
+            {
+                EndStroke();
+                return;
+            }
+
             newPoints.Clear();
             recorder.AddSample(worldPosition, newPoints);
             foreach (Vector2 point in newPoints)

@@ -55,6 +55,9 @@ namespace AirTrafficControl
             }
         }
 
+        /// <summary>Current velocity: heading times speed.</summary>
+        public Vector2 Velocity => HeadingVector * Speed;
+
         /// <summary>Radius of the tightest circle the aircraft flies when turning back at an edge.</summary>
         public float TurnRadius => Speed / (TurnRateDegrees * Mathf.Deg2Rad);
 

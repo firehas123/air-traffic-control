@@ -55,6 +55,31 @@ namespace AirTrafficControl
             return this;
         }
 
+        /// <summary>A flat ring between <paramref name="innerRadius"/> and <paramref name="outerRadius"/>.</summary>
+        public MeshBuilder Ring(Vector2 centre, float innerRadius, float outerRadius, int segments, Color color)
+        {
+            for (int i = 0; i < segments; i++)
+            {
+                float a0 = 2f * Mathf.PI * i / segments;
+                float a1 = 2f * Mathf.PI * (i + 1) / segments;
+                var d0 = new Vector2(Mathf.Cos(a0), Mathf.Sin(a0));
+                var d1 = new Vector2(Mathf.Cos(a1), Mathf.Sin(a1));
+                Quad(centre + d0 * innerRadius, centre + d0 * outerRadius,
+                     centre + d1 * outerRadius, centre + d1 * innerRadius, color);
+            }
+            return this;
+        }
+
+        /// <summary>A straight bar from <paramref name="from"/> to <paramref name="to"/>.</summary>
+        public MeshBuilder Bar(Vector2 from, Vector2 to, float thickness, Color color)
+        {
+            Vector2 along = to - from;
+            if (along.sqrMagnitude <= 0f)
+                return this;
+            Vector2 side = new Vector2(-along.y, along.x).normalized * (thickness / 2f);
+            return Quad(from - side, to - side, to + side, from + side, color);
+        }
+
         public Mesh Build(string name)
         {
             var mesh = new Mesh { name = name };

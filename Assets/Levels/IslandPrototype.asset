@@ -22,5 +22,13 @@ MonoBehaviour:
     width: 0.6
     touchdownZoneStart: 0.1
     touchdownZoneLength: 0.7
-  spawnPosition: {x: -5, y: 3}
-  spawnHeadingDegrees: 0
+  aircraftInAir: 2
+  spawnPoints:
+  - position: {x: -5.5, y: 3.3}
+    headingDegrees: -10
+  - position: {x: 5.5, y: 3.3}
+    headingDegrees: 200
+  - position: {x: -5.5, y: -3.5}
+    headingDegrees: 15
+  - position: {x: 5.5, y: -3.6}
+    headingDegrees: 165
