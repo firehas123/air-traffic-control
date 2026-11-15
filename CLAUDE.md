@@ -7,11 +7,11 @@ Read `docs/BLUEPRINT.md` before proposing or building anything. It is a copy of 
 - Items marked AGREED are requirements. Do not change them without asking the owner.
 - Items marked PROPOSED or OPEN are not settled. Ask before building on them.
 - Section 11 (items C1 to C21) was accepted on 14 November 2026. Where it differs from sections 1 to 7, section 11 applies.
-- Unity 2D with C# is still PROPOSED. Confirm it with the owner before creating the Unity project.
+- Engine is AGREED: Unity 6.3 LTS (6000.3.28f1) with C#, Universal 2D template. The Unity project is already at the repository root (Assets, Packages, ProjectSettings). Do not upgrade the Unity version without asking the owner.
 
 ## Current priority
 
-Milestones M0 and M1: a blank Unity scene running on the iPad, then one map with path drawing, route following, landing, collision and restart.
+Milestones M0 and M1: the blank SampleScene running on the iPad, then one map with path drawing, route following, landing, collision and restart.
 
 Rules that apply from the M1 prototype:
 

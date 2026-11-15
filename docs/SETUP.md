@@ -1,6 +1,6 @@
 # Development setup (Mac)
 
-Do these in order before starting the M0 milestone. This setup assumes Unity 2D with C#, which is still PROPOSED in the blueprint, so confirm the engine first.
+Do these in order before starting the M0 milestone. The engine is Unity 6.3 LTS (6000.3.28f1) with C#, agreed on 15 November 2026. This setup was completed on 15 November 2026.
 
 ## 1. Basic tools
 
@@ -18,7 +18,7 @@ Do these in order before starting the M0 milestone. This setup assumes Unity 2D 
 ## 2. Unity
 
 1. Install Unity Hub from https://unity.com/download and sign in. Choose the free Personal license.
-2. In Unity Hub, install the newest Unity 6 LTS editor. Tick these modules during install:
+2. In Unity Hub, install Unity 6.3 LTS (6000.3.28f1), the version this project uses. Tick these modules during install:
    - Android Build Support, including OpenJDK and Android SDK & NDK Tools
    - iOS Build Support
 3. Create a new project with the "Universal 2D" template. Save it inside this repository folder so the `Assets`, `Packages` and `ProjectSettings` folders sit at the repository root.

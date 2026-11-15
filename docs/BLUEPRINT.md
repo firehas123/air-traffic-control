@@ -21,7 +21,7 @@ AGREED IN PRINCIPLE: Stars, earned coins, achievements, cosmetics, personal best
 
 AGREED: Develop on MacBook, test locally on iPad before publishing; Android first, Apple App Store second. PC (Steam/Epic) and consoles (Xbox/PlayStation, potentially Nintendo) are future targets.
 
-PROPOSED: Unity 2D with C#, separating touch input from portable game logic.
+AGREED: Unity 2D with C# (Unity 6.3 LTS), separating touch input from portable game logic.
 
 AGREED: Offline-first, no custom backend required for initial release. Monetize lightly, chiefly optional rewarded ads on mobile; player enjoyment comes first.
 
@@ -59,7 +59,7 @@ ACCESSIBILITY: Generous touch targets; status communicated by shape/icon as well
 
 ## 5. TECHNICAL DESIGN & PLATFORM READINESS
 
-PROPOSED ENGINE: Unity 2D + C#. Review licensing and console developer eligibility at the time of expansion.
+AGREED ENGINE: Unity 2D + C#, Unity 6.3 LTS (6000.3.28f1), Universal 2D template. Review licensing and console developer eligibility at the time of expansion.
 
 **Modules:**
 
@@ -198,6 +198,8 @@ Android device testing strategy — OPEN; validate on real phones.
 14 Nov 2026 — PROPOSED: Unity 2D / C# as initial development stack.
 
 14 Nov 2026 — AGREED: Owner accepted section 11 items C1 to C21. Where they differ from sections 1 to 7, section 11 applies: no advertising in the first release (C12), staged release starting with Island Airport (C16), one rule per map (C1).
+
+15 Nov 2026 — AGREED: Unity 6.3 LTS (6000.3.28f1) with C# as the development stack. Project created in the GitHub repository firehas123/air-traffic-control.
 
 ## 11. ENGAGEMENT, GAMIFICATION AND BUSINESS MODEL
 
