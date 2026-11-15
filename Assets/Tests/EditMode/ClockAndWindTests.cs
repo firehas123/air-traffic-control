@@ -33,6 +33,46 @@ namespace AirTrafficControl.Tests
         }
     }
 
+    public class SlowDrawTests
+    {
+        [Test]
+        public void Drawing_SlowsTimeToTheSlowFactor()
+        {
+            var clock = new GameClock { Drawing = true };
+            Assert.AreEqual(GameClock.DrawingSlowFactor, clock.TimeScale, 1e-6f);
+            Assert.IsTrue(clock.IsSlowedForDrawing);
+        }
+
+        [Test]
+        public void Drawing_AtFastSpeed_SlowsFromFast()
+        {
+            var clock = new GameClock { Fast = true, Drawing = true };
+            Assert.AreEqual(GameClock.FastSpeed * GameClock.DrawingSlowFactor, clock.TimeScale, 1e-6f);
+        }
+
+        [Test]
+        public void SwitchOff_DrawingDoesNotSlowTime()
+        {
+            var clock = new GameClock { SlowWhileDrawing = false, Drawing = true };
+            Assert.AreEqual(1f, clock.TimeScale);
+            Assert.AreEqual("Slow draw off", clock.SlowDrawLabel);
+        }
+
+        [Test]
+        public void SwitchIsOnAtStart()
+        {
+            Assert.IsTrue(new GameClock().SlowWhileDrawing);
+            Assert.AreEqual("Slow draw on", new GameClock().SlowDrawLabel);
+        }
+
+        [Test]
+        public void Paused_BeatsDrawing()
+        {
+            var clock = new GameClock { Drawing = true, Paused = true };
+            Assert.AreEqual(0f, clock.TimeScale);
+        }
+    }
+
     public class WindScheduleTests
     {
         [Test]

@@ -5,7 +5,8 @@ namespace AirTrafficControl
 {
     /// <summary>
     /// Decides whether a line lands on a runway (owner decisions, 15 Nov 2026).
-    /// The drawn line must end in the active touchdown zone (the highlighted area with the arrows).
+    /// The drawn line must end inside the active touchdown zone (the highlighted area with the arrows),
+    /// overlapping it by at least <see cref="ConnectInset"/>.
     /// The direction the line arrives from does not matter: the owner asked for this flexibility so that
     /// an aircraft coming from the far side can be brought straight onto the arrows. The aircraft lines up
     /// with the runway at touchdown. Lines that do not land leave the aircraft carrying straight on (C5).
@@ -26,10 +27,12 @@ namespace AirTrafficControl
         public const float ApproachSampleLength = 0.3f;
 
         /// <summary>
-        /// The line may end this far beside the touchdown zone's side edges and still count (about 1 mm on
-        /// a 12.9" iPad). There is no margin before the threshold: a line ending before the runway never lands.
+        /// The line must reach at least this far inside the touchdown zone, on every side, before it lands
+        /// (about 2.4 mm on a 12.9" iPad; the runway is 0.6 wide). Owner decision 15 Nov 2026: the line should
+        /// overlap the runway, not connect as soon as it touches the zone's edge. A line ending before the
+        /// runway never lands.
         /// </summary>
-        public const float SideMargin = 0.05f;
+        public const float ConnectInset = 0.12f;
 
         /// <summary>
         /// The direction of travel over the last <see cref="ApproachSampleLength"/> of the line
@@ -66,7 +69,7 @@ namespace AirTrafficControl
         {
             if (line == null || line.Count < 2)
                 return false;
-            if (!runway.InTouchdownZone(line[line.Count - 1], SideMargin))
+            if (!runway.InTouchdownZone(line[line.Count - 1], ConnectInset))
                 return false;
             if (!TryGetApproachHeading(line, out float heading))
                 return false;

@@ -59,7 +59,10 @@ namespace AirTrafficControl.Tests
             Assert.IsTrue(runway.InTouchdownZone(new Vector2(0.3f, 0f)), "end of the zone");
             Assert.IsFalse(runway.InTouchdownZone(new Vector2(0.4f, 0f)), "past the zone");
             Assert.IsFalse(runway.InTouchdownZone(new Vector2(0f, 0.34f)), "beside the zone");
-            Assert.IsTrue(runway.InTouchdownZone(new Vector2(0f, 0.34f), 0.05f), "beside, within the side margin");
+            Assert.IsFalse(runway.InTouchdownZone(new Vector2(0f, 0.25f), 0.12f), "inside, but not 0.12 in from the side");
+            Assert.IsTrue(runway.InTouchdownZone(new Vector2(0f, 0.15f), 0.12f), "0.15 in from the side");
+            Assert.IsFalse(runway.InTouchdownZone(new Vector2(-0.35f, 0f), 0.12f), "0.05 into the zone along the runway");
+            Assert.IsTrue(runway.InTouchdownZone(new Vector2(-0.25f, 0f), 0.12f), "0.15 into the zone along the runway");
         }
 
         [Test]
@@ -127,11 +130,14 @@ namespace AirTrafficControl.Tests
         }
 
         [Test]
-        public void EndsJustBesideTheZoneEdge_WithinTheSideMargin_Lands()
+        public void EndsJustInsideTheZoneEdge_DoesNotLand_TheLineMustOverlap()
         {
-            float edge = -1f + 0.3f;
-            var line = Line(new Vector2(-3f, edge + 0.03f), new Vector2(InZoneX, edge + 0.03f));
-            Assert.IsTrue(LandingRules.CanLand(Eastbound, line));
+            float edge = -1f + 0.3f; // top edge of the runway
+            var touching = Line(new Vector2(InZoneX, 1f), new Vector2(InZoneX, edge - 0.05f));
+            var overlapping = Line(new Vector2(InZoneX, 1f), new Vector2(InZoneX, edge - 0.15f));
+
+            Assert.IsFalse(LandingRules.CanLand(Eastbound, touching), "0.05 onto the runway is not enough");
+            Assert.IsTrue(LandingRules.CanLand(Eastbound, overlapping), "0.15 onto the runway lands");
         }
 
         [TestCase(25f, true)]
@@ -218,9 +224,10 @@ namespace AirTrafficControl.Tests
             Vector2? connected = ConnectionPoint(start, Stroke(start, new Vector2(4f, -1f)));
 
             Assert.IsTrue(connected.HasValue, "Should connect");
-            Assert.IsTrue(Eastbound.InTouchdownZone(connected.Value), "Ends in the touchdown zone");
-            Assert.GreaterOrEqual(connected.Value.x, -0.4f, "Not before the arrows");
-            Assert.Less(connected.Value.x, -0.4f + 0.06f, "Connects on reaching the zone, not later");
+            Assert.IsTrue(Eastbound.InTouchdownZone(connected.Value, LandingRules.ConnectInset), "Ends well inside the zone");
+            float firstAllowed = -0.4f + LandingRules.ConnectInset;
+            Assert.GreaterOrEqual(connected.Value.x, firstAllowed - 1e-4f, "Overlaps the zone by the inset");
+            Assert.Less(connected.Value.x, firstAllowed + 0.06f, "Connects as soon as it overlaps enough, not later");
         }
 
         [Test]
@@ -231,8 +238,10 @@ namespace AirTrafficControl.Tests
             Vector2? connected = ConnectionPoint(start, Stroke(start, new Vector2(-3f, -1f)));
 
             Assert.IsTrue(connected.HasValue, "Should connect");
-            Assert.IsTrue(Eastbound.InTouchdownZone(connected.Value));
-            Assert.Greater(connected.Value.x, 0.3f - 0.06f, "Connects on reaching the zone's far edge, not later");
+            Assert.IsTrue(Eastbound.InTouchdownZone(connected.Value, LandingRules.ConnectInset));
+            float firstAllowed = 0.3f - LandingRules.ConnectInset;
+            Assert.LessOrEqual(connected.Value.x, firstAllowed + 1e-4f, "Overlaps the zone by the inset");
+            Assert.Greater(connected.Value.x, firstAllowed - 0.06f, "Connects as soon as it overlaps enough, not later");
         }
 
         [Test]
@@ -242,7 +251,9 @@ namespace AirTrafficControl.Tests
             Vector2? connected = ConnectionPoint(start, Stroke(start, new Vector2(InZoneX, -3f)));
 
             Assert.IsTrue(connected.HasValue, "Should connect");
-            Assert.IsTrue(Eastbound.InTouchdownZone(connected.Value, LandingRules.SideMargin));
+            float runwayTopEdge = -1f + 0.3f;
+            Assert.LessOrEqual(connected.Value.y, runwayTopEdge - LandingRules.ConnectInset + 1e-4f, "Crosses onto the runway by the inset");
+            Assert.Greater(connected.Value.y, runwayTopEdge - LandingRules.ConnectInset - 0.06f, "Connects as soon as it overlaps enough");
         }
 
         [Test]

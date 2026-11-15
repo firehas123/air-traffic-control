@@ -28,6 +28,9 @@ namespace AirTrafficControl
         PathRecorder recorder;
         AircraftController selected;
 
+        /// <summary>True while the player is drawing an aircraft's line (used to slow time, C4).</summary>
+        public bool IsDrawing => selected != null && recorder != null && recorder.IsRecording;
+
         public void Initialise(InputAdapter inputAdapter, LandingSystem landingSystem)
         {
             landing = landingSystem;

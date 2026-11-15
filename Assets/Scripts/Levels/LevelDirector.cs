@@ -20,20 +20,22 @@ namespace AirTrafficControl
 
     /// <summary>
     /// Runs one level from <see cref="LevelData"/>: keeps the level's number of aircraft in the air, counts
-    /// landings, and ends the attempt on the first collision (blueprint: collisions restart the level).
-    /// Retry restarts at once (C3: under two seconds, no lives, no waiting).
-    /// Also runs the game speed (1x / 2x button, see <see cref="GameClock"/>) and the Island wind rule
-    /// (C1, see <see cref="WindSchedule"/>), which the Wind button switches on and off.
-    /// Spawn schedules and objectives will be added here once the level data schema is settled.
+    /// landings, clears the level when the landing target is reached (C2 objective "land a set number"), and
+    /// ends the attempt on the first collision (blueprint: collisions restart the level). Retry and Play again
+    /// restart at once (C3: under two seconds, no lives, no waiting).
+    /// Also runs game time (<see cref="GameClock"/>): the 1x / 2x Speed button, freezing at the end, and slowing
+    /// time while the player draws (C4, Slow draw button); and the Island wind rule (C1, <see cref="WindSchedule"/>,
+    /// Wind button). Spawn schedules and other objective types will be added once the level data schema is settled.
     /// </summary>
     public sealed class LevelDirector : MonoBehaviour
     {
         /// <summary>The crash stays on screen this long, frozen, before the collision panel appears.</summary>
         const float CrashPauseSeconds = 0.5f;
+        const float ClearedPauseSeconds = 0.3f;
         const float RespawnDelay = 1f;      // seconds after a landing
         const float BusyRetryDelay = 0.5f;  // seconds to wait when every spawn point is busy
 
-        readonly LevelSession session = new LevelSession();
+        LevelSession session = new LevelSession();
         readonly GameClock clock = new GameClock();
         readonly List<Vector2> spawnPositions = new List<Vector2>();
         readonly List<Vector2> aircraftPositions = new List<Vector2>();
@@ -44,6 +46,7 @@ namespace AirTrafficControl
         LandingSystem landing;
         AirspaceSafety safety;
         InputAdapter input;
+        PathPlanner planner;
         HudView hud;
         Material material;
         AircraftSettings aircraftSettings;
@@ -58,9 +61,12 @@ namespace AirTrafficControl
         public GameClock Clock => clock;
 
         public void Initialise(LevelData levelData, Camera camera, LandingSystem landingSystem, AirspaceSafety airspaceSafety,
-                               InputAdapter inputAdapter, HudView hudView, Material shapeMaterial, AircraftSettings settings)
+                               InputAdapter inputAdapter, PathPlanner pathPlanner, HudView hudView, Material shapeMaterial,
+                               AircraftSettings settings)
         {
             level = levelData;
+            session = new LevelSession(level.landingsToClear);
+            planner = pathPlanner;
             worldCamera = camera;
             landing = landingSystem;
             safety = airspaceSafety;
@@ -87,8 +93,10 @@ namespace AirTrafficControl
             hud.RetryPressed += OnRetryPressed;
             hud.SpeedPressed += OnSpeedPressed;
             hud.WindPressed += OnWindPressed;
+            hud.SlowDrawPressed += OnSlowDrawPressed;
             input.SetScreenBlocker(hud.IsOverInteractive);
             hud.SetSpeedLabel(clock.SpeedLabel);
+            hud.SetSlowDrawLabel(clock.SlowDrawLabel);
             hud.SetWind(windRule.hasWind, windOn);
         }
 
@@ -100,6 +108,7 @@ namespace AirTrafficControl
                 hud.RetryPressed -= OnRetryPressed;
                 hud.SpeedPressed -= OnSpeedPressed;
                 hud.WindPressed -= OnWindPressed;
+                hud.SlowDrawPressed -= OnSlowDrawPressed;
             }
             Time.timeScale = 1f;
         }
@@ -111,9 +120,11 @@ namespace AirTrafficControl
             RemoveAllAircraft();
 
             session.Restart();
-            hud.SetLanded(0);
-            hud.HideCollision();
-            clock.Paused = false; // the speed setting (1x / 2x) carries over between attempts
+            hud.SetLanded(0, session.LandingsToClear);
+            hud.SetTime(0f);
+            hud.HideEnd();
+            clock.Paused = false; // the Speed and Slow draw settings carry over between attempts
+            clock.Drawing = false;
             ApplyClock();
             input.enabled = true;
             attempt++;
@@ -130,7 +141,23 @@ namespace AirTrafficControl
         void Update()
         {
             session.Tick(Time.deltaTime);
+            hud.SetTime(session.ElapsedSeconds);
             UpdateWind(Time.deltaTime);
+
+            // C4: slow time while the player is drawing an aircraft's line.
+            bool drawing = session.IsPlaying && planner != null && planner.IsDrawing;
+            if (drawing != clock.Drawing)
+            {
+                clock.Drawing = drawing;
+                ApplyClock();
+            }
+        }
+
+        void OnSlowDrawPressed()
+        {
+            clock.SlowWhileDrawing = !clock.SlowWhileDrawing;
+            hud.SetSlowDrawLabel(clock.SlowDrawLabel);
+            ApplyClock();
         }
 
         void ApplyClock()
@@ -208,34 +235,51 @@ namespace AirTrafficControl
                 return;
 
             // Freeze everything so the crash can be seen, and stop drawing while the panel is up.
+            EndAttempt();
+            StartCoroutine(ShowEndPanel(CrashPauseSeconds,
+                () => hud.ShowCollision(session.ElapsedSeconds, session.LandedCount, session.LandingsToClear)));
+        }
+
+        void OnLevelCleared()
+        {
+            EndAttempt();
+            StartCoroutine(ShowEndPanel(ClearedPauseSeconds,
+                () => hud.ShowCleared(session.ElapsedSeconds, session.LandedCount, session.LandingsToClear)));
+        }
+
+        void EndAttempt()
+        {
             StopAllCoroutines();
             clock.Paused = true;
+            clock.Drawing = false;
             ApplyClock();
             input.enabled = false;
             hud.SetWindWarning(0);
-            StartCoroutine(ShowCollisionPanel());
         }
 
-        IEnumerator ShowCollisionPanel()
+        IEnumerator ShowEndPanel(float delay, Action show)
         {
-            yield return new WaitForSecondsRealtime(CrashPauseSeconds);
-            hud.ShowCollision(session.ElapsedSeconds, session.LandedCount);
+            yield return new WaitForSecondsRealtime(delay);
+            show();
         }
 
         void OnRetryPressed()
         {
             var timer = Stopwatch.StartNew();
             StartLevel();
-            // C3: restart after a collision takes under two seconds. Shown in the Xcode console.
+            // C3: restart takes under two seconds. Shown in the Xcode console.
             Debug.Log($"LevelDirector: restart took {timer.Elapsed.TotalMilliseconds:F1} ms");
         }
 
         void OnAircraftLanded(AircraftController aircraft)
         {
             aircraft.Landed -= OnAircraftLanded;
-            session.RecordLanding();
-            hud.SetLanded(session.LandedCount);
-            StartCoroutine(SpawnWhenClear(RespawnDelay));
+            bool cleared = session.RecordLanding();
+            hud.SetLanded(session.LandedCount, session.LandingsToClear);
+            if (cleared)
+                OnLevelCleared();
+            else if (session.IsPlaying)
+                StartCoroutine(SpawnWhenClear(RespawnDelay));
         }
 
         void RemoveAllAircraft()

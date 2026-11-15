@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
@@ -8,8 +9,11 @@ namespace AirTrafficControl
 {
     /// <summary>
     /// Placeholder in-game UI, built in code (no art), following the screen mockups (mockups/index.html):
-    /// the landing counter, the Speed and Wind buttons, the wind-change countdown, and the collision panel
-    /// with Retry. Shows what <see cref="LevelDirector"/> tells it; no game logic.
+    /// - top left: "Landed N of M" and the level timer
+    /// - top right: Speed (1x / 2x), Wind (C1 switch) and Slow draw (C4 switch) buttons
+    /// - top centre: the wind-change countdown
+    /// - centre: the end panel, either "Two aircraft collided" with Retry or "Level cleared" with Play again
+    /// Shows what <see cref="LevelDirector"/> tells it; no game logic.
     /// </summary>
     public sealed class HudView : MonoBehaviour
     {
@@ -17,21 +21,27 @@ namespace AirTrafficControl
         static readonly Color PanelColor = new Color(0.97f, 0.97f, 0.95f, 0.97f);
         static readonly Color Ink = new Color(0.08f, 0.14f, 0.2f);
         static readonly Color AlertRed = new Color(0.8f, 0.15f, 0.15f);
+        static readonly Color SuccessGreen = new Color(0.12f, 0.55f, 0.25f);
         static readonly Color ButtonColor = new Color(1f, 0.82f, 0.15f);
 
+        readonly List<RectTransform> touchBlockers = new List<RectTransform>();
+
+        Font font;
         Text landedText;
+        Text timeText;
+        int shownSeconds = -1;
         Text speedLabel;
         Text windLabel;
         GameObject windButton;
+        Text slowDrawLabel;
         GameObject windWarning;
         Text windWarningText;
-        GameObject collisionPanel;
-        Text collisionDetail;
-        Font font;
+        GameObject endPanel;
+        Text endTitle;
+        Text endDetail;
+        Text endButtonLabel;
 
-        readonly System.Collections.Generic.List<RectTransform> touchBlockers = new System.Collections.Generic.List<RectTransform>();
-
-        /// <summary>Raised when the player taps Retry.</summary>
+        /// <summary>Raised when the player taps Retry or Play again.</summary>
         public event Action RetryPressed;
 
         /// <summary>Raised when the player taps the Speed button.</summary>
@@ -39,6 +49,9 @@ namespace AirTrafficControl
 
         /// <summary>Raised when the player taps the Wind button.</summary>
         public event Action WindPressed;
+
+        /// <summary>Raised when the player taps the Slow draw button.</summary>
+        public event Action SlowDrawPressed;
 
         public void Initialise()
         {
@@ -52,66 +65,72 @@ namespace AirTrafficControl
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1366f, 1024f); // 12.9" iPad in points, landscape
             scaler.matchWidthOrHeight = 0.5f;
+            Transform root = canvasObject.transform;
 
             // Buttons need an event system. This project uses the new Input System only.
             if (FindAnyObjectByType<EventSystem>() == null)
                 new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
 
-            // Landing counter, top left.
-            RectTransform pill = CreateBox("LandedPill", canvasObject.transform, PillColor);
-            pill.anchorMin = pill.anchorMax = pill.pivot = new Vector2(0f, 1f);
-            pill.anchoredPosition = new Vector2(24f, -24f);
-            pill.sizeDelta = new Vector2(220f, 64f);
-            landedText = CreateText("Landed", pill, 34, Color.white, FontStyle.Bold);
+            // Top left: landing counter and timer.
+            landedText = CreateText("Landed", TopLeftPill("LandedPill", root, 24f, 260f), 32, Color.white, FontStyle.Bold);
+            timeText = CreateText("Time", TopLeftPill("TimePill", root, 300f, 120f), 32, Color.white, FontStyle.Bold);
 
-            // Speed and Wind buttons, top right.
-            speedLabel = CreateTopRightButton("SpeedButton", canvasObject.transform, 0, () => SpeedPressed?.Invoke(), out _);
-            windLabel = CreateTopRightButton("WindButton", canvasObject.transform, 1, () => WindPressed?.Invoke(), out windButton);
+            // Top right: Speed, Wind, Slow draw.
+            speedLabel = CreateTopRightButton("SpeedButton", root, 0, () => SpeedPressed?.Invoke(), out _);
+            windLabel = CreateTopRightButton("WindButton", root, 1, () => WindPressed?.Invoke(), out windButton);
+            slowDrawLabel = CreateTopRightButton("SlowDrawButton", root, 2, () => SlowDrawPressed?.Invoke(), out _);
 
-            // Wind-change countdown, top centre, hidden until a change is near.
-            RectTransform warning = CreateBox("WindWarning", canvasObject.transform, PillColor);
+            // Wind-change countdown, top centre below the buttons, hidden until a change is near.
+            RectTransform warning = CreateBox("WindWarning", root, PillColor);
             warning.anchorMin = warning.anchorMax = warning.pivot = new Vector2(0.5f, 1f);
-            warning.anchoredPosition = new Vector2(0f, -24f);
+            warning.anchoredPosition = new Vector2(0f, -110f);
             warning.sizeDelta = new Vector2(420f, 64f);
             windWarningText = CreateText("Text", warning, 32, ButtonColor, FontStyle.Bold);
             windWarning = warning.gameObject;
             windWarning.SetActive(false);
 
-            // Collision panel, centred, hidden until a collision.
-            RectTransform panel = CreateBox("CollisionPanel", canvasObject.transform, PanelColor);
+            // End panel, centred, hidden until the level ends.
+            RectTransform panel = CreateBox("EndPanel", root, PanelColor);
             panel.anchorMin = panel.anchorMax = panel.pivot = new Vector2(0.5f, 0.5f);
             panel.sizeDelta = new Vector2(640f, 380f);
-            collisionPanel = panel.gameObject;
+            endPanel = panel.gameObject;
+            touchBlockers.Add(panel); // the whole panel, so a tap beside the button cannot grab an aircraft
 
-            Text title = CreateText("Title", panel, 48, AlertRed, FontStyle.Bold);
-            title.text = "Two aircraft collided";
-            Place(title.rectTransform, new Vector2(0f, 110f), new Vector2(600f, 70f));
+            endTitle = CreateText("Title", panel, 48, AlertRed, FontStyle.Bold);
+            Place(endTitle.rectTransform, new Vector2(0f, 110f), new Vector2(600f, 70f));
+            endDetail = CreateText("Detail", panel, 30, Ink, FontStyle.Normal);
+            Place(endDetail.rectTransform, new Vector2(0f, 25f), new Vector2(580f, 90f));
 
-            collisionDetail = CreateText("Detail", panel, 30, Ink, FontStyle.Normal);
-            Place(collisionDetail.rectTransform, new Vector2(0f, 25f), new Vector2(580f, 90f));
-
-            RectTransform buttonBox = CreateBox("RetryButton", panel, ButtonColor);
+            RectTransform buttonBox = CreateBox("EndButton", panel, ButtonColor);
             Place(buttonBox, new Vector2(0f, -110f), new Vector2(320f, 110f));
             var button = buttonBox.gameObject.AddComponent<Button>();
             button.targetGraphic = buttonBox.GetComponent<Image>();
             button.onClick.AddListener(() => RetryPressed?.Invoke());
-            touchBlockers.Add(panel); // the whole panel, so a tap beside Retry cannot grab an aircraft
-            Text buttonText = CreateText("Label", buttonBox, 46, Ink, FontStyle.Bold);
-            buttonText.text = "Retry";
+            endButtonLabel = CreateText("Label", buttonBox, 46, Ink, FontStyle.Bold);
 
-            collisionPanel.SetActive(false);
-            SetLanded(0);
+            endPanel.SetActive(false);
+            SetLanded(0, 0);
+            SetTime(0f);
         }
 
-        public void SetLanded(int count)
+        /// <summary>"Landed N of M", or "Landed N" when the level has no landing target.</summary>
+        public void SetLanded(int count, int target)
         {
-            landedText.text = $"Landed {count}";
+            landedText.text = target > 0 ? $"Landed {count} of {target}" : $"Landed {count}";
         }
 
-        public void SetSpeedLabel(string label)
+        public void SetTime(float elapsedSeconds)
         {
-            speedLabel.text = label;
+            int whole = Mathf.FloorToInt(elapsedSeconds);
+            if (whole == shownSeconds)
+                return;
+            shownSeconds = whole;
+            timeText.text = LevelSession.FormatTime(elapsedSeconds);
         }
+
+        public void SetSpeedLabel(string label) => speedLabel.text = label;
+
+        public void SetSlowDrawLabel(string label) => slowDrawLabel.text = label;
 
         /// <summary>Shows the Wind button, labelled on or off. Hidden on levels without the wind rule.</summary>
         public void SetWind(bool levelHasWind, bool on)
@@ -130,6 +149,24 @@ namespace AirTrafficControl
                 windWarningText.text = $"Wind changing in {secondsLeft}";
         }
 
+        public void ShowCollision(float elapsedSeconds, int landedCount, int target)
+        {
+            string landed = target > 0 ? $"{landedCount} of {target}" : (landedCount == 1 ? "1 aircraft" : $"{landedCount} aircraft");
+            ShowEnd("Two aircraft collided", AlertRed,
+                    $"after {LevelSession.FormatTime(elapsedSeconds)}. You had landed {landed}.", "Retry");
+        }
+
+        public void ShowCleared(float elapsedSeconds, int landedCount, int target)
+        {
+            ShowEnd("Level cleared", SuccessGreen,
+                    $"Landed {landedCount} of {target} in {LevelSession.FormatTime(elapsedSeconds)}.", "Play again");
+        }
+
+        public void HideEnd()
+        {
+            endPanel.SetActive(false);
+        }
+
         /// <summary>
         /// True if the screen point is on a visible button or panel. The input adapter uses this so that a tap
         /// on the UI never selects an aircraft or starts drawing.
@@ -144,16 +181,22 @@ namespace AirTrafficControl
             return false;
         }
 
-        public void ShowCollision(float elapsedSeconds, int landedCount)
+        void ShowEnd(string title, Color titleColor, string detail, string buttonLabel)
         {
-            string landings = landedCount == 1 ? "1 aircraft" : $"{landedCount} aircraft";
-            collisionDetail.text = $"after {LevelSession.FormatTime(elapsedSeconds)}. You had landed {landings}.";
-            collisionPanel.SetActive(true);
+            endTitle.text = title;
+            endTitle.color = titleColor;
+            endDetail.text = detail;
+            endButtonLabel.text = buttonLabel;
+            endPanel.SetActive(true);
         }
 
-        public void HideCollision()
+        RectTransform TopLeftPill(string name, Transform parent, float x, float width)
         {
-            collisionPanel.SetActive(false);
+            RectTransform pill = CreateBox(name, parent, PillColor);
+            pill.anchorMin = pill.anchorMax = pill.pivot = new Vector2(0f, 1f);
+            pill.anchoredPosition = new Vector2(x, -24f);
+            pill.sizeDelta = new Vector2(width, 64f);
+            return pill;
         }
 
         // Buttons along the top right, from the right edge inwards: slot 0 is rightmost.
@@ -161,14 +204,14 @@ namespace AirTrafficControl
         {
             RectTransform box = CreateBox(name, parent, PillColor);
             box.anchorMin = box.anchorMax = box.pivot = new Vector2(1f, 1f);
-            box.anchoredPosition = new Vector2(-24f - slot * 220f, -24f);
-            box.sizeDelta = new Vector2(200f, 64f);
+            box.anchoredPosition = new Vector2(-24f - slot * 230f, -24f);
+            box.sizeDelta = new Vector2(214f, 64f);
             var button = box.gameObject.AddComponent<Button>();
             button.targetGraphic = box.GetComponent<Image>();
             button.onClick.AddListener(() => onClick());
             touchBlockers.Add(box);
             buttonObject = box.gameObject;
-            return CreateText("Label", box, 30, Color.white, FontStyle.Bold);
+            return CreateText("Label", box, 28, Color.white, FontStyle.Bold);
         }
 
         static RectTransform CreateBox(string name, Transform parent, Color color)

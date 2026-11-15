@@ -33,14 +33,18 @@ M0 is done. M1 is in progress, one step at a time, each built, installed and che
 3. A second aircraft with danger warnings and collisions (AirspaceSafety) (done).
 4. Landing counter and restart in under two seconds (C3) (done).
 5. Island wind rule (C1), with an on/off switch (built 15 Nov 2026, waiting for the owner's iPad check).
-6. Slow time while drawing (C4), with an on/off switch.
+6. Slow time while drawing (C4), with an on/off switch (built 15 Nov 2026, waiting for the owner's iPad check).
+
+All six M1 steps are built. M1 passes when the owner plays one complete session on the iPad: draw, land 8 aircraft to clear the level (or collide and retry), with the wind and slow-draw switches tried both ways. The level also gained a landing target of 8 (C2 objective "land a set number of aircraft") so that a session has an end; the owner can change the number in `Assets/Levels/IslandPrototype.asset`.
 
 Gameplay rules the owner has decided while testing M1 (details in the commit messages):
 
 - Aircraft follow the drawn line exactly, with instant turns at corners. The line is never smoothed or cut; any change to it throws `PathAlteredException`.
-- A line lands when it ends in the runway's touchdown zone, the highlighted area with the yellow arrows. It may arrive from any direction (changed on 15 Nov 2026 from "within 30 degrees of the landing direction"). On reaching the zone the line connects automatically: drawing stops and the aircraft turns green (cleared to land).
+- A line lands when it ends in the runway's touchdown zone, the highlighted area with the yellow arrows. It may arrive from any direction (changed on 15 Nov 2026 from "within 30 degrees of the landing direction"). It must overlap the zone by at least 0.12 world units, not just touch its edge (`LandingRules.ConnectInset`). On reaching that point the line connects automatically: drawing stops and the aircraft turns green (cleared to land).
 - Game speed has a 1x / 2x button. 1x is normal, 0.6 world units per second. 2x is the speed the prototype ran at before 15 Nov 2026 (1.2).
-- A collision freezes the game and shows a panel with one large Retry button; Retry restarts at once.
+- A collision freezes the game and shows a panel with one large Retry button; Retry restarts at once. Landing the target number clears the level and shows "Level cleared" with Play again.
+- Slow draw (C4): while the player draws an aircraft's line, game time runs at 0.4 of the chosen speed. A "Slow draw on / off" button switches it; it starts on.
+- Wind (C1): the landing direction reverses every 25 to 40 seconds with a 5-second countdown. A green aircraft whose line ends at the old end loses its clearance. A "Wind on / off" button switches the rule.
 
 Rules that apply from the M1 prototype:
 

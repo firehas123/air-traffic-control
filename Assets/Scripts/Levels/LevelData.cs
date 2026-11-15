@@ -14,6 +14,10 @@ namespace AirTrafficControl
     {
         public string mapId = "island";
 
+        [Header("Objective (C2: land a set number of aircraft)")]
+        [Tooltip("Landings needed to clear the level. 0 means no target: the level only ends on a collision.")]
+        [Min(0)] public int landingsToClear = 8;
+
         [Header("Island (drawn under the runway)")]
         public Vector2 islandCentre = new Vector2(1f, -0.8f);
         public Vector2 islandRadii = new Vector2(3.8f, 2.1f);

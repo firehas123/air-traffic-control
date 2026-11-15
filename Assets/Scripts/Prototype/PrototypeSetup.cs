@@ -47,7 +47,7 @@ namespace AirTrafficControl
             hud.Initialise();
 
             var director = new GameObject("LevelDirector").AddComponent<LevelDirector>();
-            director.Initialise(level, worldCamera, landing, safety, input, hud, shapeMaterial, aircraft);
+            director.Initialise(level, worldCamera, landing, safety, input, planner, hud, shapeMaterial, aircraft);
             director.StartLevel();
         }
     }

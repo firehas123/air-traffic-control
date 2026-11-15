@@ -6,14 +6,24 @@ namespace AirTrafficControl
     {
         Playing,
         Failed,
+        Cleared,
     }
 
     /// <summary>
-    /// The score and state of one attempt at a level: landings so far, time played, and whether a collision
-    /// has ended it. Plain C#, no Unity components, so it can be unit tested.
+    /// The score and state of one attempt at a level: landings so far, time played, and whether it has ended,
+    /// failed by a collision or cleared by reaching the landing target (objective type "land a set number of
+    /// aircraft", C2). Plain C#, no Unity components, so it can be unit tested.
     /// </summary>
     public sealed class LevelSession
     {
+        public LevelSession(int landingsToClear = 0)
+        {
+            LandingsToClear = Mathf.Max(0, landingsToClear);
+        }
+
+        /// <summary>Landings needed to clear the level. 0 means no target: the level only ends on a collision.</summary>
+        public int LandingsToClear { get; }
+
         public SessionState State { get; private set; } = SessionState.Playing;
         public int LandedCount { get; private set; }
         public float ElapsedSeconds { get; private set; }
@@ -26,11 +36,21 @@ namespace AirTrafficControl
                 ElapsedSeconds += deltaTime;
         }
 
-        /// <summary>Counts a landing. Ignored once the session has failed.</summary>
-        public void RecordLanding()
+        /// <summary>
+        /// Counts a landing. Ignored once the session has ended. Returns true for the landing that reaches the
+        /// target and clears the level.
+        /// </summary>
+        public bool RecordLanding()
         {
-            if (IsPlaying)
-                LandedCount++;
+            if (!IsPlaying)
+                return false;
+            LandedCount++;
+            if (LandingsToClear > 0 && LandedCount >= LandingsToClear)
+            {
+                State = SessionState.Cleared;
+                return true;
+            }
+            return false;
         }
 
         /// <summary>Ends the session. Returns true only for the first collision, so the failure is handled once.</summary>
@@ -42,7 +62,7 @@ namespace AirTrafficControl
             return true;
         }
 
-        /// <summary>Starts a fresh attempt: no landings, no time, playing.</summary>
+        /// <summary>Starts a fresh attempt: no landings, no time, playing. The target stays the same.</summary>
         public void Restart()
         {
             State = SessionState.Playing;

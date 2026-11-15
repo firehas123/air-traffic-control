@@ -72,14 +72,15 @@ namespace AirTrafficControl
 
         /// <summary>
         /// True if the point is in the touchdown zone. The zone starts inside the runway, so a point before
-        /// the runway never counts. <paramref name="sideMargin"/> widens it sideways only.
+        /// the runway never counts. A positive <paramref name="inset"/> shrinks the zone by that much on every
+        /// side, so the point must be well inside it rather than on its edge.
         /// </summary>
-        public bool InTouchdownZone(Vector2 world, float sideMargin = 0f)
+        public bool InTouchdownZone(Vector2 world, float inset = 0f)
         {
             Vector2 local = ToLocal(world);
             float intoZone = local.x + Length / 2f - TouchdownZoneStart;
-            return intoZone >= 0f && intoZone <= TouchdownZoneLength
-                   && Mathf.Abs(local.y) <= Width / 2f + sideMargin;
+            return intoZone >= inset && intoZone <= TouchdownZoneLength - inset
+                   && Mathf.Abs(local.y) <= Width / 2f - inset;
         }
     }
 }

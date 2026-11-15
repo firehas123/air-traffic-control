@@ -75,6 +75,52 @@ namespace AirTrafficControl.Tests
             Assert.AreEqual(0f, session.ElapsedSeconds);
         }
 
+        [Test]
+        public void ReachingTheLandingTarget_ClearsTheLevel()
+        {
+            var session = new LevelSession(3);
+
+            Assert.IsFalse(session.RecordLanding());
+            Assert.IsFalse(session.RecordLanding());
+            Assert.IsTrue(session.RecordLanding(), "The third landing clears it");
+            Assert.AreEqual(SessionState.Cleared, session.State);
+            Assert.IsFalse(session.IsPlaying);
+        }
+
+        [Test]
+        public void AfterClearing_NothingMoreCounts_AndACollisionDoesNotFailIt()
+        {
+            var session = new LevelSession(1);
+            session.RecordLanding();
+            session.Tick(4f);
+
+            Assert.IsFalse(session.RecordLanding());
+            Assert.IsFalse(session.RecordCollision());
+            Assert.AreEqual(SessionState.Cleared, session.State);
+            Assert.AreEqual(1, session.LandedCount);
+            Assert.AreEqual(0f, session.ElapsedSeconds, "Time stopped when it was cleared");
+        }
+
+        [Test]
+        public void NoTarget_NeverClears()
+        {
+            var session = new LevelSession(0);
+            for (int i = 0; i < 50; i++)
+                Assert.IsFalse(session.RecordLanding());
+            Assert.IsTrue(session.IsPlaying);
+        }
+
+        [Test]
+        public void Restart_KeepsTheTarget()
+        {
+            var session = new LevelSession(8);
+            session.RecordCollision();
+            session.Restart();
+
+            Assert.AreEqual(8, session.LandingsToClear);
+            Assert.IsTrue(session.IsPlaying);
+        }
+
         [TestCase(0f, "0:00")]
         [TestCase(9.9f, "0:09")]
         [TestCase(72.4f, "1:12")]
