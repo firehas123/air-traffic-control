@@ -101,7 +101,7 @@ Initial custom server hosting: US$0; marketing, art, sound, device purchases, st
 
 M0 — Setup: Unity project, version control and iPad build workflow. Pass: blank game scene launches on iPad. STATUS: DONE 15 Nov 2026, verified on iPad Pro 12.9 (6th gen).
 
-M1 — Flight prototype: one map, path drawing, route following, landing, collision, restart. Pass: one complete playable session. STATUS: IN PROGRESS, step 1 of 4 done 15 Nov 2026 (see section 12).
+M1 — Flight prototype: one map, path drawing, route following, landing, collision, restart. Pass: one complete playable session. STATUS: IN PROGRESS, step 1 of 6 done 15 Nov 2026 (see section 12).
 
 M2 — Fun/UX: controls, danger warnings, tutorial, balance and visual/audio feedback. Pass: a new tester understands play without coaching.
 
@@ -181,7 +181,9 @@ Rewarded-ad choice — OPEN; cosmetics/retry, not mandatory.
 
 Supporter purchase — OPEN; optional.
 
-Android device testing strategy — OPEN; validate on real phones.
+Android device testing strategy — Testing on a real phone starts once the iOS version is ready (owner, 15 Nov 2026).
+
+Wind and slow-time on/off switches — OPEN: a player setting in the release, or test switches only.
 
 ## 10. DECISION LOG
 
@@ -208,6 +210,10 @@ Android device testing strategy — OPEN; validate on real phones.
 15 Nov 2026 — AGREED for the prototype: landscape orientation only (C19). Final choice after phone testing.
 
 15 Nov 2026 — DONE: M1 step 1. One aircraft follows a finger-drawn path on the iPad, verified by the owner.
+
+15 Nov 2026 — AGREED: M1 gains step 5, the Island wind rule (C1), and step 6, slowing time while drawing (C4). Both are built with an on/off switch.
+
+15 Nov 2026 — AGREED: Android testing on a real phone starts once the iOS version is ready (changes C18).
 
 ## 11. ENGAGEMENT, GAMIFICATION AND BUSINESS MODEL
 
@@ -255,7 +261,7 @@ C16 AGREED, CHANGES THE RELEASE ORDER: Release in stages. First release: Island 
 
 C17 NOTE: Google Play requires a new personal developer account to run a closed test with at least 12 testers opted in for 14 continuous days before it can apply for production release. Recruit 15 to 20 Android testers during M2 and plan about three weeks for this step in M4.
 
-C18 AGREED: Start Android testing on a real phone in M1, not M4. Android is the first release platform, and the current plan tests it last.
+C18 CHANGED 15 Nov 2026 by owner: Android testing on a real phone starts once the iOS version is ready, instead of in M1. Android stays the first release platform.
 
 C19 AGREED: Decide portrait or landscape during M1, because the choice changes map layout and how paths are drawn. Suggested starting point: landscape only.
 
@@ -287,8 +293,8 @@ Tests: 33 EditMode unit tests for path recording, exact following and edge turn-
 
 M1 remaining steps: 2. runway and landing detection (LandingSystem). 3. a second aircraft with danger warnings and collisions (AirspaceSafety). 4. landing counter and restart in under two seconds (C3). M1 passes when one complete session is playable.
 
-Not yet scheduled inside M1, although CLAUDE.md lists them for the M1 prototype: the Island wind rule (C1), the slow-time-while-drawing test (C4) and a test on a real Android phone (C18). The owner should decide where these go.
+Scheduled by the owner on 15 Nov 2026: step 5, the Island wind rule (C1), and step 6, slowing time while drawing (C4), each with an on/off switch. Android testing on a real phone (C18) starts once the iOS version is ready.
 
 ## NEXT STEP
 
-Continue M1 one step at a time, each built, installed and checked on the iPad before the next starts. Step 2: Island Airport runway and landing detection (LandingSystem). Step 3: a second aircraft with danger warnings and collisions (AirspaceSafety). Step 4: landing counter and restart in under two seconds (C3).
+Continue M1 one step at a time, each built, installed and checked on the iPad before the next starts. Step 2: Island Airport runway and landing detection (LandingSystem). Step 3: a second aircraft with danger warnings and collisions (AirspaceSafety). Step 4: landing counter and restart in under two seconds (C3). Step 5: Island wind rule (C1) with an on/off switch. Step 6: slow time while drawing (C4) with an on/off switch.

@@ -17,15 +17,22 @@ Read `docs/BLUEPRINT.md` before proposing or building anything. It is a copy of 
 
 ## Current priority
 
-Milestones M0 and M1: the blank SampleScene running on the iPad, then one map with path drawing, route following, landing, collision and restart.
+M0 is done. M1 is in progress, one step at a time, each built, installed and checked on the iPad before the next starts:
+
+1. Plane follows a finger-drawn path (done).
+2. Runway and landing detection (LandingSystem).
+3. A second aircraft with danger warnings and collisions (AirspaceSafety).
+4. Landing counter and restart in under two seconds (C3).
+5. Island wind rule (C1), with an on/off switch.
+6. Slow time while drawing (C4), with an on/off switch.
 
 Rules that apply from the M1 prototype:
 
-- C1: each map has one rule of its own. Island uses changing wind that reverses the runway landing direction.
+- C1: each map has one rule of its own. Island uses changing wind that reverses the runway landing direction. Build it with an on/off switch.
 - C3: levels last 60 to 120 seconds, and restart after a collision takes under two seconds.
-- C4: test slowing time while the player is drawing, and compare with it switched off.
+- C4: slow time while the player is drawing, with an on/off switch so both versions can be compared. Whether players see the wind and slow-time switches in the release is still OPEN.
 - C5: an aircraft with no path flies straight and turns back at the map edge. When a path ends away from a runway, the aircraft continues on its last heading.
-- C18: test on a real Android phone as well as the iPad.
+- C18 (changed by the owner on 15 Nov 2026): test on a real Android phone once the iOS version is ready, not during M1.
 
 ## Code
 
