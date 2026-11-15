@@ -22,6 +22,13 @@ MonoBehaviour:
     width: 0.6
     touchdownZoneStart: 0.1
     touchdownZoneLength: 0.7
+  wind:
+    hasWind: 1
+    onAtStart: 1
+    minSecondsBetweenChanges: 25
+    maxSecondsBetweenChanges: 40
+    warningSeconds: 5
+    indicatorPosition: {x: 5.3, y: 1.8}
   aircraftInAir: 2
   spawnPoints:
   - position: {x: -5.5, y: 3.3}

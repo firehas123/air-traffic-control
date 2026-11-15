@@ -13,6 +13,8 @@ namespace AirTrafficControl
     {
         Camera worldCamera;
         Vector2 lastWorldPosition;
+        Func<Vector2, bool> isScreenPointBlocked;
+        bool ignoringThisPress;
 
         public event Action<Vector2> PressStarted;
         public event Action<Vector2> Dragged;
@@ -26,6 +28,22 @@ namespace AirTrafficControl
             worldCamera = camera;
         }
 
+        /// <summary>
+        /// A press that starts where <paramref name="blocked"/> returns true (a screen point on a UI button)
+        /// is ignored until it is released, so tapping the UI never selects an aircraft or draws.
+        /// </summary>
+        public void SetScreenBlocker(Func<Vector2, bool> blocked)
+        {
+            isScreenPointBlocked = blocked;
+        }
+
+        void OnDisable()
+        {
+            // A press in progress when input is switched off does not carry over.
+            IsPressing = false;
+            ignoringThisPress = false;
+        }
+
         void Update()
         {
             // Pointer.current is whichever pointer was used last: the touchscreen on a tablet or phone,
@@ -35,6 +53,19 @@ namespace AirTrafficControl
                 return;
 
             bool pressed = pointer.press.isPressed;
+
+            if (ignoringThisPress)
+            {
+                if (!pressed)
+                    ignoringThisPress = false;
+                return;
+            }
+
+            if (pressed && !IsPressing && isScreenPointBlocked != null && isScreenPointBlocked(pointer.position.ReadValue()))
+            {
+                ignoringThisPress = true;
+                return;
+            }
 
             if (pressed)
             {

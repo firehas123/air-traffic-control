@@ -5,15 +5,19 @@ namespace AirTrafficControl
 {
     /// <summary>
     /// Decides whether a line lands on a runway (owner decisions, 15 Nov 2026).
-    /// The drawn line must end in the runway's touchdown zone (the highlighted area with the arrows),
-    /// and the aircraft must be heading along the runway's landing direction. Otherwise the aircraft
-    /// carries straight on (C5).
+    /// The drawn line must end in the active touchdown zone (the highlighted area with the arrows).
+    /// The direction the line arrives from does not matter: the owner asked for this flexibility so that
+    /// an aircraft coming from the far side can be brought straight onto the arrows. The aircraft lines up
+    /// with the runway at touchdown. Lines that do not land leave the aircraft carrying straight on (C5).
     /// Plain C#, no Unity components, so it can be unit tested.
     /// </summary>
     public static class LandingRules
     {
-        /// <summary>Largest difference between the approach and the landing direction that still lands.</summary>
-        public const float MaxAlignmentErrorDegrees = 30f;
+        /// <summary>
+        /// Largest difference between the approach and the landing direction that still lands.
+        /// 180 means any direction (owner decision, 15 Nov 2026; it was 30 before).
+        /// </summary>
+        public const float MaxAlignmentErrorDegrees = 180f;
 
         /// <summary>
         /// The approach direction is measured over this much of the end of the line, so a twitch of the
@@ -54,7 +58,11 @@ namespace AirTrafficControl
             return true;
         }
 
-        public static bool CanLand(Runway runway, IReadOnlyList<Vector2> line)
+        public static bool CanLand(Runway runway, IReadOnlyList<Vector2> line) =>
+            CanLand(runway, line, MaxAlignmentErrorDegrees);
+
+        /// <summary>As <see cref="CanLand(Runway, IReadOnlyList{Vector2})"/>, with a stricter approach angle if wanted.</summary>
+        public static bool CanLand(Runway runway, IReadOnlyList<Vector2> line, float maxAlignmentErrorDegrees)
         {
             if (line == null || line.Count < 2)
                 return false;
@@ -62,7 +70,7 @@ namespace AirTrafficControl
                 return false;
             if (!TryGetApproachHeading(line, out float heading))
                 return false;
-            return Mathf.Abs(Mathf.DeltaAngle(heading, runway.LandingHeadingDegrees)) <= MaxAlignmentErrorDegrees;
+            return Mathf.Abs(Mathf.DeltaAngle(heading, runway.LandingHeadingDegrees)) <= maxAlignmentErrorDegrees;
         }
 
         /// <summary>Index of the first runway the line lands on, or -1.</summary>

@@ -29,11 +29,18 @@ The owner decided on 15 Nov 2026 that this game is developed under the name **MH
 M0 is done. M1 is in progress, one step at a time, each built, installed and checked on the iPad before the next starts:
 
 1. Plane follows a finger-drawn path (done).
-2. Runway and landing detection (LandingSystem).
-3. A second aircraft with danger warnings and collisions (AirspaceSafety).
-4. Landing counter and restart in under two seconds (C3).
-5. Island wind rule (C1), with an on/off switch.
+2. Runway and landing detection (LandingSystem) (done).
+3. A second aircraft with danger warnings and collisions (AirspaceSafety) (done).
+4. Landing counter and restart in under two seconds (C3) (done).
+5. Island wind rule (C1), with an on/off switch (built 15 Nov 2026, waiting for the owner's iPad check).
 6. Slow time while drawing (C4), with an on/off switch.
+
+Gameplay rules the owner has decided while testing M1 (details in the commit messages):
+
+- Aircraft follow the drawn line exactly, with instant turns at corners. The line is never smoothed or cut; any change to it throws `PathAlteredException`.
+- A line lands when it ends in the runway's touchdown zone, the highlighted area with the yellow arrows. It may arrive from any direction (changed on 15 Nov 2026 from "within 30 degrees of the landing direction"). On reaching the zone the line connects automatically: drawing stops and the aircraft turns green (cleared to land).
+- Game speed has a 1x / 2x button. 1x is normal, 0.6 world units per second. 2x is the speed the prototype ran at before 15 Nov 2026 (1.2).
+- A collision freezes the game and shows a panel with one large Retry button; Retry restarts at once.
 
 Rules that apply from the M1 prototype:
 

@@ -12,7 +12,8 @@ namespace AirTrafficControl
     public sealed class AircraftSettings
     {
         public AircraftColors colors = AircraftColors.Default;
-        public float speed = 1.2f;          // world units per second
+        // World units per second at 1x. Owner decision 15 Nov 2026: the earlier 1.2 is now 2x, half of it is normal.
+        public float speed = 0.6f;
         public float turnRate = 200f;       // degrees per second, only for the edge turn-back with no path
         public float edgeMargin = 0.8f;     // turn back this far inside the screen edge
     }
@@ -21,6 +22,8 @@ namespace AirTrafficControl
     /// Runs one level from <see cref="LevelData"/>: keeps the level's number of aircraft in the air, counts
     /// landings, and ends the attempt on the first collision (blueprint: collisions restart the level).
     /// Retry restarts at once (C3: under two seconds, no lives, no waiting).
+    /// Also runs the game speed (1x / 2x button, see <see cref="GameClock"/>) and the Island wind rule
+    /// (C1, see <see cref="WindSchedule"/>), which the Wind button switches on and off.
     /// Spawn schedules and objectives will be added here once the level data schema is settled.
     /// </summary>
     public sealed class LevelDirector : MonoBehaviour
@@ -31,6 +34,7 @@ namespace AirTrafficControl
         const float BusyRetryDelay = 0.5f;  // seconds to wait when every spawn point is busy
 
         readonly LevelSession session = new LevelSession();
+        readonly GameClock clock = new GameClock();
         readonly List<Vector2> spawnPositions = new List<Vector2>();
         readonly List<Vector2> aircraftPositions = new List<Vector2>();
         readonly List<AircraftController> toRemove = new List<AircraftController>();
@@ -44,8 +48,14 @@ namespace AirTrafficControl
         Material material;
         AircraftSettings aircraftSettings;
         int nextSpawnIndex;
+        int attempt;
+
+        WindSchedule wind;
+        bool windOn;
+        Transform windIndicator;
 
         public LevelSession Session => session;
+        public GameClock Clock => clock;
 
         public void Initialise(LevelData levelData, Camera camera, LandingSystem landingSystem, AirspaceSafety airspaceSafety,
                                InputAdapter inputAdapter, HudView hudView, Material shapeMaterial, AircraftSettings settings)
@@ -63,14 +73,34 @@ namespace AirTrafficControl
             foreach (SpawnPoint point in level.spawnPoints)
                 spawnPositions.Add(point.position);
 
+            WindRuleSettings windRule = level.wind;
+            if (windRule.hasWind)
+            {
+                windOn = windRule.onAtStart;
+                GameObject indicator = MeshBuilder.CreateObject("WindIndicator", MapShapes.CreateWindIndicatorMesh(),
+                    material, MapShapes.WindIndicatorSortingOrder, windRule.indicatorPosition, 0f);
+                indicator.transform.SetParent(transform, true);
+                windIndicator = indicator.transform;
+            }
+
             safety.Collided += OnCollided;
             hud.RetryPressed += OnRetryPressed;
+            hud.SpeedPressed += OnSpeedPressed;
+            hud.WindPressed += OnWindPressed;
+            input.SetScreenBlocker(hud.IsOverInteractive);
+            hud.SetSpeedLabel(clock.SpeedLabel);
+            hud.SetWind(windRule.hasWind, windOn);
         }
 
         void OnDestroy()
         {
             if (safety != null) safety.Collided -= OnCollided;
-            if (hud != null) hud.RetryPressed -= OnRetryPressed;
+            if (hud != null)
+            {
+                hud.RetryPressed -= OnRetryPressed;
+                hud.SpeedPressed -= OnSpeedPressed;
+                hud.WindPressed -= OnWindPressed;
+            }
             Time.timeScale = 1f;
         }
 
@@ -83,8 +113,11 @@ namespace AirTrafficControl
             session.Restart();
             hud.SetLanded(0);
             hud.HideCollision();
-            Time.timeScale = 1f;
+            clock.Paused = false; // the speed setting (1x / 2x) carries over between attempts
+            ApplyClock();
             input.enabled = true;
+            attempt++;
+            ResetWind();
 
             nextSpawnIndex = 0;
             for (int i = 0; i < level.aircraftInAir; i++)
@@ -97,6 +130,76 @@ namespace AirTrafficControl
         void Update()
         {
             session.Tick(Time.deltaTime);
+            UpdateWind(Time.deltaTime);
+        }
+
+        void ApplyClock()
+        {
+            Time.timeScale = clock.TimeScale;
+        }
+
+        void OnSpeedPressed()
+        {
+            clock.Fast = !clock.Fast;
+            hud.SetSpeedLabel(clock.SpeedLabel);
+            ApplyClock();
+        }
+
+        void OnWindPressed()
+        {
+            if (!level.wind.hasWind)
+                return;
+            windOn = !windOn;
+            hud.SetWind(true, windOn);
+            ResetWind();
+        }
+
+        // Fresh wind: normal landing direction and a new interval before the first change.
+        // A different seed each attempt, so the changes do not come at the same moments every time.
+        void ResetWind()
+        {
+            hud.SetWindWarning(0);
+            if (!level.wind.hasWind)
+                return;
+
+            WindRuleSettings rule = level.wind;
+            wind = new WindSchedule(rule.minSecondsBetweenChanges, rule.maxSecondsBetweenChanges, rule.warningSeconds,
+                                    unchecked(attempt * 7919 + Environment.TickCount));
+            SetLandingDirection(false);
+        }
+
+        void UpdateWind(float deltaTime)
+        {
+            if (wind == null || !windOn || !session.IsPlaying)
+                return;
+
+            if (wind.Tick(deltaTime))
+                SetLandingDirection(wind.Reversed);
+
+            bool warning = wind.IsWarning;
+            hud.SetWindWarning(warning ? wind.WholeSecondsUntilChange : 0);
+            float pulse = warning ? 1f + 0.15f * Mathf.Abs(Mathf.Sin(Time.time * 6f)) : 1f;
+            windIndicator.localScale = Vector3.one * pulse;
+        }
+
+        // Turns the runway, points the wind indicator, and rechecks every aircraft's clearance: a line that
+        // ended in the old touchdown zone no longer lands, and one that ends in the new zone now does.
+        void SetLandingDirection(bool reversed)
+        {
+            if (landing.IsReversed != reversed)
+                landing.SetReversed(reversed);
+
+            if (windIndicator != null && landing.Runways.Count > 0)
+            {
+                windIndicator.rotation = Quaternion.Euler(0f, 0f, landing.Runways[0].LandingHeadingDegrees);
+                windIndicator.localScale = Vector3.one;
+            }
+
+            foreach (AircraftController aircraft in AircraftController.Active)
+            {
+                if (aircraft.IsAirborne && aircraft.Motion.HasPath)
+                    aircraft.SetClearedToLand(landing.TryLand(aircraft.Motion.Path, out _));
+            }
         }
 
         void OnCollided(AircraftController a, AircraftController b)
@@ -106,8 +209,10 @@ namespace AirTrafficControl
 
             // Freeze everything so the crash can be seen, and stop drawing while the panel is up.
             StopAllCoroutines();
-            Time.timeScale = 0f;
+            clock.Paused = true;
+            ApplyClock();
             input.enabled = false;
+            hud.SetWindWarning(0);
             StartCoroutine(ShowCollisionPanel());
         }
 

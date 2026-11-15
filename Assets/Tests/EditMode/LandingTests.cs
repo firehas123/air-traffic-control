@@ -102,10 +102,13 @@ namespace AirTrafficControl.Tests
         }
 
         [Test]
-        public void EndsInTheZone_HeadingTheWrongWay_DoesNotLand()
+        public void EndsInTheZone_ArrivingFromTheFarSide_Lands()
         {
-            var line = Line(new Vector2(3f, -1f), new Vector2(InZoneX, -1f));
-            Assert.IsFalse(LandingRules.CanLand(Eastbound, line));
+            // Owner decision 15 Nov 2026: any direction into the touchdown zone lands.
+            var westbound = Line(new Vector2(3f, -1f), new Vector2(InZoneX, -1f));
+            var fromAbove = Line(new Vector2(InZoneX, 2f), new Vector2(InZoneX, -1f));
+            Assert.IsTrue(LandingRules.CanLand(Eastbound, westbound));
+            Assert.IsTrue(LandingRules.CanLand(Eastbound, fromAbove));
         }
 
         [Test]
@@ -135,13 +138,15 @@ namespace AirTrafficControl.Tests
         [TestCase(-25f, true)]
         [TestCase(35f, false)]
         [TestCase(90f, false)]
-        public void ApproachAngle_MustBeWithinTheLimit(float angleOffRunway, bool expectLanding)
+        public void StricterApproachAngle_StillWorksWhenAsked(float angleOffRunway, bool expectLanding)
         {
+            // The default accepts any direction; a stricter limit (the earlier 30 degrees) can still be passed.
             float radians = angleOffRunway * Mathf.Deg2Rad;
             var end = new Vector2(InZoneX, -1f);
             var start = end - new Vector2(Mathf.Cos(radians), Mathf.Sin(radians)) * 1f;
 
-            Assert.AreEqual(expectLanding, LandingRules.CanLand(Eastbound, Line(start, end)));
+            Assert.AreEqual(expectLanding, LandingRules.CanLand(Eastbound, Line(start, end), 30f));
+            Assert.IsTrue(LandingRules.CanLand(Eastbound, Line(start, end)), "Default: any direction");
         }
 
         [Test]
@@ -219,18 +224,25 @@ namespace AirTrafficControl.Tests
         }
 
         [Test]
-        public void StrokeIntoTheRunwayTheWrongWay_NeverConnects()
+        public void StrokeFromTheFarEnd_ConnectsWhenItReachesTheArrows()
         {
+            // Along the runway from the far end, heading against the landing direction.
             var start = new Vector2(5f, -1f);
-            Assert.IsNull(ConnectionPoint(start, Stroke(start, new Vector2(-3f, -1f))));
+            Vector2? connected = ConnectionPoint(start, Stroke(start, new Vector2(-3f, -1f)));
+
+            Assert.IsTrue(connected.HasValue, "Should connect");
+            Assert.IsTrue(Eastbound.InTouchdownZone(connected.Value));
+            Assert.Greater(connected.Value.x, 0.3f - 0.06f, "Connects on reaching the zone's far edge, not later");
         }
 
         [Test]
-        public void StrokeAcrossTheZoneTooSteeply_DoesNotConnect()
+        public void StrokeStraightDownOntoTheArrows_Connects()
         {
-            // Straight down across the touchdown zone.
             var start = new Vector2(InZoneX, 1f);
-            Assert.IsNull(ConnectionPoint(start, Stroke(start, new Vector2(InZoneX, -3f))));
+            Vector2? connected = ConnectionPoint(start, Stroke(start, new Vector2(InZoneX, -3f)));
+
+            Assert.IsTrue(connected.HasValue, "Should connect");
+            Assert.IsTrue(Eastbound.InTouchdownZone(connected.Value, LandingRules.SideMargin));
         }
 
         [Test]

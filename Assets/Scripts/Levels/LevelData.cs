@@ -24,6 +24,9 @@ namespace AirTrafficControl
             new RunwayDefinition(),
         };
 
+        [Header("Map rule: wind (C1, Island)")]
+        public WindRuleSettings wind = new WindRuleSettings();
+
         [Header("Aircraft")]
         [Tooltip("How many aircraft are kept in the air. A new one appears after each landing or crash.")]
         [Min(1)] public int aircraftInAir = 2;
@@ -36,6 +39,26 @@ namespace AirTrafficControl
             new SpawnPoint(new Vector2(-5.5f, -3.5f), 15f),  // bottom left, heading right and up
             new SpawnPoint(new Vector2(5.5f, -3.6f), 165f),  // bottom right, heading left and up
         };
+    }
+
+    /// <summary>The Island map rule (C1): the wind changes and reverses the runway's landing direction.</summary>
+    [Serializable]
+    public sealed class WindRuleSettings
+    {
+        [Tooltip("Whether this level has the wind rule at all.")]
+        public bool hasWind = true;
+
+        [Tooltip("Whether the wind rule starts switched on. The in-game Wind button switches it for comparison (OPEN: player setting or test switch only).")]
+        public bool onAtStart = true;
+
+        public float minSecondsBetweenChanges = 25f;
+        public float maxSecondsBetweenChanges = 40f;
+
+        [Tooltip("The wind indicator pulses and a countdown shows for this long before each change.")]
+        public float warningSeconds = 5f;
+
+        [Tooltip("Where the wind indicator (dark circle with an arrow) is drawn.")]
+        public Vector2 indicatorPosition = new Vector2(5.3f, 1.8f);
     }
 
     [Serializable]

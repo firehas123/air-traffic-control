@@ -15,6 +15,23 @@ namespace AirTrafficControl
         static readonly Color Arrow = new Color(1f, 0.82f, 0.15f);
         static readonly Color ZoneFill = new Color(1f, 0.82f, 0.15f, 0.3f);
 
+        public const int WindIndicatorSortingOrder = -5;
+
+        static readonly Color IndicatorDisc = new Color(0.08f, 0.16f, 0.2f, 0.55f);
+
+        /// <summary>
+        /// Wind indicator from the screen mockups: a dark disc with a white arrow along local +x, the landing
+        /// direction. Turn the object to point it.
+        /// </summary>
+        public static Mesh CreateWindIndicatorMesh()
+        {
+            return new MeshBuilder()
+                .Ellipse(Vector2.zero, new Vector2(0.45f, 0.45f), 40, IndicatorDisc)
+                .Bar(new Vector2(-0.27f, 0f), new Vector2(0.12f, 0f), 0.09f, Marking)
+                .Triangle(new Vector2(0.08f, -0.15f), new Vector2(0.3f, 0f), new Vector2(0.08f, 0.15f), Marking)
+                .Build("WindIndicator");
+        }
+
         public static Mesh CreateIslandMesh(Vector2 radii)
         {
             return new MeshBuilder()
