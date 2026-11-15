@@ -41,7 +41,7 @@ Rules that apply from the M1 prototype:
 - C3: levels last 60 to 120 seconds, and restart after a collision takes under two seconds.
 - C4: slow time while the player is drawing, with an on/off switch so both versions can be compared. Whether players see the wind and slow-time switches in the release is still OPEN.
 - C5: an aircraft with no path flies straight and turns back at the map edge. When a path ends away from a runway, the aircraft continues on its last heading.
-- C18 (changed by the owner on 15 Nov 2026): test on a real Android phone once the iOS version is ready, not during M1.
+- C18 (changed by the owner on 15 Nov 2026): Android is checked on the Android Emulator (Android Studio, ARM64 system image) on the MacBook. A real Android phone comes once the iOS version is ready and before release. The Android build must include ARM64, because the emulator on Apple Silicon runs ARM64 images.
 
 ## Code
 
