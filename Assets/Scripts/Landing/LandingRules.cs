@@ -86,5 +86,42 @@ namespace AirTrafficControl
             }
             return -1;
         }
+
+        /// <summary>True if the line ends inside the pad, overlapping it by at least <see cref="ConnectInset"/>, from any direction.</summary>
+        public static bool CanLandOnPad(LandingPad pad, IReadOnlyList<Vector2> line)
+        {
+            if (line == null || line.Count < 2)
+                return false;
+            Vector2 end = line[line.Count - 1];
+            if (line[line.Count - 2] == end && line.Count == 2)
+                return false; // a line with no length
+            return pad.Contains(end, ConnectInset);
+        }
+
+        /// <summary>
+        /// Finds where a line lands for an aircraft that uses zones of <paramref name="kind"/> (blueprint 13.1: a line
+        /// lands only on a zone that matches the aircraft kind). False if it lands nowhere.
+        /// </summary>
+        public static bool TryFindTouchdown(IReadOnlyList<Runway> runways, IReadOnlyList<LandingPad> pads,
+                                            IReadOnlyList<Vector2> line, LandingZoneKind kind, out Touchdown touchdown)
+        {
+            if (kind == LandingZoneKind.Runway)
+            {
+                int index = FindLandingRunway(runways, line);
+                touchdown = index >= 0 ? Touchdown.OnRunway(runways[index]) : default;
+                return index >= 0;
+            }
+
+            for (int i = 0; i < pads.Count; i++)
+            {
+                if (pads[i].Kind == kind && CanLandOnPad(pads[i], line))
+                {
+                    touchdown = Touchdown.OnPad(pads[i]);
+                    return true;
+                }
+            }
+            touchdown = default;
+            return false;
+        }
     }
 }

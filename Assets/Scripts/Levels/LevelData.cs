@@ -28,6 +28,14 @@ namespace AirTrafficControl
             new RunwayDefinition(),
         };
 
+        [Header("Helipads and balloon fields")]
+        [Tooltip("Round landing zones. Helicopters and drones land on helipads, hot air balloons on balloon fields.")]
+        public List<LandingPadDefinition> landingPads = new List<LandingPadDefinition>
+        {
+            new LandingPadDefinition(LandingZoneKind.Helipad, new Vector2(-1.8f, 0.15f), 0.45f),
+            new LandingPadDefinition(LandingZoneKind.BalloonField, new Vector2(3.55f, 0.2f), 0.55f),
+        };
+
         [Header("Map rule: wind (C1, Island)")]
         public WindRuleSettings wind = new WindRuleSettings();
 
@@ -46,6 +54,26 @@ namespace AirTrafficControl
             new SpawnPoint(new Vector2(-5.5f, -3.5f), 15f),  // bottom left, heading right and up
             new SpawnPoint(new Vector2(5.5f, -3.6f), 165f),  // bottom right, heading left and up
         };
+    }
+
+    [Serializable]
+    public sealed class LandingPadDefinition
+    {
+        [Tooltip("Helipad or BalloonField. (A runway is set up under Runways.)")]
+        public LandingZoneKind kind = LandingZoneKind.Helipad;
+        public Vector2 centre;
+        [Min(0.1f)] public float radius = 0.45f;
+
+        public LandingPadDefinition() { }
+
+        public LandingPadDefinition(LandingZoneKind kind, Vector2 centre, float radius)
+        {
+            this.kind = kind;
+            this.centre = centre;
+            this.radius = radius;
+        }
+
+        public LandingPad ToPad() => new LandingPad(kind, centre, radius);
     }
 
     /// <summary>The Island map rule (C1): the wind changes and reverses the runway's landing direction.</summary>

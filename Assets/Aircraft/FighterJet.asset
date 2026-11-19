@@ -19,3 +19,5 @@ MonoBehaviour:
   color: {r: 0.36, g: 0.38, b: 0.42, a: 1}
   silhouette: 2
   landsOn: 0
+  landsOnCarrier: 1
+  keepsUpright: 0

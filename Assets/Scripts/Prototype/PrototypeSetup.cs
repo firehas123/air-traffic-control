@@ -33,7 +33,7 @@ namespace AirTrafficControl
                 MapShapes.IslandSortingOrder, level.islandCentre, 0f);
 
             var landing = new GameObject("LandingSystem").AddComponent<LandingSystem>();
-            landing.Initialise(level.runways, shapeMaterial);
+            landing.Initialise(level.runways, level.landingPads, shapeMaterial);
 
             var safety = new GameObject("AirspaceSafety").AddComponent<AirspaceSafety>();
 

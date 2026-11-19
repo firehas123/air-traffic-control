@@ -54,7 +54,7 @@ namespace AirTrafficControl
         int nextSpawnIndex;
         int attempt;
         System.Random kindPicker = new System.Random(1);
-        readonly Dictionary<AircraftController, Runway> landingBeforeWindChange = new Dictionary<AircraftController, Runway>();
+        readonly Dictionary<AircraftController, Touchdown> landingBeforeWindChange = new Dictionary<AircraftController, Touchdown>();
 
         WindSchedule wind;
         bool windOn;
@@ -148,8 +148,12 @@ namespace AirTrafficControl
             hud.SetTime(session.ElapsedSeconds);
             UpdateWind(Time.deltaTime);
 
+            // Matching landing zones glow while the player draws (blueprint 13.1).
+            AircraftController drawingFor = session.IsPlaying && planner != null ? planner.DrawingFor : null;
+            landing.SetHighlight(drawingFor != null ? drawingFor.Type.landsOn : (LandingZoneKind?)null);
+
             // C4: slow time while the player is drawing an aircraft's line.
-            bool drawing = session.IsPlaying && planner != null && planner.IsDrawing;
+            bool drawing = drawingFor != null;
             if (drawing != clock.Drawing)
             {
                 clock.Drawing = drawing;
@@ -224,7 +228,7 @@ namespace AirTrafficControl
             foreach (AircraftController aircraft in AircraftController.Active)
             {
                 if (aircraft.IsAirborne && aircraft.Motion.HasPath && aircraft.IsClearedToLand
-                    && landing.TryLand(aircraft.Motion.Path, out Runway before))
+                    && landing.TryLand(aircraft.Motion.Path, aircraft.Type.landsOn, out Touchdown before))
                     landingBeforeWindChange[aircraft] = before;
             }
 
@@ -243,15 +247,15 @@ namespace AirTrafficControl
                 if (!aircraft.IsAirborne || !aircraft.Motion.HasPath || aircraft.IsInWindGrace)
                     continue;
 
-                bool wasCleared = landingBeforeWindChange.TryGetValue(aircraft, out Runway oldRunway);
-                bool landsNow = landing.TryLand(aircraft.Motion.Path, out _);
+                bool wasCleared = landingBeforeWindChange.TryGetValue(aircraft, out Touchdown oldTouchdown);
+                bool landsNow = landing.TryLand(aircraft.Motion.Path, aircraft.Type.landsOn, out _);
                 switch (WindGrace.Decide(wasCleared, aircraft.Motion.SecondsToEndOfPath, landsNow, grace))
                 {
                     case ClearanceAfterWindChange.ClearedForNewZone:
                         aircraft.SetClearedToLand(true);
                         break;
                     case ClearanceAfterWindChange.KeepsLandingOnOldZone:
-                        aircraft.KeepLandingDuringWindGrace(oldRunway);
+                        aircraft.KeepLandingDuringWindGrace(oldTouchdown);
                         break;
                     default:
                         aircraft.SetClearedToLand(false);

@@ -59,25 +59,34 @@ public static class PrototypeSceneSetup
             AssetDatabase.CreateAsset(level, LevelPath);
         }
 
-        // M2 step 1: the test level spawns all three runway kinds so the owner can try them (blueprint 14.4).
-        if (level.aircraftTypes.Count == 0)
-        {
-            level.aircraftTypes.Add(LoadOrCreateAircraftType("Airliner", AircraftSilhouette.Airliner));
-            level.aircraftTypes.Add(LoadOrCreateAircraftType("JumboJet", AircraftSilhouette.JumboJet));
-            level.aircraftTypes.Add(LoadOrCreateAircraftType("FighterJet", AircraftSilhouette.FighterJet));
-        }
+        // During M2 the test level spawns every kind so the owner can try them (blueprint 14.4). A kind is added to
+        // the level when its asset is first created; kinds already in the asset (or removed from it) are left alone.
+        AddKind(level, "Airliner", AircraftSilhouette.Airliner);
+        AddKind(level, "JumboJet", AircraftSilhouette.JumboJet);
+        AddKind(level, "FighterJet", AircraftSilhouette.FighterJet);
+        AddKind(level, "Helicopter", AircraftSilhouette.Helicopter);
+        AddKind(level, "Drone", AircraftSilhouette.Drone);
+        AddKind(level, "HotAirBalloon", AircraftSilhouette.HotAirBalloon);
 
         EditorUtility.SetDirty(level);
         AssetDatabase.SaveAssetIfDirty(level);
         return level;
     }
 
+    static void AddKind(LevelData level, string fileName, AircraftSilhouette kind)
+    {
+        AircraftType type = LoadOrCreateAircraftType(fileName, kind, out bool created);
+        if ((created || level.aircraftTypes.Count == 0) && !level.aircraftTypes.Contains(type))
+            level.aircraftTypes.Add(type);
+    }
+
     // Creates an aircraft kind with its agreed starting values (blueprint 13.1, 14.1), if it does not exist yet.
     // An existing asset is kept, so values tuned in the Inspector survive re-running this setup.
-    static AircraftType LoadOrCreateAircraftType(string fileName, AircraftSilhouette kind)
+    static AircraftType LoadOrCreateAircraftType(string fileName, AircraftSilhouette kind, out bool created)
     {
         string path = $"{AircraftFolder}/{fileName}.asset";
         var type = AssetDatabase.LoadAssetAtPath<AircraftType>(path);
+        created = type == null;
         if (type != null)
             return type;
 

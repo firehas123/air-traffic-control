@@ -11,7 +11,7 @@ namespace AirTrafficControl
     /// The aircraft follows exactly the line drawn. After every new point, the followed path is checked
     /// against the drawn line, and any difference throws <see cref="PathAlteredException"/>.
     ///
-    /// When the line reaches a runway in a way that lands (see <see cref="LandingRules"/>), it connects:
+    /// When the line reaches a zone that matches the aircraft kind in a way that lands (see <see cref="LandingRules"/>), it connects:
     /// the line ends there, the rest of the stroke is ignored, and the aircraft shows it is cleared to land.
     /// </summary>
     public sealed class PathPlanner : MonoBehaviour
@@ -30,6 +30,9 @@ namespace AirTrafficControl
 
         /// <summary>True while the player is drawing an aircraft's line (used to slow time, C4).</summary>
         public bool IsDrawing => selected != null && recorder != null && recorder.IsRecording;
+
+        /// <summary>The aircraft whose line is being drawn, or null.</summary>
+        public AircraftController DrawingFor => IsDrawing ? selected : null;
 
         public void Initialise(InputAdapter inputAdapter, LandingSystem landingSystem)
         {
@@ -103,7 +106,7 @@ namespace AirTrafficControl
 
             PathIntegrity.CheckSameLine(recorder.Points, selected.Motion.Path);
 
-            if (landing != null && landing.TryLand(recorder.Points, out _))
+            if (landing != null && landing.TryLand(recorder.Points, selected.Type.landsOn, out _))
             {
                 // Connected to the runway: end the line here and ignore the rest of the stroke.
                 selected.SetClearedToLand(true);

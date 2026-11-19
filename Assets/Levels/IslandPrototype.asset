@@ -23,6 +23,13 @@ MonoBehaviour:
     width: 0.6
     touchdownZoneStart: 0.1
     touchdownZoneLength: 0.7
+  landingPads:
+  - kind: 1
+    centre: {x: -1.8, y: 0.15}
+    radius: 0.45
+  - kind: 2
+    centre: {x: 3.55, y: 0.2}
+    radius: 0.55
   wind:
     hasWind: 1
     onAtStart: 1
@@ -35,7 +42,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 78932e9696c3e4f5db8166115bd9f27c, type: 2}
   - {fileID: 11400000, guid: ba844492ef7b944a6949d6b6fa12b6fd, type: 2}
   - {fileID: 11400000, guid: 9ff925c54a46d495898c672c3a023d55, type: 2}
-  aircraftInAir: 2
+  - {fileID: 11400000, guid: b84439bb6b5f54cd388ca53a4d425ee0, type: 2}
+  - {fileID: 11400000, guid: c695963f6f1434ea188a4cef672c35ec, type: 2}
+  - {fileID: 11400000, guid: 81585f62e792d4ee79f1220d35cd7695, type: 2}
+  aircraftInAir: 3
   spawnPoints:
   - position: {x: -5.5, y: 3.3}
     headingDegrees: -10

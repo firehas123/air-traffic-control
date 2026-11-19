@@ -8,15 +8,17 @@ namespace AirTrafficControl
         Airliner,
         JumboJet,
         FighterJet,
+        Helicopter,
+        Drone,
+        HotAirBalloon,
     }
 
-    /// <summary>
-    /// Which kind of landing zone an aircraft kind uses. Only runways exist so far (M2 step 1);
-    /// helipad, balloon field and carrier come in M2 steps 2 and 3.
-    /// </summary>
+    /// <summary>Which kind of landing zone an aircraft kind uses (blueprint 13.1). A line lands only on a matching zone.</summary>
     public enum LandingZoneKind
     {
         Runway,
+        Helipad,
+        BalloonField,
     }
 
     /// <summary>
@@ -44,17 +46,54 @@ namespace AirTrafficControl
         [Tooltip("Body colour. Never green, yellow or red.")]
         public Color color = new Color(0.96f, 0.96f, 0.96f);
 
+        [Tooltip("Second colour, used by shapes with two colours (the balloon's stripes).")]
+        public Color accentColor = new Color(0.96f, 0.96f, 0.96f);
+
         public AircraftSilhouette silhouette = AircraftSilhouette.Airliner;
 
         public LandingZoneKind landsOn = LandingZoneKind.Runway;
+
+        [Tooltip("Can also land on the carrier ship's deck when a level has one (blueprint 13.2: fighter jets only).")]
+        public bool landsOnCarrier;
+
+        [Tooltip("Keep the shape upright instead of turning it to the heading (the balloon drifts, it does not steer nose first).")]
+        public bool keepsUpright;
 
         /// <summary>Fills in the agreed starting values for a kind (blueprint 13.1 and 14.1).</summary>
         public void SetDefaults(AircraftSilhouette kind)
         {
             silhouette = kind;
             landsOn = LandingZoneKind.Runway;
+            landsOnCarrier = false;
+            keepsUpright = false;
             switch (kind)
             {
+                case AircraftSilhouette.Helicopter:
+                    displayName = "Helicopter";
+                    speedMultiplier = 0.6f;
+                    size = 1f;
+                    collisionRadius = AirlinerCollisionRadius;
+                    color = new Color(0.95f, 0.5f, 0.12f);           // orange
+                    landsOn = LandingZoneKind.Helipad;
+                    break;
+                case AircraftSilhouette.Drone:
+                    displayName = "Drone";
+                    speedMultiplier = 0.8f;
+                    size = 0.6f;
+                    collisionRadius = 0.18f;
+                    color = new Color(0.6f, 0.36f, 0.86f);           // purple
+                    landsOn = LandingZoneKind.Helipad;
+                    break;
+                case AircraftSilhouette.HotAirBalloon:
+                    displayName = "Hot air balloon";
+                    speedMultiplier = 0.35f;
+                    size = 1f;
+                    collisionRadius = 0.28f;                          // round, a little wider than an airliner
+                    color = new Color(1f, 0.52f, 0.76f);             // pink
+                    accentColor = new Color(0.55f, 0.3f, 0.82f);     // purple stripes
+                    landsOn = LandingZoneKind.BalloonField;
+                    keepsUpright = true;
+                    break;
                 case AircraftSilhouette.JumboJet:
                     displayName = "Jumbo jet";
                     speedMultiplier = 0.85f;
@@ -68,6 +107,7 @@ namespace AirTrafficControl
                     size = 0.75f;
                     collisionRadius = 0.18f;
                     color = new Color(0.36f, 0.38f, 0.42f);          // dark grey
+                    landsOnCarrier = true;
                     break;
                 default:
                     displayName = "Airliner";
@@ -77,6 +117,8 @@ namespace AirTrafficControl
                     color = new Color(0.96f, 0.96f, 0.96f);          // white
                     break;
             }
+            if (kind != AircraftSilhouette.HotAirBalloon)
+                accentColor = color;
         }
 
         /// <summary>An airliner made in code, used if a level lists no kinds.</summary>

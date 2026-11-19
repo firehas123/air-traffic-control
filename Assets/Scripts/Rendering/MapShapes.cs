@@ -16,6 +16,13 @@ namespace AirTrafficControl
         static readonly Color ZoneFill = new Color(1f, 0.82f, 0.15f, 0.3f);
 
         public const int WindIndicatorSortingOrder = -5;
+        public const int GlowSortingOrder = -9;
+
+        /// <summary>Glow colour for landing zones that match the aircraft being drawn. Not green, yellow or red.</summary>
+        public static readonly Color Glow = new Color(0.55f, 0.95f, 1f, 0.95f);
+
+        static readonly Color PadAsphalt = new Color(0.25f, 0.27f, 0.3f);
+        static readonly Color FieldGrass = new Color(0.62f, 0.84f, 0.45f);
 
         static readonly Color IndicatorDisc = new Color(0.08f, 0.16f, 0.2f, 0.55f);
 
@@ -30,6 +37,52 @@ namespace AirTrafficControl
                 .Bar(new Vector2(-0.27f, 0f), new Vector2(0.12f, 0f), 0.09f, Marking)
                 .Triangle(new Vector2(0.08f, -0.15f), new Vector2(0.3f, 0f), new Vector2(0.08f, 0.15f), Marking)
                 .Build("WindIndicator");
+        }
+
+        /// <summary>Helipad: a dark circle with a white ring and a white H, centred on the origin.</summary>
+        public static Mesh CreateHelipadMesh(float radius)
+        {
+            float h = radius * 0.42f;
+            return new MeshBuilder()
+                .Ellipse(Vector2.zero, new Vector2(radius, radius), 40, PadAsphalt)
+                .Ring(Vector2.zero, radius * 0.82f, radius * 0.9f, 40, Marking)
+                .Bar(new Vector2(-h * 0.6f, -h), new Vector2(-h * 0.6f, h), 0.06f, Marking)
+                .Bar(new Vector2(h * 0.6f, -h), new Vector2(h * 0.6f, h), 0.06f, Marking)
+                .Bar(new Vector2(-h * 0.6f, 0f), new Vector2(h * 0.6f, 0f), 0.06f, Marking)
+                .Build("Helipad");
+        }
+
+        /// <summary>Balloon field: a light grass circle with a white border and a small cross at its centre.</summary>
+        public static Mesh CreateBalloonFieldMesh(float radius)
+        {
+            float c = radius * 0.25f;
+            return new MeshBuilder()
+                .Ellipse(Vector2.zero, new Vector2(radius, radius), 40, FieldGrass)
+                .Ring(Vector2.zero, radius * 0.9f, radius, 40, Marking)
+                .Bar(new Vector2(-c, 0f), new Vector2(c, 0f), 0.05f, Marking)
+                .Bar(new Vector2(0f, -c), new Vector2(0f, c), 0.05f, Marking)
+                .Build("BalloonField");
+        }
+
+        /// <summary>A glowing ring just outside a pad of the given radius.</summary>
+        public static Mesh CreatePadGlowMesh(float radius)
+        {
+            return new MeshBuilder().Ring(Vector2.zero, radius + 0.04f, radius + 0.12f, 40, Glow).Build("PadGlow");
+        }
+
+        /// <summary>A glowing outline around a runway's touchdown zone, in the runway's local coordinates.</summary>
+        public static Mesh CreateTouchdownZoneGlowMesh(Runway runway)
+        {
+            float x0 = -runway.Length / 2f + runway.TouchdownZoneStart - 0.06f;
+            float x1 = x0 + runway.TouchdownZoneLength + 0.12f;
+            float y = runway.Width / 2f + 0.06f;
+            const float t = 0.07f;
+            return new MeshBuilder()
+                .Bar(new Vector2(x0, -y), new Vector2(x1, -y), t, Glow)
+                .Bar(new Vector2(x0, y), new Vector2(x1, y), t, Glow)
+                .Bar(new Vector2(x0, -y), new Vector2(x0, y), t, Glow)
+                .Bar(new Vector2(x1, -y), new Vector2(x1, y), t, Glow)
+                .Build("TouchdownZoneGlow");
         }
 
         public static Mesh CreateIslandMesh(Vector2 radii)

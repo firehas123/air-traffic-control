@@ -76,7 +76,9 @@ namespace AirTrafficControl
         float rollTime;
         Vector2 touchdownPoint;
         Vector2 rollDirection;
-        Runway? graceRunway;
+        Touchdown? graceTouchdown;
+        bool settlesOntoPad;
+        Vector2 padCentre;
 
         bool isCrashed;
         float crashTime;
@@ -101,7 +103,7 @@ namespace AirTrafficControl
         public bool IsClearedToLand { get; private set; }
 
         /// <summary>True when the aircraft keeps a landing at the old end of a runway after the wind changed (14.3).</summary>
-        public bool IsInWindGrace => graceRunway.HasValue;
+        public bool IsInWindGrace => graceTouchdown.HasValue;
 
         public bool IsWarningShown => warningRing != null && warningRing.activeSelf;
 
@@ -149,8 +151,8 @@ namespace AirTrafficControl
             worldCamera = camera;
             edgeMargin = margin;
 
-            bodyMesh = AircraftShape.CreateMesh(type.silhouette, type.color, type.size);
-            crashedMesh = AircraftShape.CreateMesh(type.silhouette, colors.crashed, type.size);
+            bodyMesh = AircraftShape.CreateMesh(type.silhouette, type.color, type.accentColor, type.size);
+            crashedMesh = AircraftShape.CreateMesh(type.silhouette, colors.crashed, colors.crashed, type.size);
             GetComponent<MeshFilter>().sharedMesh = bodyMesh;
             var meshRenderer = GetComponent<MeshRenderer>();
             meshRenderer.sharedMaterial = material;
@@ -218,20 +220,20 @@ namespace AirTrafficControl
         {
             if (isCrashed)
                 return;
-            graceRunway = null;
+            graceTouchdown = null;
             IsClearedToLand = cleared;
             ShowStatus();
         }
 
         /// <summary>
         /// Wind grace period (blueprint 14.3): the wind has moved the touchdown zone, but this aircraft is close
-        /// enough to touchdown to keep landing where its line ends, on <paramref name="runway"/> as it was.
+        /// enough to touchdown to keep landing where its line ends, on the runway as it was.
         /// </summary>
-        public void KeepLandingDuringWindGrace(Runway runway)
+        public void KeepLandingDuringWindGrace(Touchdown touchdown)
         {
             if (isCrashed || isLanding)
                 return;
-            graceRunway = runway;
+            graceTouchdown = touchdown;
             IsClearedToLand = true;
             ShowStatus();
         }
@@ -251,7 +253,7 @@ namespace AirTrafficControl
                 return;
             isCrashed = true;
             crashTime = 0f;
-            graceRunway = null;
+            graceTouchdown = null;
             Motion.ClearPath(); // also ends any stroke being drawn for this aircraft
             pathLine.positionCount = 0;
             warningRing.SetActive(false);
@@ -298,14 +300,14 @@ namespace AirTrafficControl
             if (wasFollowing && !Motion.HasPath)
             {
                 // A landing kept through a wind change lands on the runway as it was; otherwise ask the landing system.
-                if (graceRunway.HasValue)
+                if (graceTouchdown.HasValue)
                 {
-                    StartLandingRoll(graceRunway.Value);
+                    StartLanding(graceTouchdown.Value);
                     return;
                 }
-                if (landing != null && landing.TryLand(Motion.Path, out Runway runway))
+                if (landing != null && landing.TryLand(Motion.Path, Type.landsOn, out Touchdown touchdown))
                 {
-                    StartLandingRoll(runway);
+                    StartLanding(touchdown);
                     return;
                 }
                 if (IsClearedToLand)
@@ -322,27 +324,46 @@ namespace AirTrafficControl
             }
         }
 
-        void StartLandingRoll(Runway runway)
+        void StartLanding(Touchdown touchdown)
         {
             isLanding = true;
             rollTime = 0f;
-            graceRunway = null;
+            graceTouchdown = null;
             touchdownPoint = Motion.Path[Motion.Path.Count - 1];
-            rollDirection = runway.Direction;
             pathLine.positionCount = 0;
             warningRing.SetActive(false);
             ShowStatus();
-            transform.SetPositionAndRotation(touchdownPoint, Quaternion.Euler(0f, 0f, runway.LandingHeadingDegrees));
+
+            settlesOntoPad = !touchdown.IsRunway;
+            if (settlesOntoPad)
+            {
+                // Helipad or balloon field: settle onto the centre of the pad.
+                padCentre = touchdown.Pad.Centre;
+                transform.position = touchdownPoint;
+            }
+            else
+            {
+                // Runway: line up with it at touchdown and roll out.
+                rollDirection = touchdown.Runway.Direction;
+                transform.SetPositionAndRotation(touchdownPoint, Quaternion.Euler(0f, 0f, touchdown.Runway.LandingHeadingDegrees));
+            }
             statusRoot.rotation = Quaternion.identity;
         }
 
-        // Line up with the runway at touchdown, slow evenly to a stop, and shrink away.
+        // Runway: slow evenly to a stop along the runway. Pad: drift to its centre. Either way, shrink away.
         void UpdateLandingRoll()
         {
             rollTime += Time.deltaTime;
             float t = Mathf.Clamp01(rollTime / RollDuration);
-            float rolled = Motion.Speed * RollDuration * (t - t * t / 2f); // even deceleration to zero
-            transform.position = touchdownPoint + rollDirection * rolled;
+            if (settlesOntoPad)
+            {
+                transform.position = Vector2.Lerp(touchdownPoint, padCentre, Mathf.SmoothStep(0f, 1f, t));
+            }
+            else
+            {
+                float rolled = Motion.Speed * RollDuration * (t - t * t / 2f); // even deceleration to zero
+                transform.position = touchdownPoint + rollDirection * rolled;
+            }
             transform.localScale = Vector3.one * Mathf.Lerp(1f, RollEndScale, t);
 
             if (t >= 1f)
@@ -354,7 +375,8 @@ namespace AirTrafficControl
 
         void ApplyTransform()
         {
-            transform.SetPositionAndRotation(Motion.Position, Quaternion.Euler(0f, 0f, Motion.HeadingDegrees));
+            float heading = Type != null && Type.keepsUpright ? 0f : Motion.HeadingDegrees;
+            transform.SetPositionAndRotation(Motion.Position, Quaternion.Euler(0f, 0f, heading));
             statusRoot.rotation = Quaternion.identity;
         }
 
