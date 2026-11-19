@@ -26,7 +26,7 @@ The owner decided on 15 Nov 2026 that this game is developed under the name **MH
 
 ## Current priority
 
-M0 and M1 are done (M1 passed on 15 Nov 2026). **M2 started on 19 Nov 2026.** The plan is in `docs/BLUEPRINT.md` section 13. Build one step at a time; each step is built, installed and checked by the owner on the iPad before the next starts:
+M0 and M1 are done (M1 passed on 15 Nov 2026). **M2 is done: passed by the owner on 19 Nov 2026 after checking it on the iPad.** The plan was in `docs/BLUEPRINT.md` section 13. Its steps were:
 
 1. Aircraft kinds as data (an AircraftType asset per kind: name, speed, size, colour, silhouette, landing zone kind). Status moves from colouring the whole aircraft to a ring and icon (green ring with a tick when cleared, yellow ring when it needs a new line, red pulsing ring for danger). Airliner, jumbo jet and fighter jet on the runway. Built 19 Nov 2026 with the collision radius per kind (14.1) and the wind grace period (14.3).
 2. Helipad with helicopter and drone; balloon field with hot air balloon. A line lands only on a zone that matches the aircraft kind; matching zones glow while drawing. Built 19 Nov 2026.
@@ -35,7 +35,7 @@ M0 and M1 are done (M1 passed on 15 Nov 2026). **M2 started on 19 Nov 2026.** Th
 5. First-time help that teaches by doing; check that a cleared level takes 60 to 120 seconds (C3). Built 19 Nov 2026 (the test level is estimated at 65 s; the owner times real play).
 6. M2 pass test: a player who has never seen the game understands it without coaching.
 
-The owner asked on 19 Nov 2026 for all M2 steps to be built together. Steps 1 to 5 are built and installed on the iPad, waiting for the owner's check; step 6 is the owner's test with a new player.
+The owner asked on 19 Nov 2026 for all M2 steps to be built together, checked steps 1 to 5 on the iPad and passed M2 the same day. Next is M3 (content and progression); do not start it until the owner asks.
 
 Collision size per kind (section 14.1, AGREED 19 Nov 2026): each AircraftType has a collision radius. Two aircraft collide when their centres are closer than the two radii added together, and warning distances scale the same way. Airliner 0.25 (so two airliners still collide at 0.5), fighter jet and drone smaller, jumbo jet 1.4x the airliner. Tunable in the Inspector.
 
