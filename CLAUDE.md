@@ -30,7 +30,7 @@ M0 and M1 are done (M1 passed on 15 Nov 2026). **M2 started on 19 Nov 2026.** Th
 
 1. Aircraft kinds as data (an AircraftType asset per kind: name, speed, size, colour, silhouette, landing zone kind). Status moves from colouring the whole aircraft to a ring and icon (green ring with a tick when cleared, yellow ring when it needs a new line, red pulsing ring for danger). Airliner, jumbo jet and fighter jet on the runway.
 2. Helipad with helicopter and drone; balloon field with hot air balloon. A line lands only on a zone that matches the aircraft kind; matching zones glow while drawing.
-3. Carrier ship level feature. **Do not start until the owner confirms section 13.2** (it is PROPOSED). It needs the one exception to the exact-line rule: a line connected to the deck moves with the ship.
+3. Carrier ship level feature (AGREED 19 Nov 2026, section 13.2). A carrier crosses the sea; a fighter jet lands on its moving deck while it passes, with a countdown. A line connected to the deck moves with the ship: the one exception to the exact-line rule. If the ship leaves the screen before touchdown, even at the last moment, the connection is lost and the fighter keeps flying, turning back at the screen edges (like C5) until the next ship. The owner wants that chaos. Starting values as level data: a ship every 40 to 60 s, about 20 s to cross, fighters only.
 4. Sound and vibration for landing, warning and collision; the level result screen (C10).
 5. First-time help that teaches by doing; check that a cleared level takes 60 to 120 seconds (C3).
 6. M2 pass test: a player who has never seen the game understands it without coaching.

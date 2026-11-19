@@ -177,7 +177,7 @@ Collision consequences — AGREED for the prototype (15 Nov 2026): a red warning
 
 Cleared-to-land cue — AGREED 19 Nov 2026: status is shown as a ring and an icon around the aircraft, not only by colour (section 13.1).
 
-Carrier ship — PROPOSED (section 13.2): owner to confirm Claude's reading before M2 step 3.
+Carrier ship — AGREED 19 Nov 2026 (section 13.2): a fighter that misses the ship bounces off the screen edges until the next one.
 
 Star thresholds — PROPOSED safety + efficiency; requires tuning.
 
@@ -233,7 +233,7 @@ Wind and slow-time on/off switches — OPEN: a player setting in the release, or
 
 19 Nov 2026 — AGREED: M2 started. Six aircraft kinds with their own speed, size, colour and landing zone (balloon, helicopter, drone, airliner, jumbo jet, fighter jet); details delegated to Claude (section 13.1).
 
-19 Nov 2026 — PROPOSED: Carrier ship level feature, owner's idea as read by Claude (section 13.2).
+19 Nov 2026 — AGREED: Carrier ship level feature (section 13.2). A fighter jet lands on the moving deck while the ship passes; if the ship leaves first, the fighter turns back at the screen edges and waits for the next ship, adding traffic. A line connected to the deck moves with the ship, the only exception to the exact-line rule.
 
 ## 11. ENGAGEMENT, GAMIFICATION AND BUSINESS MODEL
 
@@ -339,13 +339,13 @@ No kind is green, yellow or red, because those colours mean cleared, needs a new
 
 A line lands only on a zone that matches the aircraft kind, and the matching zones glow while the player draws. Kinds arrive a few at a time across the levels, not all at once.
 
-### 13.2 CARRIER SHIP (PROPOSED, the owner to confirm Claude's reading)
+### 13.2 CARRIER SHIP (AGREED, confirmed by the owner on 19 Nov 2026)
 
-How Claude understood the idea: an aircraft carrier crosses the sea from time to time. While it passes, a fighter jet waiting for it must land on its deck, a moving landing zone with a countdown. If the fighter has not landed when the ship leaves the screen, it circles and waits for the next ship. It is a feature of some Island levels, not of every level.
+An aircraft carrier crosses the sea from time to time. While it passes, a fighter jet waiting for it must land on its deck, a moving landing zone with a countdown. If the fighter has not landed when the ship leaves the screen, even if it was about to touch down, its connection is lost: it keeps flying, turns back at the screen edges (like C5) and gets in the way of other traffic until the next ship comes. The owner wants that chaos; it is what makes the feature interesting. It is a feature of some Island levels, not of every level.
 
 Rule change it needs: a line connected to the deck must move with the ship, so its end follows the deck. This would be the only exception to "the line is never changed" (AGREED 15 Nov 2026).
 
-Still open: how often a ship comes, how long it takes to cross, whether helicopters may also land on it, and whether a missed ship costs anything besides waiting.
+Starting values chosen by Claude, all level data the owner can tune after playing: a ship every 40 to 60 seconds, about 20 seconds to cross the screen, only fighter jets land on it, and a missed ship costs nothing besides the waiting and the extra traffic.
 
 ### 13.3 M2 STEPS (each built, installed and checked on the iPad before the next starts)
 
@@ -353,7 +353,7 @@ Still open: how often a ship comes, how long it takes to cross, whether helicopt
 
 2. Helipad with helicopter and drone; balloon field with hot air balloon; a line lands only on a matching zone.
 
-3. Carrier ship level feature, after the owner confirms 13.2.
+3. Carrier ship level feature (13.2).
 
 4. Feel and feedback: sound and vibration for landing, warning and collision; the level result screen (C10).
 
@@ -363,4 +363,4 @@ Still open: how often a ship comes, how long it takes to cross, whether helicopt
 
 ## NEXT STEP
 
-M2 started on 19 Nov 2026 (plan in section 13). Step 1: aircraft kinds as data, with status shown as a ring and icon; airliner, jumbo jet and fighter jet on the runway. Each step is built, installed and checked on the iPad before the next starts. Waiting for the owner: confirm the carrier ship reading (13.2) before step 3.
+M2 started on 19 Nov 2026 (plan in section 13). Step 1: aircraft kinds as data, with status shown as a ring and icon; airliner, jumbo jet and fighter jet on the runway. Each step is built, installed and checked on the iPad before the next starts. The carrier ship (13.2) was confirmed by the owner on 19 Nov 2026.
