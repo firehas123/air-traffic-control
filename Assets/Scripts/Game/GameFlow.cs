@@ -15,6 +15,7 @@ namespace AirTrafficControl
         [SerializeField] LevelCatalog catalog;
         [SerializeField] Material shapeMaterial;
         [SerializeField] AircraftSettings aircraft = new AircraftSettings();
+        [SerializeField] AnimationSettings animationSettings;
 
         ProgressionSave save;
         Progression progression;
@@ -40,6 +41,7 @@ namespace AirTrafficControl
                 return;
             }
 
+            Animations.Use(animationSettings);
             save = ProgressionSave.Load(ProgressionSave.DefaultPath);
             progression = new Progression(save.Data, catalog.Ids);
 
@@ -77,7 +79,13 @@ namespace AirTrafficControl
             island.transform.SetParent(levelRoot.transform, true);
 
             var landing = Add<LandingSystem>("LandingSystem");
-            landing.Initialise(level.runways, level.landingPads, shapeMaterial);
+            landing.Initialise(level.runways, level.landingPads, shapeMaterial, level.scenery);
+
+            var scenery = Add<IslandScenery>("IslandScenery");
+            scenery.Initialise(level, worldCamera, landing, shapeMaterial);
+
+            var effects = Add<EffectsSystem>("EffectsSystem");
+            effects.Initialise(worldCamera, shapeMaterial);
 
             var safety = Add<AirspaceSafety>("AirspaceSafety");
 
@@ -99,7 +107,7 @@ namespace AirTrafficControl
             feedback.Initialise();
 
             director = Add<LevelDirector>("LevelDirector");
-            director.Initialise(level, worldCamera, landing, safety, input, planner, carrier, hud, shapeMaterial, aircraft, feedback);
+            director.Initialise(level, worldCamera, landing, safety, input, planner, carrier, hud, shapeMaterial, aircraft, feedback, effects);
             director.Cleared += OnCleared;
             director.Failed += OnFailed;
             director.StartLevel();

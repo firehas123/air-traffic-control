@@ -44,12 +44,27 @@ public static class PrototypeSceneSetup
         var serialized = new SerializedObject(flow);
         serialized.FindProperty("shapeMaterial").objectReferenceValue = material;
         serialized.FindProperty("catalog").objectReferenceValue = catalog;
+        serialized.FindProperty("animationSettings").objectReferenceValue = LoadOrCreateAnimationSettings();
         serialized.ApplyModifiedPropertiesWithoutUndo();
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
         AssetDatabase.SaveAssets();
         Debug.Log("PrototypeSceneSetup: SampleScene is ready.");
+    }
+
+    // M3 step 2: every animation value in one asset (blueprint 15.3). An existing asset is kept.
+    static AnimationSettings LoadOrCreateAnimationSettings()
+    {
+        const string path = "Assets/Config/AnimationSettings.asset";
+        var settings = AssetDatabase.LoadAssetAtPath<AnimationSettings>(path);
+        if (settings != null)
+            return settings;
+        if (!AssetDatabase.IsValidFolder("Assets/Config"))
+            AssetDatabase.CreateFolder("Assets", "Config");
+        settings = ScriptableObject.CreateInstance<AnimationSettings>();
+        AssetDatabase.CreateAsset(settings, path);
+        return settings;
     }
 
     // M3 step 1: the Island levels 1 to 10. Until step 4 every entry reuses the test level's data.
@@ -90,6 +105,26 @@ public static class PrototypeSceneSetup
         AddKind(level, "Helicopter", AircraftSilhouette.Helicopter);
         AddKind(level, "Drone", AircraftSilhouette.Drone);
         AddKind(level, "HotAirBalloon", AircraftSilhouette.HotAirBalloon);
+
+        // M3: the test level gets two gates and one runway crossing, so the owner can try ground control
+        // (blueprint 15.4). Gate A is on the apron north of the runway; gate B is a remote stand to the south,
+        // whose taxiway crosses the runway and stops at a crossing point first.
+        if (level.ground.gates.Count == 0)
+        {
+            level.ground.gates.Add(new GateDefinition
+            {
+                position = new Vector2(0.4f, 0.45f), headingDegrees = 270f,
+                connector = new System.Collections.Generic.List<Vector2> { new Vector2(0.4f, 0.45f), new Vector2(0.4f, -0.15f) },
+                crossingIndex = -1,
+            });
+            level.ground.gates.Add(new GateDefinition
+            {
+                position = new Vector2(1.6f, -1.75f), headingDegrees = 90f,
+                connector = new System.Collections.Generic.List<Vector2>
+                    { new Vector2(1.6f, -1.75f), new Vector2(1.6f, -1.32f), new Vector2(1.6f, -0.15f) },
+                crossingIndex = 1,
+            });
+        }
 
         EditorUtility.SetDirty(level);
         AssetDatabase.SaveAssetIfDirty(level);

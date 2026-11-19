@@ -34,6 +34,7 @@ namespace AirTrafficControl
         Text windLabel;
         GameObject windButton;
         Text slowDrawLabel;
+        Text animsLabel;
         GameObject windWarning;
         Text windWarningText;
         GameObject carrierCountdown;
@@ -67,6 +68,9 @@ namespace AirTrafficControl
 
         /// <summary>Raised when the player taps the Slow draw button.</summary>
         public event Action SlowDrawPressed;
+
+        /// <summary>Raised when the player taps the Anims button (blueprint 15.3: animations can be turned off for comparison).</summary>
+        public event Action AnimsPressed;
 
         /// <summary>Raised when the player taps "?" to see the first-time help again.</summary>
         public event Action HelpPressed;
@@ -107,6 +111,7 @@ namespace AirTrafficControl
             speedLabel = CreateTopRightButton("SpeedButton", root, 0, () => SpeedPressed?.Invoke(), out _);
             windLabel = CreateTopRightButton("WindButton", root, 1, () => WindPressed?.Invoke(), out windButton);
             slowDrawLabel = CreateTopRightButton("SlowDrawButton", root, 2, () => SlowDrawPressed?.Invoke(), out _);
+            animsLabel = CreateTopRightButton("AnimsButton", root, 3, () => AnimsPressed?.Invoke(), out _);
 
             // "?" replays the first-time help, top right after the other buttons.
             RectTransform helpButton = CreateBox("HelpButton", root, PillColor);
@@ -214,6 +219,8 @@ namespace AirTrafficControl
         public void SetSpeedLabel(string label) => speedLabel.text = label;
 
         public void SetSlowDrawLabel(string label) => slowDrawLabel.text = label;
+
+        public void SetAnimsLabel(bool on) => animsLabel.text = on ? "Anims on" : "Anims off";
 
         /// <summary>Shows the Wind button, labelled on or off. Hidden on levels without the wind rule.</summary>
         public void SetWind(bool levelHasWind, bool on)

@@ -16,6 +16,7 @@ namespace AirTrafficControl
         readonly List<Runway> runways = new List<Runway>();
         readonly List<Transform> runwayViews = new List<Transform>();
         readonly List<GameObject> runwayGlows = new List<GameObject>();
+        readonly List<RunwayLights> runwayLights = new List<RunwayLights>();
 
         readonly List<LandingPad> pads = new List<LandingPad>();
         readonly List<GameObject> padGlows = new List<GameObject>();
@@ -28,7 +29,8 @@ namespace AirTrafficControl
         /// <summary>True when every runway lands the opposite way to its level data.</summary>
         public bool IsReversed { get; private set; }
 
-        public void Initialise(IEnumerable<RunwayDefinition> runwayDefinitions, IEnumerable<LandingPadDefinition> padDefinitions, Material material)
+        public void Initialise(IEnumerable<RunwayDefinition> runwayDefinitions, IEnumerable<LandingPadDefinition> padDefinitions,
+                               Material material, SceneryLayout scenery = null)
         {
             foreach (RunwayDefinition definition in runwayDefinitions)
             {
@@ -48,6 +50,11 @@ namespace AirTrafficControl
                 glow.transform.SetParent(view.transform, false);
                 glow.SetActive(false);
                 runwayGlows.Add(glow);
+
+                var lights = new GameObject("Lights").AddComponent<RunwayLights>();
+                lights.transform.SetParent(view.transform, false);
+                lights.Initialise(runway, scenery != null ? scenery.approachLights : 6, scenery != null ? scenery.approachLightSpacing : 0.22f, material);
+                runwayLights.Add(lights);
             }
 
             if (padDefinitions != null)
@@ -107,6 +114,15 @@ namespace AirTrafficControl
         /// <summary>True if the line lands for an aircraft that uses zones of <paramref name="kind"/>.</summary>
         public bool TryLand(IReadOnlyList<Vector2> line, LandingZoneKind kind, out Touchdown touchdown) =>
             LandingRules.TryFindTouchdown(runways, pads, line, kind, out touchdown);
+
+        /// <summary>Flashes every runway's edge lights while it is busy (blueprint 15.4).</summary>
+        public void SetRunwayBusy(bool busy)
+        {
+            foreach (RunwayLights lights in runwayLights)
+                lights.SetBusy(busy);
+        }
+
+        public bool IsRunwayBusyShown => runwayLights.Count > 0 && runwayLights[0].IsBusy;
 
         /// <summary>Makes the zones of <paramref name="kind"/> glow, or none when it is null (blueprint 13.1).</summary>
         public void SetHighlight(LandingZoneKind? kind)

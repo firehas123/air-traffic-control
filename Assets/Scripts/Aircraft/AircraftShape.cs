@@ -58,17 +58,70 @@ namespace AirTrafficControl
             b.Quad(P(-0.22f, -0.06f, s), P(-0.3f, -0.18f, s), P(-0.35f, -0.18f, s), P(-0.33f, -0.06f, s), c);
         }
 
-        // Round cabin, tail boom and a two-blade main rotor seen from above.
+        // Round cabin and tail boom seen from above. The rotors are separate meshes so they can spin
+        // (HelicopterRotor, HelicopterTailRotor).
         static void Helicopter(MeshBuilder b, Color c, float s)
         {
-            Color rotor = Color.Lerp(c, Color.black, 0.45f);
             b.Bar(P(-0.05f, 0f, s), P(-0.34f, 0f, s), 0.05f * s, c);
-            b.Bar(P(-0.34f, -0.09f, s), P(-0.34f, 0.09f, s), 0.04f * s, c);
             b.Ellipse(P(0.06f, 0f, s), P(0.17f, 0.12f, s), 24, c);
-            b.Bar(P(-0.24f, -0.24f, s), P(0.3f, 0.24f, s), 0.035f * s, rotor);
-            b.Bar(P(-0.24f, 0.24f, s), P(0.3f, -0.24f, s), 0.035f * s, rotor);
-            b.Ellipse(P(0.03f, 0f, s), P(0.04f, 0.04f, s), 12, rotor);
         }
+
+        /// <summary>Where the main rotor turns, in the aircraft's local coordinates.</summary>
+        public static Vector2 HelicopterRotorHub(float s) => P(0.03f, 0f, s);
+
+        /// <summary>Where the tail rotor turns.</summary>
+        public static Vector2 HelicopterTailHub(float s) => P(-0.34f, 0f, s);
+
+        /// <summary>A two-blade main rotor centred on its hub.</summary>
+        public static Mesh HelicopterRotor(Color bodyColor, float s)
+        {
+            Color rotor = Color.Lerp(bodyColor, Color.black, 0.45f);
+            return new MeshBuilder()
+                .Bar(P(-0.32f, 0f, s), P(0.32f, 0f, s), 0.035f * s, rotor)
+                .Ellipse(Vector2.zero, P(0.04f, 0.04f, s), 12, rotor)
+                .Build("Rotor");
+        }
+
+        public static Mesh HelicopterTailRotor(Color bodyColor, float s)
+        {
+            Color rotor = Color.Lerp(bodyColor, Color.black, 0.45f);
+            return new MeshBuilder().Bar(P(0f, -0.09f, s), P(0f, 0.09f, s), 0.035f * s, rotor).Build("TailRotor");
+        }
+
+        /// <summary>The four rotor hubs of the drone.</summary>
+        public static Vector2[] DroneHubs(float s) => new[] { P(0.2f, 0.2f, s), P(0.2f, -0.2f, s), P(-0.2f, 0.2f, s), P(-0.2f, -0.2f, s) };
+
+        /// <summary>One drone rotor blade pair, centred on its hub.</summary>
+        public static Mesh DroneBlade(Color bodyColor, float s)
+        {
+            Color blade = Color.Lerp(bodyColor, Color.white, 0.55f);
+            return new MeshBuilder().Bar(P(-0.1f, 0f, s), P(0.1f, 0f, s), 0.025f * s, blade).Build("DroneBlade");
+        }
+
+        /// <summary>Where the white strobe lights sit (wing tips and tail), for airliners and jumbo jets.</summary>
+        public static Vector2[] StrobePoints(AircraftSilhouette silhouette, float s)
+        {
+            switch (silhouette)
+            {
+                case AircraftSilhouette.JumboJet: return new[] { P(-0.12f, 0.36f, s), P(-0.12f, -0.36f, s), P(-0.35f, 0f, s) };
+                case AircraftSilhouette.Airliner: return new[] { P(-0.1f, 0.34f, s), P(-0.1f, -0.34f, s), P(-0.34f, 0f, s) };
+                default: return new Vector2[0];
+            }
+        }
+
+        /// <summary>Where contrails start (engines), for airliners and jumbo jets.</summary>
+        public static Vector2[] EnginePoints(AircraftSilhouette silhouette, float s)
+        {
+            switch (silhouette)
+            {
+                case AircraftSilhouette.JumboJet: return new[] { P(-0.02f, 0.2f, s), P(-0.02f, -0.2f, s) };
+                case AircraftSilhouette.Airliner: return new[] { P(-0.04f, 0.18f, s), P(-0.04f, -0.18f, s) };
+                default: return new Vector2[0];
+            }
+        }
+
+        /// <summary>The fighter's exhaust, where the afterburner flame and speed trail start.</summary>
+        public static Vector2 FighterExhaust(float s) => P(-0.33f, 0f, s);
 
         // Four rotors on an X frame.
         static void Drone(MeshBuilder b, Color c, float s)

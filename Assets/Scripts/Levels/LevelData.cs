@@ -28,6 +28,12 @@ namespace AirTrafficControl
         public Vector2 islandCentre = new Vector2(1f, -0.8f);
         public Vector2 islandRadii = new Vector2(3.8f, 2.1f);
 
+        [Header("Scenery (blueprint 15.3; decoration only, it never affects play)")]
+        public SceneryLayout scenery = new SceneryLayout();
+
+        [Header("Ground: taxiways and gates (drawn in M3 step 2, driven by ground control in step 3)")]
+        public GroundLayout ground = new GroundLayout();
+
         [Header("Runways")]
         public List<RunwayDefinition> runways = new List<RunwayDefinition>
         {
@@ -63,6 +69,81 @@ namespace AirTrafficControl
             new SpawnPoint(new Vector2(-5.5f, -3.5f), 15f),  // bottom left, heading right and up
             new SpawnPoint(new Vector2(5.5f, -3.6f), 165f),  // bottom right, heading left and up
         };
+    }
+
+    /// <summary>Where the Island's decoration goes. Positions are in world units.</summary>
+    [Serializable]
+    public sealed class SceneryLayout
+    {
+        public List<Vector2> palms = new List<Vector2>
+        {
+            new Vector2(-2.3f, -1.3f), new Vector2(-2.05f, -2.05f), new Vector2(-0.8f, -2.3f), new Vector2(0.6f, -2.35f),
+            new Vector2(2.6f, -2.25f), new Vector2(3.9f, -1.6f), new Vector2(4.25f, -0.9f), new Vector2(-2.6f, -0.45f),
+            new Vector2(-0.35f, 0.9f), new Vector2(2.8f, 0.7f),
+        };
+
+        [Tooltip("Rocks are scattered along the beach; this many, placed the same way every time.")]
+        [Min(0)] public int rocks = 12;
+
+        [Tooltip("The terminal building with its control tower, north of the apron.")]
+        public Vector2 terminalCentre = new Vector2(0.9f, 0.98f);
+        public Vector2 terminalSize = new Vector2(1.6f, 0.3f);
+        public Vector2 towerPosition = new Vector2(1.95f, 0.98f);
+
+        [Tooltip("The apron (parking area) in front of the terminal.")]
+        public Vector2 apronCentre = new Vector2(1.05f, 0.45f);
+        public Vector2 apronSize = new Vector2(2.3f, 0.62f);
+
+        [Tooltip("Parked planes for decoration (they never move). Gates for departures are under Ground.")]
+        public List<Vector2> parkedPlanes = new List<Vector2> { new Vector2(1.3f, 0.45f), new Vector2(1.9f, 0.45f) };
+
+        public Vector2 windsockPosition = new Vector2(-1.05f, -1.5f);
+
+        [Tooltip("Boats sail along these heights, looping across the screen.")]
+        public List<float> boatLanes = new List<float> { 4.3f, 2.3f };
+
+        [Min(0)] public int clouds = 3;
+        [Min(0)] public int birds = 3;
+
+        [Tooltip("Approach lights before each runway end, pulsing towards the touchdown zone.")]
+        [Min(0)] public int approachLights = 6;
+        public float approachLightSpacing = 0.22f;
+    }
+
+    /// <summary>
+    /// Taxiways and gates (blueprint 15.4). The main taxiway runs beside the runway; its two ends are the hold
+    /// lines for the two runway ends (the first point for the runway's normal landing direction, the last point for
+    /// the reversed one). Each gate has a connector from the gate to the main taxiway; a connector may cross the
+    /// runway, at its crossing point.
+    /// </summary>
+    [Serializable]
+    public sealed class GroundLayout
+    {
+        public List<Vector2> mainTaxiway = new List<Vector2> { new Vector2(-0.6f, -0.15f), new Vector2(2.6f, -0.15f) };
+
+        public List<GateDefinition> gates = new List<GateDefinition>();
+
+        [Tooltip("Taxi speed in world units per second at 1x.")]
+        [Min(0.05f)] public float taxiSpeed = 0.35f;
+
+        [Tooltip("A taxiing aircraft stops this far behind the one in front of it.")]
+        [Min(0.1f)] public float queueSpacing = 0.75f;
+    }
+
+    [Serializable]
+    public sealed class GateDefinition
+    {
+        public Vector2 position;
+
+        [Tooltip("Direction the parked aircraft faces, in degrees: 0 = right, 90 = up.")]
+        public float headingDegrees;
+
+        [Tooltip("From the gate to a point on the main taxiway. The first point is the gate, the last is on the main taxiway.")]
+        public List<Vector2> connector = new List<Vector2>();
+
+        [Tooltip("Index of the connector point where the aircraft must stop and wait for Cross (the segment after it " +
+                 "crosses the runway). -1 when the connector does not cross the runway.")]
+        public int crossingIndex = -1;
     }
 
     /// <summary>Star thresholds (PROPOSED, to be tuned by playing) and coins (C9) for the result screen.</summary>

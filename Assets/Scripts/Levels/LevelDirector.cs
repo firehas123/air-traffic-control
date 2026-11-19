@@ -50,6 +50,7 @@ namespace AirTrafficControl
         PathPlanner planner;
         CarrierSystem carrier;
         FeedbackSystem feedback;
+        EffectsSystem effects;
         HelpDemo helpDemo;
         FirstTimeHelp help;
         const string HelpSeenKey = "atc.firstTimeHelp.seen";
@@ -76,8 +77,10 @@ namespace AirTrafficControl
 
         public void Initialise(LevelData levelData, Camera camera, LandingSystem landingSystem, AirspaceSafety airspaceSafety,
                                InputAdapter inputAdapter, PathPlanner pathPlanner, CarrierSystem carrierSystem, HudView hudView,
-                               Material shapeMaterial, AircraftSettings settings, FeedbackSystem feedbackSystem = null)
+                               Material shapeMaterial, AircraftSettings settings, FeedbackSystem feedbackSystem = null,
+                               EffectsSystem effectsSystem = null)
         {
+            effects = effectsSystem;
             carrier = carrierSystem;
             feedback = feedbackSystem;
 
@@ -119,6 +122,8 @@ namespace AirTrafficControl
             hud.WindPressed += OnWindPressed;
             hud.SlowDrawPressed += OnSlowDrawPressed;
             hud.HelpPressed += OnHelpPressed;
+            hud.AnimsPressed += OnAnimsPressed;
+            hud.SetAnimsLabel(Animations.On);
             input.SetScreenBlocker(hud.IsOverInteractive);
             hud.SetSpeedLabel(clock.SpeedLabel);
             hud.SetSlowDrawLabel(clock.SlowDrawLabel);
@@ -140,6 +145,7 @@ namespace AirTrafficControl
                 hud.WindPressed -= OnWindPressed;
                 hud.SlowDrawPressed -= OnSlowDrawPressed;
                 hud.HelpPressed -= OnHelpPressed;
+                hud.AnimsPressed -= OnAnimsPressed;
             }
             Time.timeScale = 1f;
         }
@@ -191,6 +197,12 @@ namespace AirTrafficControl
         void OnHelpPressed()
         {
             help.Reset();
+        }
+
+        void OnAnimsPressed()
+        {
+            Animations.RuntimeOn = !Animations.On;
+            hud.SetAnimsLabel(Animations.On);
         }
 
         // Shows the current hint, and the ghost-line demo while the drawing hint is up.
@@ -251,7 +263,10 @@ namespace AirTrafficControl
         {
             aircraft.TouchedDown -= OnTouchedDown;
             if (session.IsPlaying)
+            {
                 feedback?.TouchedDown();
+                effects?.Landing(aircraft.transform.position);
+            }
         }
 
         void Update()
@@ -393,6 +408,7 @@ namespace AirTrafficControl
 
             // Freeze everything so the crash can be seen, and stop drawing while the panel is up.
             feedback?.Collision();
+            effects?.Collision(((Vector2)a.transform.position + (Vector2)b.transform.position) / 2f);
             EndAttempt();
             LevelOutcome outcome = Outcome(false);
             StartCoroutine(ShowEndPanel(CrashPauseSeconds, () => Failed?.Invoke(outcome)));

@@ -23,6 +23,55 @@ MonoBehaviour:
     coinsPerStar: 10
   islandCentre: {x: 1, y: -0.8}
   islandRadii: {x: 3.8, y: 2.1}
+  scenery:
+    palms:
+    - {x: -2.3, y: -1.3}
+    - {x: -2.05, y: -2.05}
+    - {x: -0.8, y: -2.3}
+    - {x: 0.6, y: -2.35}
+    - {x: 2.6, y: -2.25}
+    - {x: 3.9, y: -1.6}
+    - {x: 4.25, y: -0.9}
+    - {x: -2.6, y: -0.45}
+    - {x: -0.35, y: 0.9}
+    - {x: 2.8, y: 0.7}
+    rocks: 12
+    terminalCentre: {x: 0.9, y: 0.98}
+    terminalSize: {x: 1.6, y: 0.3}
+    towerPosition: {x: 1.95, y: 0.98}
+    apronCentre: {x: 1.05, y: 0.45}
+    apronSize: {x: 2.3, y: 0.62}
+    parkedPlanes:
+    - {x: 1.3, y: 0.45}
+    - {x: 1.9, y: 0.45}
+    windsockPosition: {x: -1.05, y: -1.5}
+    boatLanes:
+    - 4.3
+    - 2.3
+    clouds: 3
+    birds: 3
+    approachLights: 6
+    approachLightSpacing: 0.22
+  ground:
+    mainTaxiway:
+    - {x: -0.6, y: -0.15}
+    - {x: 2.6, y: -0.15}
+    gates:
+    - position: {x: 0.4, y: 0.45}
+      headingDegrees: 270
+      connector:
+      - {x: 0.4, y: 0.45}
+      - {x: 0.4, y: -0.15}
+      crossingIndex: -1
+    - position: {x: 1.6, y: -1.75}
+      headingDegrees: 90
+      connector:
+      - {x: 1.6, y: -1.75}
+      - {x: 1.6, y: -1.32}
+      - {x: 1.6, y: -0.15}
+      crossingIndex: 1
+    taxiSpeed: 0.35
+    queueSpacing: 0.75
   runways:
   - centre: {x: 1, y: -0.8}
     landingHeadingDegrees: 0

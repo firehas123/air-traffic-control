@@ -104,16 +104,15 @@ namespace AirTrafficControl
         }
 
         /// <summary>Dashes from <paramref name="from"/> to <paramref name="to"/>, for the carrier tether (blueprint 14.2).</summary>
-        public static void BuildDashes(MeshBuilder builder, Vector2 from, Vector2 to, Color color)
+        public static void BuildDashes(MeshBuilder builder, Vector2 from, Vector2 to, Color color,
+                                       float dash = 0.12f, float gap = 0.08f, float thickness = 0.06f)
         {
-            const float dash = 0.12f;
-            const float gap = 0.08f;
             float length = Vector2.Distance(from, to);
             if (length <= 1e-4f)
                 return;
             Vector2 dir = (to - from) / length;
             for (float d = 0f; d < length; d += dash + gap)
-                builder.Bar(from + dir * d, from + dir * Mathf.Min(d + dash, length), 0.06f, color);
+                builder.Bar(from + dir * d, from + dir * Mathf.Min(d + dash, length), thickness, color);
         }
 
         public static Mesh CreateIslandMesh(Vector2 radii)

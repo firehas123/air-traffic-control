@@ -19,6 +19,8 @@ namespace AirTrafficControl
         CarrierSchedule schedule;
         GameObject shipView;
         GameObject deckGlow;
+        Renderer deckLights;
+        Transform wake;
         bool highlighted;
 
         /// <summary>The ship crossing now, or null.</summary>
@@ -79,6 +81,14 @@ namespace AirTrafficControl
                     deckGlow.transform.localScale = new Vector3(1f, 1f + 0.04f * Mathf.Sin(Time.unscaledTime * 6f), 1f);
                 if (highlighted && !CurrentPass.IsFullyOnScreen)
                     SetHighlight(false);
+
+                AnimationSettings a = Animations.Settings;
+                bool countdown = CurrentPass.IsFullyOnScreen;
+                Tint.SetAlpha(deckLights, countdown
+                    ? (Animations.On && !AnimationMath.Flash(Time.unscaledTime, a.deckLightBlinkSeconds * 2f, a.deckLightBlinkSeconds) ? 0.3f : 1f)
+                    : 0.3f);
+                if (wake != null)
+                    wake.localScale = Animations.On ? new Vector3(1f, 1f + AnimationMath.Sway(Time.time, 0.06f, 1.5f), 1f) : Vector3.one;
             }
         }
 
@@ -107,6 +117,26 @@ namespace AirTrafficControl
             deckGlow.transform.SetParent(shipView.transform, false);
             deckGlow.SetActive(false);
             highlighted = false;
+
+            // White wake behind the stern (blueprint 15.3).
+            GameObject wakeObject = MeshBuilder.CreateObject("Wake", SceneryShapes.CarrierWake(CurrentPass.ShipLength), material,
+                SceneryShapes.BoatOrder, Vector2.zero, 0f);
+            wakeObject.transform.SetParent(shipView.transform, false);
+            wake = wakeObject.transform;
+
+            // Deck edge lights, which blink during the countdown.
+            var lights = new MeshBuilder();
+            Runway deckRunway = CurrentPass.DeckLocal;
+            for (float x = -deckRunway.Length / 2f; x <= deckRunway.Length / 2f + 1e-3f; x += 0.35f)
+            {
+                lights.Ellipse(new Vector2(x, deckRunway.Width / 2f + 0.03f), new Vector2(0.03f, 0.03f), 8, SceneryShapes.LightOn);
+                lights.Ellipse(new Vector2(x, -deckRunway.Width / 2f - 0.03f), new Vector2(0.03f, 0.03f), 8, SceneryShapes.LightOn);
+            }
+            GameObject lightObject = MeshBuilder.CreateObject("DeckLights", lights.Build("DeckLights"), material,
+                SceneryShapes.RunwayLightOrder, Vector2.zero, 0f);
+            lightObject.transform.SetParent(shipView.transform, false);
+            deckLights = lightObject.GetComponent<Renderer>();
+            Tint.SetAlpha(deckLights, 0.3f);
         }
 
         void RemoveShip()
@@ -118,6 +148,8 @@ namespace AirTrafficControl
                 Destroy(shipView);
             shipView = null;
             deckGlow = null;
+            deckLights = null;
+            wake = null;
         }
     }
 }

@@ -1,7 +1,13 @@
 // Draws geometry in its vertex colours, with no lighting and no texture.
-// Used for placeholder shapes (aircraft mesh, path LineRenderer) under the URP 2D renderer.
+// Used for all the code-drawn art (map, aircraft, path lines, trails) under the URP 2D renderer.
+// _Tint multiplies the colour, so an effect can fade out through a MaterialPropertyBlock without rebuilding its mesh.
 Shader "AirTrafficControl/UnlitVertexColor"
 {
+    Properties
+    {
+        _Tint ("Tint", Color) = (1, 1, 1, 1)
+    }
+
     SubShader
     {
         Tags { "RenderType" = "Transparent" "Queue" = "Transparent" "RenderPipeline" = "UniversalPipeline" }
@@ -16,6 +22,8 @@ Shader "AirTrafficControl/UnlitVertexColor"
             #pragma vertex vert
             #pragma fragment frag
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+            half4 _Tint;
 
             struct Attributes
             {
@@ -33,7 +41,7 @@ Shader "AirTrafficControl/UnlitVertexColor"
             {
                 Varyings output;
                 output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
-                output.color = input.color;
+                output.color = input.color * _Tint;
                 return output;
             }
 

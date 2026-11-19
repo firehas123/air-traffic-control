@@ -42,7 +42,6 @@ namespace AirTrafficControl
     /// red pulsing ring = danger. The danger ring's radius comes from the kind's collision radius, so two rings touch
     /// when the proximity warning starts.
     /// </summary>
-    [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public sealed class AircraftController : MonoBehaviour
     {
         const int PathSortingOrder = 0;
@@ -63,6 +62,9 @@ namespace AirTrafficControl
         LandingSystem landing;
         Mesh bodyMesh;
         Mesh crashedMesh;
+        MeshFilter bodyFilter;
+        MeshRenderer bodyRenderer;
+        AircraftVisuals visuals;
         Transform statusRoot;
         GameObject needsLineRing;
         GameObject clearedRing;
@@ -130,8 +132,6 @@ namespace AirTrafficControl
                                                Material material, AircraftColors colors, float edgeMargin)
         {
             var go = new GameObject(type != null ? type.displayName : "Aircraft");
-            go.AddComponent<MeshFilter>();
-            go.AddComponent<MeshRenderer>();
             var aircraft = go.AddComponent<AircraftController>();
             aircraft.landing = landing;
             aircraft.Initialise(type != null ? type : AircraftType.CreateDefaultAirliner(), motion, camera, material, colors, edgeMargin);
@@ -166,10 +166,15 @@ namespace AirTrafficControl
 
             bodyMesh = AircraftShape.CreateMesh(type.silhouette, type.color, type.accentColor, type.size);
             crashedMesh = AircraftShape.CreateMesh(type.silhouette, colors.crashed, colors.crashed, type.size);
-            GetComponent<MeshFilter>().sharedMesh = bodyMesh;
-            var meshRenderer = GetComponent<MeshRenderer>();
-            meshRenderer.sharedMaterial = material;
-            meshRenderer.sortingOrder = PlaneSortingOrder;
+            // The shape lives on a child, so animations can lean or bob it without stretching the status rings.
+            GameObject body = MeshBuilder.CreateObject("Body", bodyMesh, material, PlaneSortingOrder, Vector2.zero, 0f);
+            body.transform.SetParent(transform, false);
+            bodyFilter = body.GetComponent<MeshFilter>();
+            bodyRenderer = body.GetComponent<MeshRenderer>();
+
+            visuals = gameObject.AddComponent<AircraftVisuals>();
+            visuals.Initialise(this, type, body.transform,
+                AircraftShape.CreateMesh(type.silhouette, AircraftVisuals.ShadowColor, AircraftVisuals.ShadowColor, type.size), material);
 
             // Status rings and the crash mark sit under a child that does not turn with the aircraft,
             // so the tick and the X stay upright.
@@ -268,7 +273,7 @@ namespace AirTrafficControl
             {
                 // Lives in world space (not a child), so the dashes are not turned or scaled with the aircraft.
                 tetherMesh = new Mesh { name = "Tether" };
-                tetherObject = MeshBuilder.CreateObject("Tether", tetherMesh, GetComponent<MeshRenderer>().sharedMaterial,
+                tetherObject = MeshBuilder.CreateObject("Tether", tetherMesh, bodyRenderer.sharedMaterial,
                     PathSortingOrder, Vector2.zero, 0f);
             }
             tetherObject.SetActive(true);
@@ -358,7 +363,8 @@ namespace AirTrafficControl
             pathLine.positionCount = 0;
             warningRing.SetActive(false);
             crashMark.SetActive(true);
-            GetComponent<MeshFilter>().sharedMesh = crashedMesh;
+            bodyFilter.sharedMesh = crashedMesh;
+            visuals.HideLights();
             ShowStatus();
         }
 
@@ -464,6 +470,7 @@ namespace AirTrafficControl
 
             TouchedDown?.Invoke(this);
             settlesOntoPad = !touchdown.IsRunway;
+            visuals.Settling = settlesOntoPad;
             if (settlesOntoPad)
             {
                 // Helipad or balloon field: settle onto the centre of the pad.
@@ -500,6 +507,7 @@ namespace AirTrafficControl
                 transform.position = touchdownPoint + rollDirection * rolled;
             }
             transform.localScale = Vector3.one * Mathf.Lerp(1f, RollEndScale, t);
+            visuals.Altitude = 1f - t; // the shadow closes in under the aircraft as it lands
 
             if (t >= 1f)
             {
