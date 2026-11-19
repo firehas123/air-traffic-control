@@ -29,7 +29,12 @@ MonoBehaviour:
     minSecondsBetweenChanges: 25
     maxSecondsBetweenChanges: 40
     warningSeconds: 5
+    landingGraceSeconds: 1.5
     indicatorPosition: {x: 5.3, y: 1.8}
+  aircraftTypes:
+  - {fileID: 11400000, guid: 78932e9696c3e4f5db8166115bd9f27c, type: 2}
+  - {fileID: 11400000, guid: ba844492ef7b944a6949d6b6fa12b6fd, type: 2}
+  - {fileID: 11400000, guid: 9ff925c54a46d495898c672c3a023d55, type: 2}
   aircraftInAir: 2
   spawnPoints:
   - position: {x: -5.5, y: 3.3}

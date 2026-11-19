@@ -15,6 +15,7 @@ public static class PrototypeSceneSetup
     const string ShaderPath = "Assets/Shaders/UnlitVertexColor.shader";
     const string MaterialPath = "Assets/Materials/UnlitVertexColor.mat";
     const string LevelPath = "Assets/Levels/IslandPrototype.asset";
+    const string AircraftFolder = "Assets/Aircraft";
     const string RootName = "Prototype";
 
     [MenuItem("Tools/Air Traffic Control/Set Up Prototype Scene")]
@@ -50,19 +51,42 @@ public static class PrototypeSceneSetup
     static LevelData LoadOrCreateLevel()
     {
         var level = AssetDatabase.LoadAssetAtPath<LevelData>(LevelPath);
-        if (level != null)
+        if (level == null)
         {
-            EditorUtility.SetDirty(level);
-            AssetDatabase.SaveAssetIfDirty(level);
-            return level;
+            if (!AssetDatabase.IsValidFolder("Assets/Levels"))
+                AssetDatabase.CreateFolder("Assets", "Levels");
+            level = ScriptableObject.CreateInstance<LevelData>();
+            AssetDatabase.CreateAsset(level, LevelPath);
         }
 
-        if (!AssetDatabase.IsValidFolder("Assets/Levels"))
-            AssetDatabase.CreateFolder("Assets", "Levels");
+        // M2 step 1: the test level spawns all three runway kinds so the owner can try them (blueprint 14.4).
+        if (level.aircraftTypes.Count == 0)
+        {
+            level.aircraftTypes.Add(LoadOrCreateAircraftType("Airliner", AircraftSilhouette.Airliner));
+            level.aircraftTypes.Add(LoadOrCreateAircraftType("JumboJet", AircraftSilhouette.JumboJet));
+            level.aircraftTypes.Add(LoadOrCreateAircraftType("FighterJet", AircraftSilhouette.FighterJet));
+        }
 
-        level = ScriptableObject.CreateInstance<LevelData>();
-        AssetDatabase.CreateAsset(level, LevelPath);
+        EditorUtility.SetDirty(level);
+        AssetDatabase.SaveAssetIfDirty(level);
         return level;
+    }
+
+    // Creates an aircraft kind with its agreed starting values (blueprint 13.1, 14.1), if it does not exist yet.
+    // An existing asset is kept, so values tuned in the Inspector survive re-running this setup.
+    static AircraftType LoadOrCreateAircraftType(string fileName, AircraftSilhouette kind)
+    {
+        string path = $"{AircraftFolder}/{fileName}.asset";
+        var type = AssetDatabase.LoadAssetAtPath<AircraftType>(path);
+        if (type != null)
+            return type;
+
+        if (!AssetDatabase.IsValidFolder(AircraftFolder))
+            AssetDatabase.CreateFolder("Assets", "Aircraft");
+        type = ScriptableObject.CreateInstance<AircraftType>();
+        type.SetDefaults(kind);
+        AssetDatabase.CreateAsset(type, path);
+        return type;
     }
 
     static Material LoadOrCreateMaterial()

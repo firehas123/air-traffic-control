@@ -32,6 +32,9 @@ namespace AirTrafficControl
         public WindRuleSettings wind = new WindRuleSettings();
 
         [Header("Aircraft")]
+        [Tooltip("Kinds of aircraft this level spawns, picked at random for each new aircraft. Repeat a kind to make it more common.")]
+        public List<AircraftType> aircraftTypes = new List<AircraftType>();
+
         [Tooltip("How many aircraft are kept in the air. A new one appears after each landing or crash.")]
         [Min(1)] public int aircraftInAir = 2;
 
@@ -60,6 +63,10 @@ namespace AirTrafficControl
 
         [Tooltip("The wind indicator pulses and a countdown shows for this long before each change.")]
         public float warningSeconds = 5f;
+
+        [Tooltip("Grace period (blueprint 14.3): an aircraft cleared to land that would reach touchdown within this " +
+                 "many game seconds when the wind changes still lands at the old end.")]
+        [Min(0f)] public float landingGraceSeconds = WindGrace.DefaultGraceSeconds;
 
         [Tooltip("Where the wind indicator (dark circle with an arrow) is drawn.")]
         public Vector2 indicatorPosition = new Vector2(5.3f, 1.8f);

@@ -70,6 +70,12 @@ namespace AirTrafficControl
         public float PathLength => distanceAtPoint.Count == 0 ? 0f : distanceAtPoint[distanceAtPoint.Count - 1];
         public float DistanceAlongPath => distanceAlong;
 
+        /// <summary>How much of the line is still ahead (0 when not following a path).</summary>
+        public float RemainingPathLength => following ? Mathf.Max(0f, PathLength - distanceAlong) : 0f;
+
+        /// <summary>Game seconds until the aircraft reaches the end of its line; infinity when not following one.</summary>
+        public float SecondsToEndOfPath => following && Speed > 0f ? RemainingPathLength / Speed : float.PositiveInfinity;
+
         /// <summary>Points of the line still ahead of the aircraft, in drawing order.</summary>
         public int RemainingWaypointCount => following ? path.Count - segment - 1 : 0;
         public Vector2 GetRemainingWaypoint(int index) => path[segment + 1 + index];

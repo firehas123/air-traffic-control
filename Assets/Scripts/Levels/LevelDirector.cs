@@ -12,7 +12,8 @@ namespace AirTrafficControl
     public sealed class AircraftSettings
     {
         public AircraftColors colors = AircraftColors.Default;
-        // World units per second at 1x. Owner decision 15 Nov 2026: the earlier 1.2 is now 2x, half of it is normal.
+        // Airliner speed in world units per second at 1x (owner decision 15 Nov 2026: the earlier 1.2 is now 2x,
+        // half of it is normal). Each kind flies at this times its AircraftType.speedMultiplier.
         public float speed = 0.6f;
         public float turnRate = 200f;       // degrees per second, only for the edge turn-back with no path
         public float edgeMargin = 0.8f;     // turn back this far inside the screen edge
@@ -52,6 +53,8 @@ namespace AirTrafficControl
         AircraftSettings aircraftSettings;
         int nextSpawnIndex;
         int attempt;
+        System.Random kindPicker = new System.Random(1);
+        readonly Dictionary<AircraftController, Runway> landingBeforeWindChange = new Dictionary<AircraftController, Runway>();
 
         WindSchedule wind;
         bool windOn;
@@ -128,6 +131,7 @@ namespace AirTrafficControl
             ApplyClock();
             input.enabled = true;
             attempt++;
+            kindPicker = new System.Random(unchecked(attempt * 104729 + Environment.TickCount));
             ResetWind();
 
             nextSpawnIndex = 0;
@@ -211,8 +215,19 @@ namespace AirTrafficControl
 
         // Turns the runway, points the wind indicator, and rechecks every aircraft's clearance: a line that
         // ended in the old touchdown zone no longer lands, and one that ends in the new zone now does.
+        // Turns the runway, points the wind indicator, and rechecks every aircraft's clearance. A line that ends in
+        // the new touchdown zone is cleared. A cleared aircraft whose line ends at the old end loses its clearance,
+        // unless it would reach touchdown within the grace period (blueprint 14.3): then it still lands there.
         void SetLandingDirection(bool reversed)
         {
+            landingBeforeWindChange.Clear();
+            foreach (AircraftController aircraft in AircraftController.Active)
+            {
+                if (aircraft.IsAirborne && aircraft.Motion.HasPath && aircraft.IsClearedToLand
+                    && landing.TryLand(aircraft.Motion.Path, out Runway before))
+                    landingBeforeWindChange[aircraft] = before;
+            }
+
             if (landing.IsReversed != reversed)
                 landing.SetReversed(reversed);
 
@@ -222,11 +237,28 @@ namespace AirTrafficControl
                 windIndicator.localScale = Vector3.one;
             }
 
+            float grace = level.wind.landingGraceSeconds;
             foreach (AircraftController aircraft in AircraftController.Active)
             {
-                if (aircraft.IsAirborne && aircraft.Motion.HasPath)
-                    aircraft.SetClearedToLand(landing.TryLand(aircraft.Motion.Path, out _));
+                if (!aircraft.IsAirborne || !aircraft.Motion.HasPath || aircraft.IsInWindGrace)
+                    continue;
+
+                bool wasCleared = landingBeforeWindChange.TryGetValue(aircraft, out Runway oldRunway);
+                bool landsNow = landing.TryLand(aircraft.Motion.Path, out _);
+                switch (WindGrace.Decide(wasCleared, aircraft.Motion.SecondsToEndOfPath, landsNow, grace))
+                {
+                    case ClearanceAfterWindChange.ClearedForNewZone:
+                        aircraft.SetClearedToLand(true);
+                        break;
+                    case ClearanceAfterWindChange.KeepsLandingOnOldZone:
+                        aircraft.KeepLandingDuringWindGrace(oldRunway);
+                        break;
+                    default:
+                        aircraft.SetClearedToLand(false);
+                        break;
+                }
             }
+            landingBeforeWindChange.Clear();
         }
 
         void OnCollided(AircraftController a, AircraftController b)
@@ -303,6 +335,20 @@ namespace AirTrafficControl
                 yield return new WaitForSeconds(BusyRetryDelay);
         }
 
+        AircraftType defaultKind;
+
+        // A random kind from the level's list, or a default airliner if the list is empty.
+        AircraftType PickKind()
+        {
+            List<AircraftType> kinds = level.aircraftTypes;
+            AircraftType picked = kinds != null && kinds.Count > 0 ? kinds[kindPicker.Next(kinds.Count)] : null;
+            if (picked != null)
+                return picked;
+            if (defaultKind == null)
+                defaultKind = AircraftType.CreateDefaultAirliner();
+            return defaultKind;
+        }
+
         bool TrySpawnNow()
         {
             aircraftPositions.Clear();
@@ -315,8 +361,10 @@ namespace AirTrafficControl
 
             nextSpawnIndex = index + 1;
             SpawnPoint point = level.spawnPoints[index];
-            var motion = new AircraftMotion(point.position, point.headingDegrees, aircraftSettings.speed, aircraftSettings.turnRate);
-            AircraftController aircraft = AircraftController.Spawn(motion, worldCamera, landing, material,
+            AircraftType type = PickKind();
+            float speed = aircraftSettings.speed * type.speedMultiplier;
+            var motion = new AircraftMotion(point.position, point.headingDegrees, speed, aircraftSettings.turnRate);
+            AircraftController aircraft = AircraftController.Spawn(type, motion, worldCamera, landing, material,
                                                                    aircraftSettings.colors, aircraftSettings.edgeMargin);
             aircraft.Landed += OnAircraftLanded;
             return true;
