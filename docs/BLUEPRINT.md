@@ -169,7 +169,7 @@ Game title and branding — OPEN; choose original title after prototype.
 
 Portrait vs landscape — Landscape only for the prototype (15 Nov 2026, C19); confirm after phone testing.
 
-Visual style — PROPOSED colorful minimalist 2D.
+Visual style — AGREED 19 Nov 2026: detailed, lively top-down 2D maps inspired by the scenery of Airport Madness Challenge, with original art, and animated aircraft (section 15.3). Art source PROPOSED in 15.2.
 
 Helicopters — AGREED 19 Nov 2026: in M2 step 2, landing on a helipad (section 13.1).
 
@@ -240,6 +240,8 @@ Wind and slow-time on/off switches — OPEN: a player setting in the release, or
 19 Nov 2026 — AGREED: Build M2 steps 1 to 5 together and check them on the iPad at once, instead of one step at a time.
 
 19 Nov 2026 — DONE: M2 passed. The owner checked the build from commit bffbc2c on iPad Pro 12.9 (6th gen) and passed M2 as a whole, including the step 6 pass test. Star thresholds and coin amounts stay PROPOSED starting values.
+
+19 Nov 2026 — AGREED: M3 includes richer map art inspired by Airport Madness Challenge (original art, not a copy) and aircraft animations: fighter afterburner, balloon bobbing and burner, jet strobe lights, helicopter rotors and more; details delegated to Claude (section 15.3).
 
 ## 11. ENGAGEMENT, GAMIFICATION AND BUSINESS MODEL
 
@@ -437,20 +439,36 @@ Status: PROPOSED, waiting for the owner, with ChatGPT invited to review. Section
 
 1. Saves and level select: ProgressionSave keeps stars, unlocked levels, coins and best times on the device, with a version number so later updates can read old saves. A level select screen for Island levels 1 to 10. The result screen's button becomes Next level (C10).
 
-2. Island levels 1 to 10 as data: new aircraft kinds one at a time (14.4: airliner, jumbo jet, helicopter with the helipad, balloon with the balloon field, drone, fighter jet, carrier last); the four objective types (C2) spread over the levels; wind from about level 3; each level 60 to 120 s (C3).
+2. Island map art and aircraft animations (15.3, AGREED by the owner on 19 Nov 2026), built before the levels so they are designed on the finished map.
 
-3. Home screen and progress: controller rank from total safe landings (C8), coin total, Play and Levels buttons, credit "Developed by MHC Studio".
+3. Island levels 1 to 10 as data: new aircraft kinds one at a time (14.4: airliner, jumbo jet, helicopter with the helipad, balloon with the balloon field, drone, fighter jet, carrier last); the four objective types (C2) spread over the levels; wind from about level 3; each level 60 to 120 s (C3).
 
-4. Tower Shift for Island (C6): endless traffic until the first collision, unlocked by finishing level 10, best result saved.
+4. Home screen and progress: controller rank from total safe landings (C8), coin total, Play and Levels buttons, credit "Developed by MHC Studio".
 
-5. Daily Flight (C7): a level made on the device from the date, small coin reward, a streak that one missed day does not reset.
+5. Tower Shift for Island (C6): endless traffic until the first collision, unlocked by finishing level 10, best result saved.
 
-6. Cosmetics with coins (C9, C11): a first small set of aircraft skins and line colours, every item earnable by play; stars unlock cosmetic tiers only.
+6. Daily Flight (C7): a level made on the device from the date, small coin reward, a streak that one missed day does not reset.
 
-Pass for this part of M3: Island levels 1 to 10, Tower Shift and Daily Flight play offline on the iPad, and progress is still there after closing and reopening the app.
+7. Cosmetics with coins (C9, C11): a first small set of aircraft skins and line colours, every item earnable by play; stars unlock cosmetic tiers only.
+
+Pass for this part of M3: the Island map and aircraft animations look finished on the iPad at 60 FPS; Island levels 1 to 10, Tower Shift and Daily Flight play offline on the iPad; and progress is still there after closing and reopening the app.
 
 Later in M3 (or as updates after release, per C16): City Airport (runways that close for short periods) and Desert Airport (sandstorms and low-fuel aircraft), levels 11 to 30. The Supporter Pack purchase (C12) belongs to the store releases (M4 and M5).
 
 ### 15.2 QUESTIONS FOR THE OWNER
 
-Approve the order above, or change it. Decide whether City and Desert are built in M3 or after the first release. C17: Google Play's closed test needs at least 12 testers for 14 days; recruiting 15 to 20 Android testers should start during M3. The game title is still OPEN and is needed before the store listings.
+Approve the order above, or change it. Decide whether City and Desert are built in M3 or after the first release. C17: Google Play's closed test needs at least 12 testers for 14 days; recruiting 15 to 20 Android testers should start during M3. The game title is still OPEN and is needed before the store listings. Art source for 15.3: Claude proposes original art made by Claude Code (vector shapes turned into sprites) in one consistent style, at no cost; the alternatives are free CC0 art packs (faster, less unique, licence to check) or a paid artist.
+
+### 15.3 MAP ART AND ANIMATIONS (AGREED 19 Nov 2026, details delegated to Claude)
+
+Owner's request: maps with the scenery and creativity of Airport Madness Challenge (free on iOS), but not a copy: original art in our own style, and animated aircraft, all in M3. Section 4 still applies: do not copy another game's maps, art, logos or branding.
+
+Island map: animated sea with gentle waves and foam along the beach; palm trees that sway; sand and rocks; a small terminal with a control tower; taxiways and an apron with parked planes; runway lights that pulse towards the touchdown zone; a windsock that shows the wind direction (ties into C1); boats, and the carrier leaving a white wake; clouds drifting over the map with soft shadows; a few birds.
+
+Aircraft: every aircraft gets a soft shadow on the ground that moves under it as it lands. Fighter jet: flickering afterburner flame, a short speed trail, tilts into turns. Hot air balloon: gentle bobbing and sway, a burner flame puff every few seconds. Jumbo jet and airliner: blinking white strobe lights on the wings and tail, thin contrails. Helicopter: spinning main and tail rotors, a slight wobble as it settles on the helipad. Drone: four spinning rotors and a small blinking light.
+
+Events: smoke and a short screen shake on a collision; a small sparkle and coin pop on each landing; the carrier's deck lights blink during its countdown.
+
+Rules: the status rings stay the clearest thing on screen, so scenery uses softer colours, and aircraft lights are white, not red or green (real wingtip lights are red and green, but those colours mean danger and cleared here). 60 FPS on the iPad. Animation values are data and can be turned off for comparison.
+
+Later: City and Desert scenery when those maps are built; the night version of each map (C9 cosmetic) with lights on.
