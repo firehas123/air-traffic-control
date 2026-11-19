@@ -38,6 +38,8 @@ namespace AirTrafficControl
         Text windWarningText;
         GameObject carrierCountdown;
         Text carrierCountdownText;
+        GameObject hintBox;
+        Text hintText;
         GameObject endPanel;
         Text endTitle;
         Text endDetail;
@@ -57,6 +59,9 @@ namespace AirTrafficControl
 
         /// <summary>Raised when the player taps the Slow draw button.</summary>
         public event Action SlowDrawPressed;
+
+        /// <summary>Raised when the player taps "?" to see the first-time help again.</summary>
+        public event Action HelpPressed;
 
         public void Initialise()
         {
@@ -84,6 +89,26 @@ namespace AirTrafficControl
             speedLabel = CreateTopRightButton("SpeedButton", root, 0, () => SpeedPressed?.Invoke(), out _);
             windLabel = CreateTopRightButton("WindButton", root, 1, () => WindPressed?.Invoke(), out windButton);
             slowDrawLabel = CreateTopRightButton("SlowDrawButton", root, 2, () => SlowDrawPressed?.Invoke(), out _);
+
+            // "?" replays the first-time help, top right after the other buttons.
+            RectTransform helpButton = CreateBox("HelpButton", root, PillColor);
+            helpButton.anchorMin = helpButton.anchorMax = helpButton.pivot = new Vector2(1f, 1f);
+            helpButton.anchoredPosition = new Vector2(-24f - 3 * 230f, -24f);
+            helpButton.sizeDelta = new Vector2(64f, 64f);
+            var help = helpButton.gameObject.AddComponent<Button>();
+            help.targetGraphic = helpButton.GetComponent<Image>();
+            help.onClick.AddListener(() => HelpPressed?.Invoke());
+            touchBlockers.Add(helpButton);
+            CreateText("Label", helpButton, 34, Color.white, FontStyle.Bold).text = "?";
+
+            // First-time help caption, top centre below the countdowns (the bottom is the carrier's sea lane).
+            RectTransform hint = CreateBox("Hint", root, PillColor);
+            hint.anchorMin = hint.anchorMax = hint.pivot = new Vector2(0.5f, 1f);
+            hint.anchoredPosition = new Vector2(0f, -262f);
+            hint.sizeDelta = new Vector2(820f, 72f);
+            hintText = CreateText("Text", hint, 34, Color.white, FontStyle.Bold);
+            hintBox = hint.gameObject;
+            hintBox.SetActive(false);
 
             // Wind-change countdown, top centre below the buttons, hidden until a change is near.
             RectTransform warning = CreateBox("WindWarning", root, PillColor);
@@ -175,6 +200,16 @@ namespace AirTrafficControl
                 windWarning.SetActive(show);
             if (show)
                 windWarningText.text = $"Wind changing in {secondsLeft}";
+        }
+
+        /// <summary>Shows one line of first-time help at the bottom, or hides it when <paramref name="text"/> is null.</summary>
+        public void SetHint(string text)
+        {
+            bool show = !string.IsNullOrEmpty(text);
+            if (hintBox.activeSelf != show)
+                hintBox.SetActive(show);
+            if (show && hintText.text != text)
+                hintText.text = text;
         }
 
         /// <summary>Shows "Carrier leaving in N", or hides it when <paramref name="secondsLeft"/> is 0 or less.</summary>

@@ -85,6 +85,25 @@ namespace AirTrafficControl
             }
         }
 
+        /// <summary>
+        /// A point in the middle of the first zone of <paramref name="kind"/>: the runway's current touchdown zone,
+        /// or the pad's centre. Null if the level has none. Used by the first-time help demo.
+        /// </summary>
+        public Vector2? ZonePoint(LandingZoneKind kind)
+        {
+            if (kind == LandingZoneKind.Runway)
+            {
+                if (runways.Count == 0)
+                    return null;
+                Runway runway = runways[0];
+                return runway.Threshold + runway.Direction * (runway.TouchdownZoneStart + runway.TouchdownZoneLength / 2f);
+            }
+            foreach (LandingPad pad in pads)
+                if (pad.Kind == kind)
+                    return pad.Centre;
+            return null;
+        }
+
         /// <summary>True if the line lands for an aircraft that uses zones of <paramref name="kind"/>.</summary>
         public bool TryLand(IReadOnlyList<Vector2> line, LandingZoneKind kind, out Touchdown touchdown) =>
             LandingRules.TryFindTouchdown(runways, pads, line, kind, out touchdown);

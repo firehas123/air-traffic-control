@@ -50,6 +50,9 @@ namespace AirTrafficControl
         PathPlanner planner;
         CarrierSystem carrier;
         FeedbackSystem feedback;
+        HelpDemo helpDemo;
+        FirstTimeHelp help;
+        const string HelpSeenKey = "atc.firstTimeHelp.seen";
         HudView hud;
         Material material;
         AircraftSettings aircraftSettings;
@@ -71,6 +74,12 @@ namespace AirTrafficControl
         {
             carrier = carrierSystem;
             feedback = feedbackSystem;
+
+            // First-time help (M2 step 5): what has been shown is saved on the device, offline.
+            help = new FirstTimeHelp(PlayerPrefs.GetInt(HelpSeenKey, 0));
+            helpDemo = new GameObject("HelpDemo").AddComponent<HelpDemo>();
+            helpDemo.transform.SetParent(transform, false);
+            helpDemo.Initialise(shapeMaterial);
             level = levelData;
             session = new LevelSession(level.landingsToClear);
             planner = pathPlanner;
@@ -103,6 +112,7 @@ namespace AirTrafficControl
             hud.SpeedPressed += OnSpeedPressed;
             hud.WindPressed += OnWindPressed;
             hud.SlowDrawPressed += OnSlowDrawPressed;
+            hud.HelpPressed += OnHelpPressed;
             input.SetScreenBlocker(hud.IsOverInteractive);
             hud.SetSpeedLabel(clock.SpeedLabel);
             hud.SetSlowDrawLabel(clock.SlowDrawLabel);
@@ -123,6 +133,7 @@ namespace AirTrafficControl
                 hud.SpeedPressed -= OnSpeedPressed;
                 hud.WindPressed -= OnWindPressed;
                 hud.SlowDrawPressed -= OnSlowDrawPressed;
+                hud.HelpPressed -= OnHelpPressed;
             }
             Time.timeScale = 1f;
         }
@@ -162,11 +173,72 @@ namespace AirTrafficControl
                 return;
             session.RecordWarning();
             feedback?.WarningStarted();
+            help.WarningStarted();
         }
 
         void OnLineConnected(AircraftController aircraft)
         {
             feedback?.LineConnected();
+            help.LineConnected();
+        }
+
+        void OnHelpPressed()
+        {
+            help.Reset();
+        }
+
+        // Shows the current hint, and the ghost-line demo while the drawing hint is up.
+        void UpdateHelp()
+        {
+            AircraftController demoAircraft = null;
+            bool anyAirborne = false;
+            foreach (AircraftController aircraft in AircraftController.Active)
+            {
+                if (!aircraft.IsAirborne)
+                    continue;
+                anyAirborne = true;
+                if (demoAircraft == null && !aircraft.IsClearedToLand && !aircraft.IsConnectedToCarrier)
+                    demoAircraft = aircraft;
+            }
+
+            if (session.IsPlaying)
+            {
+                if (wind != null && windOn && wind.IsWarning)
+                    help.WindChangeComing();
+                if (carrier != null && carrier.CanConnectNow && AnyAirborneFighter())
+                    help.CarrierReachable();
+            }
+
+            help.Tick(Time.unscaledDeltaTime, anyAirborne && session.IsPlaying);
+            if (help.SeenChanged)
+            {
+                PlayerPrefs.SetInt(HelpSeenKey, help.Seen);
+                PlayerPrefs.Save();
+            }
+
+            HelpHint hint = session.IsPlaying ? help.Current : HelpHint.None;
+            hud.SetHint(FirstTimeHelp.Text(hint));
+
+            Vector2? from = null;
+            Vector2 to = Vector2.zero;
+            if (hint == HelpHint.DrawToLandingZone && demoAircraft != null)
+            {
+                Vector2? zone = landing.ZonePoint(demoAircraft.Type.landsOn);
+                if (zone.HasValue)
+                {
+                    from = demoAircraft.Motion.Position;
+                    to = zone.Value;
+                }
+            }
+            helpDemo.Show(from, to);
+        }
+
+        static bool AnyAirborneFighter()
+        {
+            foreach (AircraftController aircraft in AircraftController.Active)
+                if (aircraft.IsAirborne && aircraft.Type.landsOnCarrier)
+                    return true;
+            return false;
         }
 
         void OnTouchedDown(AircraftController aircraft)
@@ -180,6 +252,7 @@ namespace AirTrafficControl
         {
             session.Tick(Time.deltaTime);
             session.RecordSeparation(safety.ClosestGapThisFrame);
+            UpdateHelp();
             hud.SetTime(session.ElapsedSeconds);
             UpdateWind(Time.deltaTime);
 
