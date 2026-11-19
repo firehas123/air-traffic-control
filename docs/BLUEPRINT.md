@@ -1,9 +1,9 @@
 # AIR TRAFFIC CONTROL — MASTER GAME DEVELOPMENT BLUEPRINT
 
-> Markdown copy of the planning document, exported 19 November 2026. The Google Doc is the source of truth:
+> Markdown copy of the planning document, exported 19 November 2026 (version 0.4). The Google Doc is the source of truth:
 > https://docs.google.com/document/d/1grpGR4kCDI6xIENAf8Av_w_nv_V3wDn8k-94nV7S0ZY/edit
 
-Version 0.3 | 19 November 2026 | Living game design document | Developed by MHC Studio
+Version 0.4 | 19 November 2026 | Living game design document | Developed by MHC Studio
 
 ## STATUS KEY
 
@@ -103,7 +103,7 @@ M0 — Setup: Unity project, version control and iPad build workflow. Pass: blan
 
 M1 — Flight prototype: one map, path drawing, route following, landing, collision, restart. Pass: one complete playable session. STATUS: DONE 15 Nov 2026. All six steps built; the owner played a complete session on iPad Pro 12.9 (6th gen) (see section 12).
 
-M2 — Fun/UX: controls, danger warnings, tutorial, balance and visual/audio feedback. Pass: a new tester understands play without coaching.
+M2 — Fun/UX: controls, danger warnings, tutorial, balance and visual/audio feedback. Pass: a new tester understands play without coaching. STATUS: DONE 19 Nov 2026. Passed by the owner on iPad Pro 12.9 (6th gen) (see sections 12 and 13).
 
 M3 — Content/progression: all maps, 30 levels, stars, coins, achievements, unlocks and local saves. Pass: full campaign playable offline; saved progress resumes correctly.
 
@@ -124,7 +124,7 @@ LATER — PC/consoles: mouse/controller UX, performance, SDK/porting feasibility
 - [x] Add Island Airport and valid landing detection.
 - [x] Spawn multiple aircraft; warning and collision system.
 
-- [x] Add score/restart; tested by the owner. A test with another player is still to do (M2 pass test).
+- [x] Add score/restart; tested by the owner. M2, including its pass test, was passed by the owner on 19 Nov 2026.
 - [ ] Record feedback before formalizing the 30-level data schema.
 
 ## 8. CHATGPT + CLAUDE COLLABORATION
@@ -179,7 +179,7 @@ Cleared-to-land cue — AGREED 19 Nov 2026: status is shown as a ring and an ico
 
 Carrier ship — AGREED 19 Nov 2026 (section 13.2): a fighter that misses the ship bounces off the screen edges until the next one.
 
-Star thresholds — PROPOSED safety + efficiency; requires tuning.
+Star thresholds — PROPOSED starting values, built in M2 as level data: 1 star for clearing the level, 2 for clearing it within 100 s, 3 for that with no danger warning. Coins: 5 per landing plus 10 per star. To be tuned by playing.
 
 Rewarded-ad choice — OPEN; cosmetics/retry, not mandatory.
 
@@ -236,6 +236,10 @@ Wind and slow-time on/off switches — OPEN: a player setting in the release, or
 19 Nov 2026 — AGREED: Carrier ship level feature (section 13.2). A fighter jet lands on the moving deck while the ship passes; if the ship leaves first, the fighter turns back at the screen edges and waits for the next ship, adding traffic. A line connected to the deck moves with the ship, the only exception to the exact-line rule.
 
 19 Nov 2026 — AGREED: ChatGPT's review (section 14), with Claude's notes. Each aircraft kind has a collision radius; two aircraft collide when their centres are closer than the two radii added together (airliner 0.25, so two airliners still collide at 0.5). On the carrier, the drawn line stays exact and only a dashed tether to the deck moves with the ship. Wind moves the runway's touchdown zone to the other end; a line may still arrive from any direction, and an aircraft within about 1.5 seconds of touchdown when the wind changes still lands. New kinds arrive one at a time in the real levels.
+
+19 Nov 2026 — AGREED: Build M2 steps 1 to 5 together and check them on the iPad at once, instead of one step at a time.
+
+19 Nov 2026 — DONE: M2 passed. The owner checked the build from commit bffbc2c on iPad Pro 12.9 (6th gen) and passed M2 as a whole, including the step 6 pass test. Star thresholds and coin amounts stay PROPOSED starting values.
 
 ## 11. ENGAGEMENT, GAMIFICATION AND BUSINESS MODEL
 
@@ -297,7 +301,7 @@ All items C1 to C21 were accepted on 14 November 2026. C16 changes the release o
 
 ## 12. PROGRESS AND CODE STATUS
 
-Updated by Claude on 19 November 2026 from the GitHub repository (latest commit 55fe99e). Read this section before suggesting code, so suggestions build on what already exists.
+Updated by Claude on 19 November 2026 from the GitHub repository (latest commit 7863fc9). Read this section before suggesting code, so suggestions build on what already exists.
 
 Repository: https://github.com/firehas123/air-traffic-control (public, branch main). It holds the code and a markdown copy of this document (docs/BLUEPRINT.md). This Google Doc stays the source of truth for decisions. The repository is the source of truth for code.
 
@@ -307,15 +311,17 @@ M0, done 15 Nov 2026: app name Air Traffic Control, bundle ID com.firehas123.atc
 
 M1, done 15 Nov 2026, verified by the owner on the iPad: (1) an aircraft follows a finger-drawn line exactly; (2) Island runway with a touchdown zone, auto-connect and landing roll; (3) two aircraft in the air, danger warnings and collisions; (4) landing counter, collision panel and instant Retry; (5) Island wind rule (C1) with an on/off switch; (6) slow time while drawing (C4) with an on/off switch. Also built: a 1x / 2x speed button and a level target of 8 landings with a Level cleared panel.
 
+M2, done 19 Nov 2026, passed by the owner on the iPad (build from commit bffbc2c). The owner chose to build steps 1 to 5 together and check them at once. (1) Six aircraft kinds as AircraftType assets, tunable in the Inspector; status shown as rings (yellow: needs a line, green with a tick: cleared, red pulsing: danger). (2) Helipad for helicopter and drone, balloon field for the hot air balloon; a line lands only on a matching zone, and matching zones glow while drawing. (3) Carrier ship crossing the sea about every 40 to 60 s (first after 10 s in the test level), fighters only, with the dashed tether (14.2), countdown and missed-ship behaviour. (4) Sounds made in code (no audio files), iOS vibration and the level result screen with stars, time, closest pass and coins (C10). (5) First-time help: one short line at a time with a ghost line showing how to draw, each hint once per install, a ? button to replay it. Commits 23a3230, 54f115e, 86c28e8, 9329c9b, bffbc2c, 7863fc9.
+
 Code in place (Assets/Scripts): InputAdapter turns touch and mouse into press, drag and release in world coordinates and ignores taps on buttons. LevelDirector runs the level from LevelData (Assets/Levels/IslandPrototype.asset). LandingSystem with LandingRules, AirspaceSafety with SeparationRules, SpawnRules, LevelSession, WindSchedule and GameClock hold the rules as plain, unit-tested code. HudView draws the placeholder interface. Earlier modules: PathRecorder and PathPlanner record the line from the aircraft and replace it when it is redrawn in flight. AircraftMotion and AircraftController move the aircraft exactly along the line at constant speed. PathIntegrity checks that the aircraft never leaves the drawn line. PrototypeSetup now only builds the map and systems.
 
-Rules already built: C1 wind, C2 landing target, C3 instant restart, C4 slow draw, C5 (with no path the aircraft flies straight and turns back at the screen edge; when a path ends it keeps its last heading), landscape only (C19), 60 FPS target. Danger warning: within 1.2 units, or a predicted pass within 0.6 units in the next 2 seconds. Collision: centres within 0.5 units.
+Rules already built: C1 wind, C2 landing target, C3 instant restart, C4 slow draw, C5 (with no path the aircraft flies straight and turns back at the screen edge; when a path ends it keeps its last heading), landscape only (C19), 60 FPS target. Separation since M2 (14.1): collision when centres are closer than the two aircraft's radii added together (airliner 0.25, jumbo 0.35, fighter and drone 0.18, helicopter 0.25, balloon 0.28). Danger warning at 2.4 times that sum, or a predicted pass within 1.2 times it in the next 2 seconds; for two airliners this is the M1 values (0.5, 1.2, 0.6). Wind grace period 1.5 s (14.3). The test level keeps 3 aircraft in the air and spawns all six kinds.
 
-Tests: 105 EditMode unit tests for paths, landing, separation, spawning, the level session, wind and the game clock (Assets/Tests/EditMode).
+Tests: 172 EditMode unit tests (Assets/Tests/EditMode), adding aircraft kinds, per-kind separation, the wind grace period, pads, the carrier, stars and coins, generated sounds, first-time help and the level-length estimate.
 
-Next: M2 started on 19 Nov 2026; the plan is in section 13.
+Next: M3 (content and progression). A PROPOSED plan is in section 15; not started until the owner approves it.
 
-Carried into M2: a shape cue for "cleared to land" besides the green colour; checking that a cleared level takes 60 to 120 seconds (C3) with the target of 8; deciding whether players see the Wind and Slow draw switches; a test with a player who has not seen the game. Left out of the mockup so far: the Levels button (no level select yet). Android starts in M4.
+Carried into M3: compare the real time to clear the test level with the 65 s estimate (C3); tune the star starting values; feel vibration on an iPhone (iPads have no haptic engine); decide whether players see the Wind and Slow draw switches; only one of the four objective types (C2) exists so far; coins are shown but not saved yet; no level select yet. Android starts in M4.
 
 ## 13. M2 PLAN: AIRCRAFT KINDS, CARRIER SHIP AND FUN
 
@@ -349,7 +355,7 @@ Rule change it needs: a line connected to the deck must move with the ship, so i
 
 Starting values chosen by Claude, all level data the owner can tune after playing: a ship every 40 to 60 seconds, about 20 seconds to cross the screen, only fighter jets land on it, and a missed ship costs nothing besides the waiting and the extra traffic.
 
-### 13.3 M2 STEPS (each built, installed and checked on the iPad before the next starts)
+### 13.3 M2 STEPS (ALL DONE 19 Nov 2026; the owner chose to build steps 1 to 5 together and passed M2 as a whole)
 
 1. Aircraft kinds as data, and status shown as a ring and icon; airliner, jumbo jet and fighter jet on the runway. Each kind has its own collision radius (14.1), and wind gets the 1.5-second landing grace period (14.3).
 
@@ -365,7 +371,7 @@ Starting values chosen by Claude, all level data the owner can tune after playin
 
 ## NEXT STEP
 
-M2 started on 19 Nov 2026 (plan in section 13). Step 1: aircraft kinds as data, with status shown as a ring and icon; airliner, jumbo jet and fighter jet on the runway; collision radius per kind (14.1) and the wind grace period (14.3). Each step is built, installed and checked on the iPad before the next starts. The carrier ship (13.2) was confirmed by the owner on 19 Nov 2026.
+M2 passed on 19 Nov 2026. Next is M3 (content and progression). Claude proposed a plan in section 15 for the owner and ChatGPT to review; building starts once the owner approves it.
 
 ## 14. CHATGPT REVIEW RECOMMENDATIONS — 19 NOVEMBER 2026
 
@@ -422,3 +428,29 @@ Owner decision: AGREED 19 Nov 2026, as described in Claude's view.
 ### RECOMMENDED SEQUENCE FOR REVIEW
 
 First settle 14.1 and 14.3 before balancing M2 collisions/landing rules; use 14.2 when implementing the carrier in M2 step 3; apply 14.4 during level design and first-time-player testing. The owner accepted all four on 19 Nov 2026: 14.1 is built in M2 step 1, 14.3 (clearer rule plus grace period) in step 1, 14.2 in step 3, 14.4 in M3 level design. Claude Code remains the code implementer; these are not instructions to edit code immediately.
+
+## 15. M3 PLAN (PROPOSED BY CLAUDE, 19 NOVEMBER 2026)
+
+Status: PROPOSED, waiting for the owner, with ChatGPT invited to review. Section 7 describes M3 as all three maps and 30 levels. C16 (AGREED) releases Island Airport first and City and Desert later as free updates, so this plan builds everything the first release needs before the other two maps.
+
+### 15.1 M3 STEPS
+
+1. Saves and level select: ProgressionSave keeps stars, unlocked levels, coins and best times on the device, with a version number so later updates can read old saves. A level select screen for Island levels 1 to 10. The result screen's button becomes Next level (C10).
+
+2. Island levels 1 to 10 as data: new aircraft kinds one at a time (14.4: airliner, jumbo jet, helicopter with the helipad, balloon with the balloon field, drone, fighter jet, carrier last); the four objective types (C2) spread over the levels; wind from about level 3; each level 60 to 120 s (C3).
+
+3. Home screen and progress: controller rank from total safe landings (C8), coin total, Play and Levels buttons, credit "Developed by MHC Studio".
+
+4. Tower Shift for Island (C6): endless traffic until the first collision, unlocked by finishing level 10, best result saved.
+
+5. Daily Flight (C7): a level made on the device from the date, small coin reward, a streak that one missed day does not reset.
+
+6. Cosmetics with coins (C9, C11): a first small set of aircraft skins and line colours, every item earnable by play; stars unlock cosmetic tiers only.
+
+Pass for this part of M3: Island levels 1 to 10, Tower Shift and Daily Flight play offline on the iPad, and progress is still there after closing and reopening the app.
+
+Later in M3 (or as updates after release, per C16): City Airport (runways that close for short periods) and Desert Airport (sandstorms and low-fuel aircraft), levels 11 to 30. The Supporter Pack purchase (C12) belongs to the store releases (M4 and M5).
+
+### 15.2 QUESTIONS FOR THE OWNER
+
+Approve the order above, or change it. Decide whether City and Desert are built in M3 or after the first release. C17: Google Play's closed test needs at least 12 testers for 14 days; recruiting 15 to 20 Android testers should start during M3. The game title is still OPEN and is needed before the store listings.

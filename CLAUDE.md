@@ -35,7 +35,7 @@ M0 and M1 are done (M1 passed on 15 Nov 2026). **M2 is done: passed by the owner
 5. First-time help that teaches by doing; check that a cleared level takes 60 to 120 seconds (C3). Built 19 Nov 2026 (the test level is estimated at 65 s; the owner times real play).
 6. M2 pass test: a player who has never seen the game understands it without coaching.
 
-The owner asked on 19 Nov 2026 for all M2 steps to be built together, checked steps 1 to 5 on the iPad and passed M2 the same day. Next is M3 (content and progression); do not start it until the owner asks.
+The owner asked on 19 Nov 2026 for all M2 steps to be built together, checked steps 1 to 5 on the iPad and passed M2 the same day. Next is M3 (content and progression); do not start it until the owner asks. A PROPOSED M3 plan is in `docs/BLUEPRINT.md` section 15; it is not settled until the owner approves it.
 
 Collision size per kind (section 14.1, AGREED 19 Nov 2026): each AircraftType has a collision radius. Two aircraft collide when their centres are closer than the two radii added together, and warning distances scale the same way. Airliner 0.25 (so two airliners still collide at 0.5), fighter jet and drone smaller, jumbo jet 1.4x the airliner. Tunable in the Inspector.
 
