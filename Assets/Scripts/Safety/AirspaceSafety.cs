@@ -18,9 +18,17 @@ namespace AirTrafficControl
         readonly List<float> radii = new List<float>();
         readonly List<Vector2Int> collisions = new List<Vector2Int>();
         SeparationState[] states = new SeparationState[8];
+        readonly HashSet<AircraftController> warnedLastFrame = new HashSet<AircraftController>();
+        readonly HashSet<AircraftController> warnedNow = new HashSet<AircraftController>();
 
         /// <summary>Raised once for each pair of aircraft that collide.</summary>
         public event Action<AircraftController, AircraftController> Collided;
+
+        /// <summary>Raised when an aircraft that was not in danger last frame is now (for sound and the 3-star rule).</summary>
+        public event Action<AircraftController> WarningStarted;
+
+        /// <summary>The smallest edge-to-edge gap between two airborne aircraft this frame (infinity with fewer than two).</summary>
+        public float ClosestGapThisFrame { get; private set; } = float.PositiveInfinity;
 
         void LateUpdate()
         {
@@ -42,9 +50,22 @@ namespace AirTrafficControl
                 states = new SeparationState[Mathf.NextPowerOfTwo(airborne.Count)];
 
             SeparationRules.Evaluate(positions, velocities, radii, states, collisions);
+            ClosestGapThisFrame = LevelResult.ClosestGap(positions, radii);
 
+            warnedNow.Clear();
             for (int i = 0; i < airborne.Count; i++)
-                airborne[i].SetWarning(states[i] == SeparationState.Warning);
+            {
+                bool warning = states[i] == SeparationState.Warning;
+                airborne[i].SetWarning(warning);
+                if (warning)
+                {
+                    warnedNow.Add(airborne[i]);
+                    if (!warnedLastFrame.Contains(airborne[i]))
+                        WarningStarted?.Invoke(airborne[i]);
+                }
+            }
+            warnedLastFrame.Clear();
+            warnedLastFrame.UnionWith(warnedNow);
 
             foreach (Vector2Int pair in collisions)
             {

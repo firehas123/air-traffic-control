@@ -49,6 +49,7 @@ namespace AirTrafficControl
         InputAdapter input;
         PathPlanner planner;
         CarrierSystem carrier;
+        FeedbackSystem feedback;
         HudView hud;
         Material material;
         AircraftSettings aircraftSettings;
@@ -66,9 +67,10 @@ namespace AirTrafficControl
 
         public void Initialise(LevelData levelData, Camera camera, LandingSystem landingSystem, AirspaceSafety airspaceSafety,
                                InputAdapter inputAdapter, PathPlanner pathPlanner, CarrierSystem carrierSystem, HudView hudView,
-                               Material shapeMaterial, AircraftSettings settings)
+                               Material shapeMaterial, AircraftSettings settings, FeedbackSystem feedbackSystem = null)
         {
             carrier = carrierSystem;
+            feedback = feedbackSystem;
             level = levelData;
             session = new LevelSession(level.landingsToClear);
             planner = pathPlanner;
@@ -95,6 +97,8 @@ namespace AirTrafficControl
             }
 
             safety.Collided += OnCollided;
+            safety.WarningStarted += OnWarningStarted;
+            planner.LineConnected += OnLineConnected;
             hud.RetryPressed += OnRetryPressed;
             hud.SpeedPressed += OnSpeedPressed;
             hud.WindPressed += OnWindPressed;
@@ -107,7 +111,12 @@ namespace AirTrafficControl
 
         void OnDestroy()
         {
-            if (safety != null) safety.Collided -= OnCollided;
+            if (safety != null)
+            {
+                safety.Collided -= OnCollided;
+                safety.WarningStarted -= OnWarningStarted;
+            }
+            if (planner != null) planner.LineConnected -= OnLineConnected;
             if (hud != null)
             {
                 hud.RetryPressed -= OnRetryPressed;
@@ -147,9 +156,30 @@ namespace AirTrafficControl
             }
         }
 
+        void OnWarningStarted(AircraftController aircraft)
+        {
+            if (!session.IsPlaying)
+                return;
+            session.RecordWarning();
+            feedback?.WarningStarted();
+        }
+
+        void OnLineConnected(AircraftController aircraft)
+        {
+            feedback?.LineConnected();
+        }
+
+        void OnTouchedDown(AircraftController aircraft)
+        {
+            aircraft.TouchedDown -= OnTouchedDown;
+            if (session.IsPlaying)
+                feedback?.TouchedDown();
+        }
+
         void Update()
         {
             session.Tick(Time.deltaTime);
+            session.RecordSeparation(safety.ClosestGapThisFrame);
             hud.SetTime(session.ElapsedSeconds);
             UpdateWind(Time.deltaTime);
 
@@ -283,6 +313,7 @@ namespace AirTrafficControl
                 return;
 
             // Freeze everything so the crash can be seen, and stop drawing while the panel is up.
+            feedback?.Collision();
             EndAttempt();
             StartCoroutine(ShowEndPanel(CrashPauseSeconds,
                 () => hud.ShowCollision(session.ElapsedSeconds, session.LandedCount, session.LandingsToClear)));
@@ -291,8 +322,12 @@ namespace AirTrafficControl
         void OnLevelCleared()
         {
             EndAttempt();
+            ResultSettings rules = level.result;
+            int stars = LevelResult.Stars(true, session.ElapsedSeconds, session.WarningCount, rules);
+            int coins = LevelResult.Coins(session.LandedCount, stars, rules);
             StartCoroutine(ShowEndPanel(ClearedPauseSeconds,
-                () => hud.ShowCleared(session.ElapsedSeconds, session.LandedCount, session.LandingsToClear)));
+                () => hud.ShowCleared(session.ElapsedSeconds, session.LandedCount, session.LandingsToClear,
+                                      session.ClosestGap, stars, coins)));
         }
 
         void EndAttempt()
@@ -384,6 +419,7 @@ namespace AirTrafficControl
             AircraftController aircraft = AircraftController.Spawn(type, motion, worldCamera, landing, material,
                                                                    aircraftSettings.colors, aircraftSettings.edgeMargin);
             aircraft.Landed += OnAircraftLanded;
+            aircraft.TouchedDown += OnTouchedDown;
             return true;
         }
     }

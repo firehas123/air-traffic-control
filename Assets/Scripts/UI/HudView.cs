@@ -42,6 +42,9 @@ namespace AirTrafficControl
         Text endTitle;
         Text endDetail;
         Text endButtonLabel;
+        readonly Image[] endStars = new Image[3];
+        static readonly Color StarEarned = new Color(1f, 0.78f, 0.1f);
+        static readonly Color StarMissing = new Color(0.78f, 0.8f, 0.82f);
 
         /// <summary>Raised when the player taps Retry or Play again.</summary>
         public event Action RetryPressed;
@@ -103,17 +106,31 @@ namespace AirTrafficControl
             // End panel, centred, hidden until the level ends.
             RectTransform panel = CreateBox("EndPanel", root, PanelColor);
             panel.anchorMin = panel.anchorMax = panel.pivot = new Vector2(0.5f, 0.5f);
-            panel.sizeDelta = new Vector2(640f, 380f);
+            panel.sizeDelta = new Vector2(660f, 460f);
             endPanel = panel.gameObject;
             touchBlockers.Add(panel); // the whole panel, so a tap beside the button cannot grab an aircraft
 
             endTitle = CreateText("Title", panel, 48, AlertRed, FontStyle.Bold);
-            Place(endTitle.rectTransform, new Vector2(0f, 110f), new Vector2(600f, 70f));
+            Place(endTitle.rectTransform, new Vector2(0f, 170f), new Vector2(620f, 70f));
+
+            // Stars (result screen only).
+            for (int i = 0; i < 3; i++)
+            {
+                var starObject = new GameObject("Star" + i, typeof(RectTransform), typeof(Image));
+                starObject.transform.SetParent(panel, false);
+                Image star = starObject.GetComponent<Image>();
+                star.sprite = StarSprite.Get();
+                star.raycastTarget = false;
+                Place(star.rectTransform, new Vector2((i - 1) * 90f, 95f), new Vector2(78f, 78f));
+                endStars[i] = star;
+            }
+
             endDetail = CreateText("Detail", panel, 30, Ink, FontStyle.Normal);
-            Place(endDetail.rectTransform, new Vector2(0f, 25f), new Vector2(580f, 90f));
+            endDetail.lineSpacing = 1.15f;
+            Place(endDetail.rectTransform, new Vector2(0f, -5f), new Vector2(620f, 120f));
 
             RectTransform buttonBox = CreateBox("EndButton", panel, ButtonColor);
-            Place(buttonBox, new Vector2(0f, -110f), new Vector2(320f, 110f));
+            Place(buttonBox, new Vector2(0f, -150f), new Vector2(320f, 110f));
             var button = buttonBox.gameObject.AddComponent<Button>();
             button.targetGraphic = buttonBox.GetComponent<Image>();
             button.onClick.AddListener(() => RetryPressed?.Invoke());
@@ -175,12 +192,24 @@ namespace AirTrafficControl
             string landed = target > 0 ? $"{landedCount} of {target}" : (landedCount == 1 ? "1 aircraft" : $"{landedCount} aircraft");
             ShowEnd("Two aircraft collided", AlertRed,
                     $"after {LevelSession.FormatTime(elapsedSeconds)}. You had landed {landed}.", "Retry");
+            foreach (Image star in endStars)
+                star.gameObject.SetActive(false);
         }
 
-        public void ShowCleared(float elapsedSeconds, int landedCount, int target)
+        /// <summary>
+        /// The level result screen (C10): landed, time, closest pass, stars and coins, with one button onward.
+        /// There is only one level so far, so the button plays it again.
+        /// </summary>
+        public void ShowCleared(float elapsedSeconds, int landedCount, int target, float closestGap, int stars, int coins)
         {
             ShowEnd("Level cleared", SuccessGreen,
-                    $"Landed {landedCount} of {target} in {LevelSession.FormatTime(elapsedSeconds)}.", "Play again");
+                    $"Landed {landedCount} of {target} in {LevelSession.FormatTime(elapsedSeconds)}\n" +
+                    $"{LevelResult.ClosestPassText(closestGap)}   ·   +{coins} coins", "Play again");
+            for (int i = 0; i < endStars.Length; i++)
+            {
+                endStars[i].gameObject.SetActive(true);
+                endStars[i].color = i < stars ? StarEarned : StarMissing;
+            }
         }
 
         public void HideEnd()

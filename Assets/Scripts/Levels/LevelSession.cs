@@ -28,6 +28,24 @@ namespace AirTrafficControl
         public int LandedCount { get; private set; }
         public float ElapsedSeconds { get; private set; }
 
+        /// <summary>Danger warnings started during this attempt (for the 3-star rule).</summary>
+        public int WarningCount { get; private set; }
+
+        /// <summary>The smallest edge-to-edge gap between two aircraft during this attempt (infinity if none).</summary>
+        public float ClosestGap { get; private set; } = float.PositiveInfinity;
+
+        public void RecordWarning()
+        {
+            if (IsPlaying)
+                WarningCount++;
+        }
+
+        public void RecordSeparation(float gap)
+        {
+            if (IsPlaying && gap < ClosestGap)
+                ClosestGap = gap;
+        }
+
         public bool IsPlaying => State == SessionState.Playing;
 
         public void Tick(float deltaTime)
@@ -68,6 +86,8 @@ namespace AirTrafficControl
             State = SessionState.Playing;
             LandedCount = 0;
             ElapsedSeconds = 0f;
+            WarningCount = 0;
+            ClosestGap = float.PositiveInfinity;
         }
 
         /// <summary>Formats seconds as m:ss, for example 72.4 -> "1:12".</summary>

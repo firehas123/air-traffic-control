@@ -23,6 +23,9 @@ namespace AirTrafficControl
         [SerializeField] float minSampleDistance = 0.01f;
 
         readonly List<Vector2> newPoints = new List<Vector2>();
+
+        /// <summary>Raised when a line connects to a landing zone or the carrier deck (for sound and first-time help).</summary>
+        public event System.Action<AircraftController> LineConnected;
         InputAdapter input;
         LandingSystem landing;
         CarrierSystem carrier;
@@ -112,12 +115,14 @@ namespace AirTrafficControl
             {
                 // Connected to a matching zone: end the line here and ignore the rest of the stroke.
                 selected.SetClearedToLand(true);
+                LineConnected?.Invoke(selected);
                 EndStroke();
             }
             else if (carrier != null && selected.Type.landsOnCarrier && carrier.TryConnect(recorder.Points))
             {
                 // Connected to the carrier deck (blueprint 13.2): the line ends here; a tether follows the ship.
                 selected.ConnectToCarrier(carrier.CurrentPass);
+                LineConnected?.Invoke(selected);
                 EndStroke();
             }
         }

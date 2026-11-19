@@ -49,8 +49,11 @@ namespace AirTrafficControl
             var hud = new GameObject("HudView").AddComponent<HudView>();
             hud.Initialise();
 
+            var feedback = new GameObject("FeedbackSystem").AddComponent<FeedbackSystem>();
+            feedback.Initialise();
+
             var director = new GameObject("LevelDirector").AddComponent<LevelDirector>();
-            director.Initialise(level, worldCamera, landing, safety, input, planner, carrier, hud, shapeMaterial, aircraft);
+            director.Initialise(level, worldCamera, landing, safety, input, planner, carrier, hud, shapeMaterial, aircraft, feedback);
             director.StartLevel();
         }
     }

@@ -120,6 +120,9 @@ namespace AirTrafficControl
         /// <summary>Raised once the landing roll has finished, just before the aircraft is removed.</summary>
         public event Action<AircraftController> Landed;
 
+        /// <summary>Raised at the moment of touchdown (runway, pad or carrier deck), for sound and vibration.</summary>
+        public event Action<AircraftController> TouchedDown;
+
         /// <summary>Raised once the crash has been shown, just before the aircraft is removed.</summary>
         public event Action<AircraftController> Crashed;
 
@@ -310,6 +313,7 @@ namespace AirTrafficControl
         {
             isLanding = true;
             landsOnCarrierDeck = true;
+            TouchedDown?.Invoke(this);
             rollTime = 0f;
             pathLine.positionCount = 0;
             warningRing.SetActive(false);
@@ -458,6 +462,7 @@ namespace AirTrafficControl
             warningRing.SetActive(false);
             ShowStatus();
 
+            TouchedDown?.Invoke(this);
             settlesOntoPad = !touchdown.IsRunway;
             if (settlesOntoPad)
             {

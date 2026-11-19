@@ -18,6 +18,9 @@ namespace AirTrafficControl
         [Tooltip("Landings needed to clear the level. 0 means no target: the level only ends on a collision.")]
         [Min(0)] public int landingsToClear = 8;
 
+        [Header("Result screen (C10)")]
+        public ResultSettings result = new ResultSettings();
+
         [Header("Island (drawn under the runway)")]
         public Vector2 islandCentre = new Vector2(1f, -0.8f);
         public Vector2 islandRadii = new Vector2(3.8f, 2.1f);
@@ -57,6 +60,20 @@ namespace AirTrafficControl
             new SpawnPoint(new Vector2(-5.5f, -3.5f), 15f),  // bottom left, heading right and up
             new SpawnPoint(new Vector2(5.5f, -3.6f), 165f),  // bottom right, heading left and up
         };
+    }
+
+    /// <summary>Star thresholds (PROPOSED, to be tuned by playing) and coins (C9) for the result screen.</summary>
+    [Serializable]
+    public sealed class ResultSettings
+    {
+        [Tooltip("Clear the level within this many seconds for 2 stars (C3 aims for 60 to 120 s per level).")]
+        [Min(1f)] public float twoStarSeconds = 100f;
+
+        [Tooltip("3 stars also need no danger warning during the whole level, so stars never reward reckless flying.")]
+        public bool threeStarsNeedNoWarnings = true;
+
+        [Min(0)] public int coinsPerLanding = 5;
+        [Min(0)] public int coinsPerStar = 10;
     }
 
     [Serializable]
