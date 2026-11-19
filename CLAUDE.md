@@ -26,27 +26,36 @@ The owner decided on 15 Nov 2026 that this game is developed under the name **MH
 
 ## Current priority
 
-M0 is done. M1 is done: passed on 15 Nov 2026, verified by the owner on the iPad. Its steps were:
+M0 and M1 are done (M1 passed on 15 Nov 2026). **M2 started on 19 Nov 2026.** The plan is in `docs/BLUEPRINT.md` section 13. Build one step at a time; each step is built, installed and checked by the owner on the iPad before the next starts:
 
-1. Plane follows a finger-drawn path (done).
-2. Runway and landing detection (LandingSystem) (done).
-3. A second aircraft with danger warnings and collisions (AirspaceSafety) (done).
-4. Landing counter and restart in under two seconds (C3) (done).
-5. Island wind rule (C1), with an on/off switch (done).
-6. Slow time while drawing (C4), with an on/off switch (done).
+1. Aircraft kinds as data (an AircraftType asset per kind: name, speed, size, colour, silhouette, landing zone kind). Status moves from colouring the whole aircraft to a ring and icon (green ring with a tick when cleared, yellow ring when it needs a new line, red pulsing ring for danger). Airliner, jumbo jet and fighter jet on the runway.
+2. Helipad with helicopter and drone; balloon field with hot air balloon. A line lands only on a zone that matches the aircraft kind; matching zones glow while drawing.
+3. Carrier ship level feature. **Do not start until the owner confirms section 13.2** (it is PROPOSED). It needs the one exception to the exact-line rule: a line connected to the deck moves with the ship.
+4. Sound and vibration for landing, warning and collision; the level result screen (C10).
+5. First-time help that teaches by doing; check that a cleared level takes 60 to 120 seconds (C3).
+6. M2 pass test: a player who has never seen the game understands it without coaching.
 
-The owner played a complete session on the iPad and passed M1 on 15 Nov 2026. Next is M2 (fun and UX); do not start it until the owner asks. The level also gained a landing target of 8 (C2 objective "land a set number of aircraft") so that a session has an end; the owner can change the number in `Assets/Levels/IslandPrototype.asset`.
+Aircraft kinds (section 13.1, AGREED). Speed is relative to the current plane at 1x (0.6 world units per second):
 
-Gameplay rules the owner has decided while testing M1 (details in the commit messages):
+| Kind | Speed | Size | Colour | Lands on |
+|---|---|---|---|---|
+| Hot air balloon | 0.35x | normal, round | pink and purple stripes | balloon field (grass circle) |
+| Helicopter | 0.6x | normal | orange | helipad (circle marked H) |
+| Drone | 0.8x | small | purple | helipad |
+| Airliner (current plane) | 1.0x | normal | white | runway |
+| Jumbo jet | 0.85x | 1.4x, so its collision radius grows too | sky blue | runway |
+| Fighter jet | 1.6x | small | dark grey | runway, or the carrier ship when a level has one |
+
+No kind may be green, yellow or red: those colours mean cleared, needs a new line and danger. Kinds should be tunable in the Inspector so the owner can adjust speeds after playing.
+
+M1 gameplay rules still apply (details in the commit messages):
 
 - Aircraft follow the drawn line exactly, with instant turns at corners. The line is never smoothed or cut; any change to it throws `PathAlteredException`.
-- A line lands when it ends in the runway's touchdown zone, the highlighted area with the yellow arrows. It may arrive from any direction (changed on 15 Nov 2026 from "within 30 degrees of the landing direction"). It must overlap the zone by at least 0.12 world units, not just touch its edge (`LandingRules.ConnectInset`). On reaching that point the line connects automatically: drawing stops and the aircraft turns green (cleared to land).
-- Game speed has a 1x / 2x button. 1x is normal, 0.6 world units per second. 2x is the speed the prototype ran at before 15 Nov 2026 (1.2).
-- A collision freezes the game and shows a panel with one large Retry button; Retry restarts at once. Landing the target number clears the level and shows "Level cleared" with Play again.
-- Slow draw (C4): while the player draws an aircraft's line, game time runs at 0.4 of the chosen speed. A "Slow draw on / off" button switches it; it starts on.
-- Wind (C1): the landing direction reverses every 25 to 40 seconds with a 5-second countdown. A green aircraft whose line ends at the old end loses its clearance. A "Wind on / off" button switches the rule.
+- A line lands when it ends in a matching touchdown zone, from any direction, overlapping it by at least 0.12 world units (`LandingRules.ConnectInset`). It connects by itself on reaching it.
+- Game speed button 1x / 2x; collision freezes the game with one large Retry; the prototype level ends after 8 landings.
+- Slow draw (C4) and Wind (C1) each have an on/off button. Whether players see these switches in the release is still OPEN.
 
-Rules that apply from the M1 prototype:
+Rules that apply from the M1 prototype onwards:
 
 - C1: each map has one rule of its own. Island uses changing wind that reverses the runway landing direction. Build it with an on/off switch.
 - C3: levels last 60 to 120 seconds, and restart after a collision takes under two seconds.

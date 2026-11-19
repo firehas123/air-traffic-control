@@ -171,11 +171,13 @@ Portrait vs landscape — Landscape only for the prototype (15 Nov 2026, C19); c
 
 Visual style — PROPOSED colorful minimalist 2D.
 
-Helicopters — OPEN when/how to introduce distinct landing requirements.
+Helicopters — AGREED 19 Nov 2026: in M2 step 2, landing on a helipad (section 13.1).
 
 Collision consequences — AGREED for the prototype (15 Nov 2026): a red warning ring before, then the game freezes with one large Retry button that restarts at once.
 
-Cleared-to-land cue — OPEN: a shape cue besides the green colour (accessibility rule in section 4), now or in M2.
+Cleared-to-land cue — AGREED 19 Nov 2026: status is shown as a ring and an icon around the aircraft, not only by colour (section 13.1).
+
+Carrier ship — PROPOSED (section 13.2): owner to confirm Claude's reading before M2 step 3.
 
 Star thresholds — PROPOSED safety + efficiency; requires tuning.
 
@@ -228,6 +230,10 @@ Wind and slow-time on/off switches — OPEN: a player setting in the release, or
 15 Nov 2026 — DONE: M1 passed. The owner played a complete session on iPad Pro 12.9 (6th gen), including the wind and slow-draw switches both ways.
 
 15 Nov 2026 — AGREED: No Android work in M1 to M3; it starts in M4 (Android release). Android is then checked on the Android Emulator (Android Studio) on the MacBook. The emulator shows whether the game works on Android, but it does not replace a real phone for touch feel and performance; a real phone is still needed before release, and Google Play's closed test needs real testers anyway.
+
+19 Nov 2026 — AGREED: M2 started. Six aircraft kinds with their own speed, size, colour and landing zone (balloon, helicopter, drone, airliner, jumbo jet, fighter jet); details delegated to Claude (section 13.1).
+
+19 Nov 2026 — PROPOSED: Carrier ship level feature, owner's idea as read by Claude (section 13.2).
 
 ## 11. ENGAGEMENT, GAMIFICATION AND BUSINESS MODEL
 
@@ -305,10 +311,56 @@ Rules already built: C1 wind, C2 landing target, C3 instant restart, C4 slow dra
 
 Tests: 105 EditMode unit tests for paths, landing, separation, spawning, the level session, wind and the game clock (Assets/Tests/EditMode).
 
-Next: M2 (fun and ease of use) has not started; it waits for the owner.
+Next: M2 started on 19 Nov 2026; the plan is in section 13.
 
 Carried into M2: a shape cue for "cleared to land" besides the green colour; checking that a cleared level takes 60 to 120 seconds (C3) with the target of 8; deciding whether players see the Wind and Slow draw switches; a test with a player who has not seen the game. Left out of the mockup so far: the Levels button (no level select yet). Android starts in M4.
 
+## 13. M2 PLAN: AIRCRAFT KINDS, CARRIER SHIP AND FUN
+
+Started by the owner on 19 November 2026. He asked for more kinds of aircraft with different speeds, one colour per kind, and ships passing by as a level feature, and left the details to Claude. They are written here so ChatGPT can review them. AGREED items were delegated by the owner; PROPOSED items wait for his confirmation.
+
+### 13.1 AIRCRAFT KINDS (AGREED, details delegated to Claude)
+
+Each kind is data (an AircraftType asset): name, speed, size, colour, silhouette and where it lands. Speeds are relative to the current plane at 1x game speed (0.6 world units per second).
+
+Hot air balloon: the slowest, 0.35x. Lands on the balloon field, a grass circle. Pink and purple stripes, round shape.
+
+Helicopter: 0.6x. Lands on the helipad, a circle marked H. Orange.
+
+Drone: 0.8x, small. Lands on the helipad. Purple.
+
+Airliner (the current plane): 1.0x. Lands on the runway. White.
+
+Jumbo jet: 0.85x and 1.4 times bigger, so it takes more room and is easier to hit. Lands on the runway. Sky blue.
+
+Fighter jet: the fastest, 1.6x, small. Lands on the runway, or on the carrier ship when a level has one. Dark grey.
+
+No kind is green, yellow or red, because those colours mean cleared, needs a new line and danger. Status therefore moves from colouring the whole aircraft to a ring and an icon around it: a green ring with a tick when cleared, a yellow ring when it needs a new line, a red pulsing ring for danger. This also settles the open item about a shape cue besides colour.
+
+A line lands only on a zone that matches the aircraft kind, and the matching zones glow while the player draws. Kinds arrive a few at a time across the levels, not all at once.
+
+### 13.2 CARRIER SHIP (PROPOSED, the owner to confirm Claude's reading)
+
+How Claude understood the idea: an aircraft carrier crosses the sea from time to time. While it passes, a fighter jet waiting for it must land on its deck, a moving landing zone with a countdown. If the fighter has not landed when the ship leaves the screen, it circles and waits for the next ship. It is a feature of some Island levels, not of every level.
+
+Rule change it needs: a line connected to the deck must move with the ship, so its end follows the deck. This would be the only exception to "the line is never changed" (AGREED 15 Nov 2026).
+
+Still open: how often a ship comes, how long it takes to cross, whether helicopters may also land on it, and whether a missed ship costs anything besides waiting.
+
+### 13.3 M2 STEPS (each built, installed and checked on the iPad before the next starts)
+
+1. Aircraft kinds as data, and status shown as a ring and icon; airliner, jumbo jet and fighter jet on the runway.
+
+2. Helipad with helicopter and drone; balloon field with hot air balloon; a line lands only on a matching zone.
+
+3. Carrier ship level feature, after the owner confirms 13.2.
+
+4. Feel and feedback: sound and vibration for landing, warning and collision; the level result screen (C10).
+
+5. First-time help: the first level teaches by doing, without walls of text; check that a cleared level takes 60 to 120 seconds (C3).
+
+6. M2 pass test: a player who has never seen the game understands it without coaching.
+
 ## NEXT STEP
 
-M1 is done. Next is M2, fun and ease of use, when the owner decides to start: controls, tutorial, balance, sound and clear feedback after each level (C10). M2 passes when a new tester understands the game without coaching. Earlier M1 plan for reference: Step 2: Island Airport runway and landing detection (LandingSystem). Step 3: a second aircraft with danger warnings and collisions (AirspaceSafety). Step 4: landing counter and restart in under two seconds (C3). Step 5: Island wind rule (C1) with an on/off switch. Step 6: slow time while drawing (C4) with an on/off switch.
+M2 started on 19 Nov 2026 (plan in section 13). Step 1: aircraft kinds as data, with status shown as a ring and icon; airliner, jumbo jet and fighter jet on the runway. Each step is built, installed and checked on the iPad before the next starts. Waiting for the owner: confirm the carrier ship reading (13.2) before step 3.
