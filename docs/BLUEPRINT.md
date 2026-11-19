@@ -1,9 +1,9 @@
 # AIR TRAFFIC CONTROL — MASTER GAME DEVELOPMENT BLUEPRINT
 
-> Markdown copy of the planning document, exported 15 November 2026. The Google Doc is the source of truth:
+> Markdown copy of the planning document, exported 19 November 2026. The Google Doc is the source of truth:
 > https://docs.google.com/document/d/1grpGR4kCDI6xIENAf8Av_w_nv_V3wDn8k-94nV7S0ZY/edit
 
-Version 0.2 | 15 November 2026 | Living game design document | Developed by MHC Studio
+Version 0.3 | 19 November 2026 | Living game design document | Developed by MHC Studio
 
 ## STATUS KEY
 
@@ -101,7 +101,7 @@ Initial custom server hosting: US$0; marketing, art, sound, device purchases, st
 
 M0 — Setup: Unity project, version control and iPad build workflow. Pass: blank game scene launches on iPad. STATUS: DONE 15 Nov 2026, verified on iPad Pro 12.9 (6th gen).
 
-M1 — Flight prototype: one map, path drawing, route following, landing, collision, restart. Pass: one complete playable session. STATUS: IN PROGRESS, step 1 of 6 done 15 Nov 2026 (see section 12).
+M1 — Flight prototype: one map, path drawing, route following, landing, collision, restart. Pass: one complete playable session. STATUS: DONE 15 Nov 2026. All six steps built; the owner played a complete session on iPad Pro 12.9 (6th gen) (see section 12).
 
 M2 — Fun/UX: controls, danger warnings, tutorial, balance and visual/audio feedback. Pass: a new tester understands play without coaching.
 
@@ -121,10 +121,10 @@ LATER — PC/consoles: mouse/controller UX, performance, SDK/porting feasibility
 - [x] Implement finger path drawing and debug route line.
 - [x] Move an aircraft along the drawn path at constant speed (follows the line exactly, per owner decision 15 Nov 2026).
 
-- [ ] Add Island Airport and valid landing detection.
-- [ ] Spawn multiple aircraft; warning and collision system.
+- [x] Add Island Airport and valid landing detection.
+- [x] Spawn multiple aircraft; warning and collision system.
 
-- [ ] Add score/restart; test with an actual player.
+- [x] Add score/restart; tested by the owner. A test with another player is still to do (M2 pass test).
 - [ ] Record feedback before formalizing the 30-level data schema.
 
 ## 8. CHATGPT + CLAUDE COLLABORATION
@@ -173,7 +173,9 @@ Visual style — PROPOSED colorful minimalist 2D.
 
 Helicopters — OPEN when/how to introduce distinct landing requirements.
 
-Collision consequences — PROPOSED failure/restart with clear warning.
+Collision consequences — AGREED for the prototype (15 Nov 2026): a red warning ring before, then the game freezes with one large Retry button that restarts at once.
+
+Cleared-to-land cue — OPEN: a shape cue besides the green colour (accessibility rule in section 4), now or in M2.
 
 Star thresholds — PROPOSED safety + efficiency; requires tuning.
 
@@ -216,6 +218,14 @@ Wind and slow-time on/off switches — OPEN: a player setting in the release, or
 15 Nov 2026 — AGREED: Android testing on a real phone starts once the iOS version is ready (changes C18).
 
 15 Nov 2026 — AGREED: The game is developed under the name MHC Studio. The credit appears in the repository, the app's company name and the in-game credits. The game will be listed on the MHC website and resume site as in development (MHC inbox draft tasks 190 for the website and 191 for the resume site, which also adds Android and iOS development); the link goes to the GitHub repository until the App Store link exists.
+
+15 Nov 2026 — AGREED: Landing rules for the prototype. A line lands when it ends in the runway's touchdown zone (the highlighted area with the yellow arrows), from any direction, overlapping the zone by at least 0.12 world units. On reaching it the line connects by itself and the aircraft turns green. (Replaces the PROPOSED alignment rule in section 2.)
+
+15 Nov 2026 — AGREED: Game speed button 1x / 2x. 1x is 0.6 world units per second.
+
+15 Nov 2026 — AGREED: The prototype level ends after 8 landings (C2 objective "land a set number of aircraft"); the number is level data.
+
+15 Nov 2026 — DONE: M1 passed. The owner played a complete session on iPad Pro 12.9 (6th gen), including the wind and slow-draw switches both ways.
 
 15 Nov 2026 — AGREED: No Android work in M1 to M3; it starts in M4 (Android release). Android is then checked on the Android Emulator (Android Studio) on the MacBook. The emulator shows whether the game works on Android, but it does not replace a real phone for touch feel and performance; a real phone is still needed before release, and Google Play's closed test needs real testers anyway.
 
@@ -279,7 +289,7 @@ All items C1 to C21 were accepted on 14 November 2026. C16 changes the release o
 
 ## 12. PROGRESS AND CODE STATUS
 
-Updated by Claude on 15 November 2026 from the GitHub repository. Read this section before suggesting code, so suggestions build on what already exists.
+Updated by Claude on 19 November 2026 from the GitHub repository (latest commit 55fe99e). Read this section before suggesting code, so suggestions build on what already exists.
 
 Repository: https://github.com/firehas123/air-traffic-control (public, branch main). It holds the code and a markdown copy of this document (docs/BLUEPRINT.md). This Google Doc stays the source of truth for decisions. The repository is the source of truth for code.
 
@@ -287,18 +297,18 @@ Who works where: the owner tests on the iPad and approves decisions. Claude Code
 
 M0, done 15 Nov 2026: app name Air Traffic Control, bundle ID com.firehas123.atcprototype. Assets/Editor/BuildScript.cs exports the Xcode project to Builds/iOS, so builds run from the command line. Verified on iPad Pro 12.9 (6th gen).
 
-M1 step 1, done 15 Nov 2026: one aircraft follows a path drawn with a finger. Verified on the iPad by the owner.
+M1, done 15 Nov 2026, verified by the owner on the iPad: (1) an aircraft follows a finger-drawn line exactly; (2) Island runway with a touchdown zone, auto-connect and landing roll; (3) two aircraft in the air, danger warnings and collisions; (4) landing counter, collision panel and instant Retry; (5) Island wind rule (C1) with an on/off switch; (6) slow time while drawing (C4) with an on/off switch. Also built: a 1x / 2x speed button and a level target of 8 landings with a Level cleared panel.
 
-Code in place (Assets/Scripts): InputAdapter turns touch and mouse into press, drag and release in world coordinates. PathRecorder and PathPlanner record the line from the aircraft and replace it when it is redrawn in flight. AircraftMotion and AircraftController move the aircraft exactly along the line at constant speed. PathIntegrity checks that the aircraft never leaves the drawn line. PrototypeSetup creates the scene objects for now and will be replaced by LevelDirector.
+Code in place (Assets/Scripts): InputAdapter turns touch and mouse into press, drag and release in world coordinates and ignores taps on buttons. LevelDirector runs the level from LevelData (Assets/Levels/IslandPrototype.asset). LandingSystem with LandingRules, AirspaceSafety with SeparationRules, SpawnRules, LevelSession, WindSchedule and GameClock hold the rules as plain, unit-tested code. HudView draws the placeholder interface. Earlier modules: PathRecorder and PathPlanner record the line from the aircraft and replace it when it is redrawn in flight. AircraftMotion and AircraftController move the aircraft exactly along the line at constant speed. PathIntegrity checks that the aircraft never leaves the drawn line. PrototypeSetup now only builds the map and systems.
 
-Rules already built: C5 (with no path the aircraft flies straight and turns back at the screen edge; when a path ends it keeps its last heading), landscape only (C19), 60 FPS target.
+Rules already built: C1 wind, C2 landing target, C3 instant restart, C4 slow draw, C5 (with no path the aircraft flies straight and turns back at the screen edge; when a path ends it keeps its last heading), landscape only (C19), 60 FPS target. Danger warning: within 1.2 units, or a predicted pass within 0.6 units in the next 2 seconds. Collision: centres within 0.5 units.
 
-Tests: 33 EditMode unit tests for path recording, exact following and edge turn-back (Assets/Tests/EditMode).
+Tests: 105 EditMode unit tests for paths, landing, separation, spawning, the level session, wind and the game clock (Assets/Tests/EditMode).
 
-M1 remaining steps: 2. runway and landing detection (LandingSystem). 3. a second aircraft with danger warnings and collisions (AirspaceSafety). 4. landing counter and restart in under two seconds (C3). M1 passes when one complete session is playable.
+Next: M2 (fun and ease of use) has not started; it waits for the owner.
 
-Scheduled by the owner on 15 Nov 2026: step 5, the Island wind rule (C1), and step 6, slowing time while drawing (C4), each with an on/off switch. Android testing on a real phone (C18) starts once the iOS version is ready.
+Carried into M2: a shape cue for "cleared to land" besides the green colour; checking that a cleared level takes 60 to 120 seconds (C3) with the target of 8; deciding whether players see the Wind and Slow draw switches; a test with a player who has not seen the game. Left out of the mockup so far: the Levels button (no level select yet). Android starts in M4.
 
 ## NEXT STEP
 
-Continue M1 one step at a time, each built, installed and checked on the iPad before the next starts. Step 2: Island Airport runway and landing detection (LandingSystem). Step 3: a second aircraft with danger warnings and collisions (AirspaceSafety). Step 4: landing counter and restart in under two seconds (C3). Step 5: Island wind rule (C1) with an on/off switch. Step 6: slow time while drawing (C4) with an on/off switch.
+M1 is done. Next is M2, fun and ease of use, when the owner decides to start: controls, tutorial, balance, sound and clear feedback after each level (C10). M2 passes when a new tester understands the game without coaching. Earlier M1 plan for reference: Step 2: Island Airport runway and landing detection (LandingSystem). Step 3: a second aircraft with danger warnings and collisions (AirspaceSafety). Step 4: landing counter and restart in under two seconds (C3). Step 5: Island wind rule (C1) with an on/off switch. Step 6: slow time while drawing (C4) with an on/off switch.
