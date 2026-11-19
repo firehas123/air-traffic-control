@@ -243,6 +243,8 @@ Wind and slow-time on/off switches — OPEN: a player setting in the release, or
 
 19 Nov 2026 — AGREED: M3 includes richer map art inspired by Airport Madness Challenge (original art, not a copy) and aircraft animations: fighter afterburner, balloon bobbing and burner, jet strobe lights, helicopter rotors and more; details delegated to Claude (section 15.3).
 
+20 Nov 2026 — AGREED: Hybrid controls in M3, built for real: drawing stays the way to fly; tapping an aircraft opens buttons for Slow and Fast in the air and Taxi, Cross and Take off on the ground, with departures from gates and a busy-runway rule; details delegated to Claude (section 15.4). Blimp, rocket and space theme are PROPOSED (section 15.5).
+
 ## 11. ENGAGEMENT, GAMIFICATION AND BUSINESS MODEL
 
 Added by Claude on 14 November 2026 after a full read of version 0.1. The owner accepted every item in this section on 14 November 2026. Each item has an ID so it can be referred to or changed by number. External figures were checked on 14 November 2026 and should be verified again before any payment or release.
@@ -441,15 +443,17 @@ Status: PROPOSED, waiting for the owner, with ChatGPT invited to review. Section
 
 2. Island map art and aircraft animations (15.3, AGREED by the owner on 19 Nov 2026), built before the levels so they are designed on the finished map.
 
-3. Island levels 1 to 10 as data: new aircraft kinds one at a time (14.4: airliner, jumbo jet, helicopter with the helipad, balloon with the balloon field, drone, fighter jet, carrier last); the four objective types (C2) spread over the levels; wind from about level 3; each level 60 to 120 s (C3).
+3. Hybrid controls (15.4, AGREED by the owner on 20 Nov 2026): slow/fast for aircraft in the air, and ground control for departures (Taxi, Cross, Take off).
 
-4. Home screen and progress: controller rank from total safe landings (C8), coin total, Play and Levels buttons, credit "Developed by MHC Studio".
+4. Island levels 1 to 10 as data, introducing slow/fast from level 2, departures from level 4 and runway crossings from level 6; new aircraft kinds one at a time (14.4: airliner, jumbo jet, helicopter with the helipad, balloon with the balloon field, drone, fighter jet, carrier last); the four objective types (C2) spread over the levels; wind from about level 3; each level 60 to 120 s (C3).
 
-5. Tower Shift for Island (C6): endless traffic until the first collision, unlocked by finishing level 10, best result saved.
+5. Home screen and progress: controller rank from total safe landings (C8), coin total, Play and Levels buttons, credit "Developed by MHC Studio".
 
-6. Daily Flight (C7): a level made on the device from the date, small coin reward, a streak that one missed day does not reset.
+6. Tower Shift for Island (C6): endless traffic until the first collision, unlocked by finishing level 10, best result saved.
 
-7. Cosmetics with coins (C9, C11): a first small set of aircraft skins and line colours, every item earnable by play; stars unlock cosmetic tiers only.
+7. Daily Flight (C7): a level made on the device from the date, small coin reward, a streak that one missed day does not reset.
+
+8. Cosmetics with coins (C9, C11): a first small set of aircraft skins and line colours, every item earnable by play; stars unlock cosmetic tiers only.
 
 Pass for this part of M3: the Island map and aircraft animations look finished on the iPad at 60 FPS; Island levels 1 to 10, Tower Shift and Daily Flight play offline on the iPad; and progress is still there after closing and reopening the app.
 
@@ -472,3 +476,27 @@ Events: smoke and a short screen shake on a collision; a small sparkle and coin 
 Rules: the status rings stay the clearest thing on screen, so scenery uses softer colours, and aircraft lights are white, not red or green (real wingtip lights are red and green, but those colours mean danger and cleared here). 60 FPS on the iPad. Animation values are data and can be turned off for comparison.
 
 Later: City and Desert scenery when those maps are built; the night version of each map (C9 cosmetic) with lights on.
+
+### 15.4 HYBRID CONTROLS (AGREED 20 Nov 2026, details delegated to Claude)
+
+The owner looked at Airport Madness Challenge (command buttons, speed control, taxi and take-off orders) and Planes Control (drawn lines, themed hazards) and chose a hybrid, built for real in M3 rather than as a separate test. Drawing a line stays the way to guide aircraft in the air; tapping an aircraft opens short command buttons for speed and for ground movement.
+
+Tap or draw: a press on an aircraft that is released within 0.25 s and moves less than 0.15 world units is a tap; anything else starts drawing as before. A tap opens option buttons beside that aircraft (at least 44 points high, readable on an iPhone). Only one aircraft's buttons are open at a time; they close after 3 s or when the player taps elsewhere. Slow draw (C4) also slows time while buttons are open, when its switch is on.
+
+Speed in the air: buttons Slow and Fast. Slow = 0.6 times the kind's speed, Fast = 1.4 times; tapping the active button again returns to normal. A small icon next to the ring shows the current speed. Fast lands sooner but its landing roll is longer, so the runway stays busy for longer; slow opens gaps in traffic. The drawn line never changes (only the speed does), and warnings use the current speed. Values are data per kind.
+
+Departures: some aircraft start at a gate by the terminal instead of entering from the edge (runway kinds only: airliner, jumbo jet, fighter jet). Tap it: Taxi. It follows a fixed taxi route (level data) to the hold line at the end of the runway that is active for the current wind, and stops behind any aircraft in front of it. At the hold line, tap it: Take off. It lines up, rolls along the runway, lifts off and leaves the screen in the runway direction, and counts as a departure. If the wind reverses while it waits, it taxis to the other end by itself.
+
+Runway crossing: where a taxi route crosses the runway it has a crossing point. The aircraft stops there and shows Cross; on Cross it crosses and continues.
+
+Runway busy: the runway is busy while an aircraft lands, rolls, takes off or crosses. A landing or a take-off that meets another aircraft on the runway is a collision. Take off and Cross can still be pressed while the runway is busy (that is the player's decision), but the runway edge lights flash while it is busy so the danger is visible. Aircraft on taxiways never collide with each other; they queue.
+
+Level goal: levels can count departures as well as landings, for example land 6 and launch 3 (an extension of C2). The result screen shows both.
+
+First-time help: one short line each for slow/fast, Taxi, Take off and Cross, the first time each appears.
+
+Kept as before: the status rings, the exact-line rule, collision sizes per kind, the carrier, helipads and balloon field (helicopters, drones and balloons do not use ground control in M3).
+
+### 15.5 MORE AIRCRAFT AND THEMES (PROPOSED by Claude, 20 Nov 2026, from the owner's ideas)
+
+Blimp: a new kind for City Airport, huge and very slow (about 0.3x), lands on a mooring mast. Rocket: a Desert Airport event like the carrier: a launch pad counts down and a no-fly column appears for a few seconds during launch. Spaceships and a space map: a fourth theme would change the agreed three maps and 30 levels, so Claude proposes it as a free update after release (a reason for players to return, C16). Owner decision: PENDING.
