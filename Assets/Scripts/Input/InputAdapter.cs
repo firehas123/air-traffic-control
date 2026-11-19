@@ -15,12 +15,21 @@ namespace AirTrafficControl
         Vector2 lastWorldPosition;
         Func<Vector2, bool> isScreenPointBlocked;
         bool ignoringThisPress;
+        readonly GestureClassifier gesture = new GestureClassifier();
 
-        public event Action<Vector2> PressStarted;
+        /// <summary>A press has become a drag (moved 0.15 units or held 0.25 s), at the point where it started.</summary>
+        public event Action<Vector2> DragStarted;
+
+        /// <summary>The finger moved while dragging.</summary>
         public event Action<Vector2> Dragged;
+
+        /// <summary>A drag ended where the finger lifted.</summary>
         public event Action<Vector2> PressEnded;
 
-        /// <summary>True while a finger (or mouse button) is held down. Used later for C4 (slow time while drawing).</summary>
+        /// <summary>A tap: released within 0.25 s and moved less than 0.15 units (blueprint 15.4), at the point pressed.</summary>
+        public event Action<Vector2> Tapped;
+
+        /// <summary>True while a finger (or mouse button) is held down.</summary>
         public bool IsPressing { get; private set; }
 
         public void Initialise(Camera camera)
@@ -42,6 +51,7 @@ namespace AirTrafficControl
             // A press in progress when input is switched off does not carry over.
             IsPressing = false;
             ignoringThisPress = false;
+            gesture.Cancel();
         }
 
         void Update()
@@ -53,6 +63,7 @@ namespace AirTrafficControl
                 return;
 
             bool pressed = pointer.press.isPressed;
+            float now = Time.unscaledTime; // real time, so slow draw does not change what counts as a tap
 
             if (ignoringThisPress)
             {
@@ -73,10 +84,15 @@ namespace AirTrafficControl
                 if (!IsPressing)
                 {
                     IsPressing = true;
-                    PressStarted?.Invoke(lastWorldPosition);
+                    gesture.Press(lastWorldPosition, now);
                 }
-                else
+                else if (gesture.IsDrag)
                 {
+                    Dragged?.Invoke(lastWorldPosition);
+                }
+                else if (gesture.Hold(lastWorldPosition, now))
+                {
+                    DragStarted?.Invoke(gesture.Start);
                     Dragged?.Invoke(lastWorldPosition);
                 }
             }
@@ -84,7 +100,21 @@ namespace AirTrafficControl
             {
                 // A released touch may not report a fresh position, so reuse the last one seen.
                 IsPressing = false;
-                PressEnded?.Invoke(lastWorldPosition);
+                bool wasDrag = gesture.IsDrag;
+                GestureEnd end = gesture.Release(lastWorldPosition, now);
+                if (end == GestureEnd.Tap)
+                {
+                    Tapped?.Invoke(gesture.Start);
+                }
+                else if (end == GestureEnd.DragEnded)
+                {
+                    if (!wasDrag)
+                    {
+                        // A slow small press: not a tap, so it is a (tiny) drag.
+                        DragStarted?.Invoke(gesture.Start);
+                    }
+                    PressEnded?.Invoke(lastWorldPosition);
+                }
             }
         }
 

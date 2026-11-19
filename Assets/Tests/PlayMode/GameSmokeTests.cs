@@ -52,5 +52,50 @@ namespace AirTrafficControl.Tests
             flow.ShowLevels();
             yield return null;
         }
+
+        [UnityTest]
+        public IEnumerator Departure_TaxisTakesOffAndIsCounted_WithoutErrors()
+        {
+            SceneManager.LoadScene("SampleScene");
+            yield return null;
+            yield return null;
+            GameFlow flow = Object.FindAnyObjectByType<GameFlow>();
+            flow.Play(0);
+            yield return null;
+            LevelDirector director = Object.FindAnyObjectByType<LevelDirector>();
+            Assert.AreEqual(3, director.Session.DeparturesToClear, "The test level asks for 3 departures");
+
+            // Keep the sky clear of arrivals so nothing collides, and act as the player for the departures.
+            float end = Time.realtimeSinceStartup + 60f;
+            bool sawGate = false, sawCrossing = false, sawHoldLine = false;
+            while (Time.realtimeSinceStartup < end && director.Session.DepartureCount < 1)
+            {
+                foreach (AircraftController aircraft in new System.Collections.Generic.List<AircraftController>(AircraftController.Active))
+                {
+                    if (aircraft.IsControllableInAir)
+                    {
+                        aircraft.gameObject.SetActive(false);
+                        Object.Destroy(aircraft.gameObject);
+                        continue;
+                    }
+                    if (aircraft.Ground == null)
+                        continue;
+                    switch (aircraft.Ground.Phase)
+                    {
+                        case GroundPhase.AtGate: sawGate = true; aircraft.GiveGroundCommand(AircraftCommand.Taxi); break;
+                        case GroundPhase.HoldingAtCrossing: sawCrossing = true; aircraft.GiveGroundCommand(AircraftCommand.Cross); break;
+                        case GroundPhase.HoldingShort: sawHoldLine = true; aircraft.GiveGroundCommand(AircraftCommand.TakeOff); break;
+                    }
+                }
+                yield return null;
+            }
+
+            Assert.IsTrue(sawGate, "A departure appeared at a gate");
+            Assert.IsTrue(sawHoldLine, "It taxied to the hold line");
+            Assert.GreaterOrEqual(director.Session.DepartureCount, 1, "It took off, left the screen and was counted");
+            TestContext.WriteLine($"Crossing point used: {sawCrossing}");
+            flow.ShowLevels();
+            yield return null;
+        }
     }
 }

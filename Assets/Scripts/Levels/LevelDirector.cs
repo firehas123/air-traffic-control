@@ -51,6 +51,9 @@ namespace AirTrafficControl
         CarrierSystem carrier;
         FeedbackSystem feedback;
         EffectsSystem effects;
+        GroundControl groundControl;
+        int departuresSpawned;
+        readonly List<AircraftType> departureKinds = new List<AircraftType>();
         HelpDemo helpDemo;
         FirstTimeHelp help;
         const string HelpSeenKey = "atc.firstTimeHelp.seen";
@@ -78,9 +81,15 @@ namespace AirTrafficControl
         public void Initialise(LevelData levelData, Camera camera, LandingSystem landingSystem, AirspaceSafety airspaceSafety,
                                InputAdapter inputAdapter, PathPlanner pathPlanner, CarrierSystem carrierSystem, HudView hudView,
                                Material shapeMaterial, AircraftSettings settings, FeedbackSystem feedbackSystem = null,
-                               EffectsSystem effectsSystem = null)
+                               EffectsSystem effectsSystem = null, GroundControl groundControlSystem = null)
         {
             effects = effectsSystem;
+            groundControl = groundControlSystem;
+            if (groundControl != null)
+            {
+                groundControl.MenuOpened += OnMenuOpened;
+                groundControl.CommandGiven += OnCommandGiven;
+            }
             carrier = carrierSystem;
             feedback = feedbackSystem;
 
@@ -138,6 +147,11 @@ namespace AirTrafficControl
                 safety.WarningStarted -= OnWarningStarted;
             }
             if (planner != null) planner.LineConnected -= OnLineConnected;
+            if (groundControl != null)
+            {
+                groundControl.MenuOpened -= OnMenuOpened;
+                groundControl.CommandGiven -= OnCommandGiven;
+            }
             if (hud != null)
             {
                 hud.RetryPressed -= OnRetryPressed;
@@ -177,6 +191,81 @@ namespace AirTrafficControl
                 if (!TrySpawnNow())
                     StartCoroutine(SpawnWhenClear(BusyRetryDelay)); // more aircraft than clear spawn points
             }
+
+            // Departures (blueprint 15.4): only runway kinds, from the level's gates, as many as the goal needs.
+            departuresSpawned = 0;
+            departureKinds.Clear();
+            foreach (AircraftType kind in level.aircraftTypes)
+                if (kind != null && kind.landsOn == LandingZoneKind.Runway)
+                    departureKinds.Add(kind);
+            if (level.departuresToClear > 0 && level.ground.gates.Count > 0)
+                StartCoroutine(DepartureLoop());
+        }
+
+        IEnumerator DepartureLoop()
+        {
+            yield return new WaitForSeconds(level.departures.firstDepartureAfterSeconds);
+            while (session.IsPlaying && departuresSpawned < level.departuresToClear)
+            {
+                if (TrySpawnDeparture())
+                {
+                    departuresSpawned++;
+                    yield return new WaitForSeconds(level.departures.secondsBetweenDepartures);
+                }
+                else
+                {
+                    yield return new WaitForSeconds(BusyRetryDelay); // every gate is taken
+                }
+            }
+        }
+
+        bool TrySpawnDeparture()
+        {
+            GateDefinition gate = null;
+            foreach (GateDefinition candidate in level.ground.gates)
+            {
+                bool taken = false;
+                foreach (AircraftController other in AircraftController.Active)
+                    if (Vector2.Distance(other.transform.position, candidate.position) < 0.5f)
+                        taken = true;
+                if (!taken && candidate.connector.Count >= 2)
+                {
+                    gate = candidate;
+                    break;
+                }
+            }
+            if (gate == null)
+                return false;
+
+            AircraftType kind = departureKinds.Count > 0 ? departureKinds[kindPicker.Next(departureKinds.Count)] : PickKind();
+            float airSpeed = aircraftSettings.speed * kind.speedMultiplier;
+            var ground = new GroundMovement(gate.connector, gate.crossingIndex, level.ground.mainTaxiway,
+                                            level.ground.taxiSpeed, airSpeed, gate.headingDegrees, landing.IsReversed);
+            var motion = new AircraftMotion(gate.position, gate.headingDegrees, airSpeed, aircraftSettings.turnRate);
+            AircraftController aircraft = AircraftController.SpawnAtGate(kind, motion, ground, worldCamera, landing, material,
+                                                                         aircraftSettings.colors, aircraftSettings.edgeMargin);
+            aircraft.Departed += OnAircraftDeparted;
+            return true;
+        }
+
+        void OnAircraftDeparted(AircraftController aircraft)
+        {
+            aircraft.Departed -= OnAircraftDeparted;
+            bool cleared = session.RecordDeparture();
+            hud.SetGoal(session.LandedCount, session.LandingsToClear, session.DepartureCount, session.DeparturesToClear);
+            if (cleared)
+                OnLevelCleared();
+        }
+
+        void OnMenuOpened(AircraftController aircraft, AircraftCommand[] commands)
+        {
+            if (commands.Length > 0 && (commands[0] == AircraftCommand.Slow || commands[0] == AircraftCommand.Fast))
+                help.SpeedButtonsShown();
+        }
+
+        void OnCommandGiven(AircraftController aircraft, AircraftCommand command)
+        {
+            feedback?.LineConnected(); // the same short click confirms a command
         }
 
         void OnWarningStarted(AircraftController aircraft)
@@ -212,7 +301,7 @@ namespace AirTrafficControl
             bool anyAirborne = false;
             foreach (AircraftController aircraft in AircraftController.Active)
             {
-                if (!aircraft.IsAirborne)
+                if (!aircraft.IsControllableInAir)
                     continue;
                 anyAirborne = true;
                 if (demoAircraft == null && !aircraft.IsClearedToLand && !aircraft.IsConnectedToCarrier)
@@ -225,6 +314,17 @@ namespace AirTrafficControl
                     help.WindChangeComing();
                 if (carrier != null && carrier.CanConnectNow && AnyAirborneFighter())
                     help.CarrierReachable();
+                foreach (AircraftController aircraft in AircraftController.Active)
+                {
+                    if (aircraft.Ground == null || aircraft.IsCrashed)
+                        continue;
+                    switch (aircraft.Ground.Phase)
+                    {
+                        case GroundPhase.AtGate: help.DepartureAtGate(); break;
+                        case GroundPhase.HoldingShort: help.DepartureAtHoldLine(); break;
+                        case GroundPhase.HoldingAtCrossing: help.DepartureAtCrossing(); break;
+                    }
+                }
             }
 
             help.Tick(Time.unscaledDeltaTime, anyAirborne && session.IsPlaying);
@@ -254,7 +354,7 @@ namespace AirTrafficControl
         static bool AnyAirborneFighter()
         {
             foreach (AircraftController aircraft in AircraftController.Active)
-                if (aircraft.IsAirborne && aircraft.Type.landsOnCarrier)
+                if (aircraft.IsControllableInAir && aircraft.Type.landsOnCarrier)
                     return true;
             return false;
         }
@@ -287,8 +387,9 @@ namespace AirTrafficControl
                     ? Mathf.CeilToInt(carrier.CurrentPass.SecondsUntilLeavesScreen) : 0);
             }
 
-            // C4: slow time while the player is drawing an aircraft's line.
-            bool drawing = drawingFor != null;
+            // C4: slow time while the player is drawing an aircraft's line, and while option buttons are open
+            // (blueprint 15.4). The Slow draw switch turns both off.
+            bool drawing = drawingFor != null || (groundControl != null && groundControl.IsMenuOpen && session.IsPlaying);
             if (drawing != clock.Drawing)
             {
                 clock.Drawing = drawing;

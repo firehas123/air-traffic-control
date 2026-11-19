@@ -19,11 +19,20 @@ namespace AirTrafficControl
         public const float TouchdownSeconds = 1f;
         public const float RespawnSeconds = 1f;
 
+        /// <summary>
+        /// Each departure (blueprint 15.4) adds the player's taps (Taxi, Take off, sometimes Cross) and its time on the
+        /// runway, which other traffic has to wait for. Its taxiing overlaps the arrivals.
+        /// </summary>
+        public const float PlayerSecondsPerCommand = 1.5f;
+        public const float CommandsPerDeparture = 2.5f;
+        public const float TakeOffSeconds = 3f;
+
         public static float Seconds(LevelData level, float airlinerSpeed)
         {
             List<AircraftType> kinds = level.aircraftTypes;
+            float departures = Mathf.Max(0, level.departuresToClear) * (PlayerSecondsPerCommand * CommandsPerDeparture + TakeOffSeconds);
             if (kinds == null || kinds.Count == 0 || level.spawnPoints.Count == 0 || level.landingsToClear <= 0)
-                return 0f;
+                return departures;
 
             float total = 0f;
             int samples = 0;
@@ -42,11 +51,11 @@ namespace AirTrafficControl
                 }
             }
             if (samples == 0)
-                return 0f;
+                return departures;
 
             float secondsPerLanding = total / samples;
             int inTheAir = Mathf.Max(1, level.aircraftInAir);
-            return secondsPerLanding * level.landingsToClear / inTheAir;
+            return secondsPerLanding * level.landingsToClear / inTheAir + departures;
         }
 
         static Vector2? ZoneCentre(LevelData level, LandingZoneKind kind)

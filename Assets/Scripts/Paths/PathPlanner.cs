@@ -44,7 +44,7 @@ namespace AirTrafficControl
             carrier = carrierSystem;
             recorder = new PathRecorder(minSampleDistance);
             input = inputAdapter;
-            input.PressStarted += OnPressStarted;
+            input.DragStarted += OnPressStarted; // a line starts only on a drag; a tap opens commands instead
             input.Dragged += OnDragged;
             input.PressEnded += OnPressEnded;
         }
@@ -53,7 +53,7 @@ namespace AirTrafficControl
         {
             if (input == null)
                 return;
-            input.PressStarted -= OnPressStarted;
+            input.DragStarted -= OnPressStarted;
             input.Dragged -= OnDragged;
             input.PressEnded -= OnPressEnded;
         }

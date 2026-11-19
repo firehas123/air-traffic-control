@@ -9,6 +9,10 @@ namespace AirTrafficControl
         DangerRing,
         WindChanging,
         CarrierDeck,
+        SlowFast,
+        Taxi,
+        TakeOff,
+        Cross,
     }
 
     /// <summary>
@@ -86,6 +90,18 @@ namespace AirTrafficControl
 
         public void CarrierReachable() => ShowOnce(HelpHint.CarrierDeck, LongHintSeconds);
 
+        /// <summary>Slow / Fast buttons opened for the first time (blueprint 15.4).</summary>
+        public void SpeedButtonsShown() => ShowOnce(HelpHint.SlowFast, LongHintSeconds);
+
+        /// <summary>A departure is waiting at a gate for the first time.</summary>
+        public void DepartureAtGate() => ShowOnce(HelpHint.Taxi, LongHintSeconds);
+
+        /// <summary>A departure is waiting at the hold line for the first time.</summary>
+        public void DepartureAtHoldLine() => ShowOnce(HelpHint.TakeOff, LongHintSeconds);
+
+        /// <summary>A departure is waiting at a crossing point for the first time.</summary>
+        public void DepartureAtCrossing() => ShowOnce(HelpHint.Cross, LongHintSeconds);
+
         // A later hint waits until the drawing lesson is done, so the first thing a new player learns is to draw.
         void ShowOnce(HelpHint hint, float seconds)
         {
@@ -118,6 +134,10 @@ namespace AirTrafficControl
                 case HelpHint.DangerRing: return "Red ring: draw a new line to keep them apart";
                 case HelpHint.WindChanging: return "Wind is changing: the arrows move to the other end";
                 case HelpHint.CarrierDeck: return "Fighter jets can land on the carrier deck";
+                case HelpHint.SlowFast: return "Slow or Fast; tap it again for normal speed";
+                case HelpHint.Taxi: return "Tap the plane at the gate, then Taxi";
+                case HelpHint.TakeOff: return "Runway clear? Tap the plane, then Take off";
+                case HelpHint.Cross: return "Runway clear? Tap the plane, then Cross";
                 default: return null;
             }
         }

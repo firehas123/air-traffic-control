@@ -28,6 +28,9 @@ namespace AirTrafficControl
         public Vector2 islandCentre = new Vector2(1f, -0.8f);
         public Vector2 islandRadii = new Vector2(3.8f, 2.1f);
 
+        [Header("Departures (blueprint 15.4): aircraft that start at a gate")]
+        public DepartureSettings departures = new DepartureSettings();
+
         [Header("Scenery (blueprint 15.3; decoration only, it never affects play)")]
         public SceneryLayout scenery = new SceneryLayout();
 
@@ -69,6 +72,17 @@ namespace AirTrafficControl
             new SpawnPoint(new Vector2(-5.5f, -3.5f), 15f),  // bottom left, heading right and up
             new SpawnPoint(new Vector2(5.5f, -3.6f), 165f),  // bottom right, heading left and up
         };
+    }
+
+    /// <summary>
+    /// When departures appear at the gates. Only runway kinds depart (airliner, jumbo jet, fighter jet); the level
+    /// spawns as many as its departure goal (LevelData.departuresToClear), one at a free gate at a time.
+    /// </summary>
+    [Serializable]
+    public sealed class DepartureSettings
+    {
+        [Min(0f)] public float firstDepartureAfterSeconds = 6f;
+        [Min(1f)] public float secondsBetweenDepartures = 15f;
     }
 
     /// <summary>Where the Island's decoration goes. Positions are in world units.</summary>

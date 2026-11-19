@@ -88,6 +88,7 @@ namespace AirTrafficControl
             effects.Initialise(worldCamera, shapeMaterial);
 
             var safety = Add<AirspaceSafety>("AirspaceSafety");
+            safety.Initialise(landing);
 
             var input = Add<InputAdapter>("InputAdapter");
             input.Initialise(worldCamera);
@@ -106,8 +107,16 @@ namespace AirTrafficControl
             var feedback = Add<FeedbackSystem>("FeedbackSystem");
             feedback.Initialise();
 
+            // Hybrid controls (blueprint 15.4): option buttons beside a tapped aircraft, and ground control.
+            var menu = Add<CommandMenu>("CommandMenu");
+            menu.Initialise(worldCamera);
+            var groundControl = Add<GroundControl>("GroundControl");
+            groundControl.Initialise(input, menu, level.ground);
+
             director = Add<LevelDirector>("LevelDirector");
-            director.Initialise(level, worldCamera, landing, safety, input, planner, carrier, hud, shapeMaterial, aircraft, feedback, effects);
+            director.Initialise(level, worldCamera, landing, safety, input, planner, carrier, hud, shapeMaterial, aircraft, feedback, effects, groundControl);
+            // Taps on the HUD or on the option buttons never reach the map.
+            input.SetScreenBlocker(point => hud.IsOverInteractive(point) || menu.IsOverButton(point));
             director.Cleared += OnCleared;
             director.Failed += OnFailed;
             director.StartLevel();

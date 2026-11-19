@@ -85,6 +85,18 @@ namespace AirTrafficControl
         bool isCrashed;
         float crashTime;
 
+        // Speed in the air (blueprint 15.4): Slow / Fast change only the speed, never the line.
+        float normalSpeed;
+        GameObject slowIcon;
+        GameObject fastIcon;
+
+        // Ground control (blueprint 15.4): a departure from a gate, then its climb out of the screen.
+        GroundMovement ground;
+        GameObject waitingRing;
+        bool departing;
+        float climbTime;
+        float rollDuration = RollDuration;
+
         // Carrier (blueprint 13.2, 14.2): the connection, and the dashed tether from the end of the line to the deck.
         CarrierApproach carrierApproach;
         bool landsOnCarrierDeck;
@@ -105,8 +117,49 @@ namespace AirTrafficControl
 
         public bool IsCrashed => isCrashed;
 
-        /// <summary>Flying: not rolling out on a runway and not crashed. Only airborne aircraft can be selected or collide.</summary>
-        public bool IsAirborne => Motion != null && !isLanding && !isCrashed;
+        /// <summary>
+        /// In the air: not on the ground, not rolling out after landing, not crashed. Airborne aircraft are checked for
+        /// collisions (including departures climbing out).
+        /// </summary>
+        public bool IsAirborne => Motion != null && !isLanding && !isCrashed && ground == null;
+
+        /// <summary>In the air and under the player's control: a line can be drawn for it, and it has Slow / Fast.</summary>
+        public bool IsControllableInAir => IsAirborne && !departing;
+
+        /// <summary>A departure climbing out after take-off: it leaves the screen by itself.</summary>
+        public bool IsDeparting => departing;
+
+        /// <summary>Its ground movement while it is a departure on the ground, otherwise null.</summary>
+        public GroundMovement Ground => ground;
+
+        /// <summary>Set each frame by the ground control: a taxiing aircraft waits while this is true (queueing).</summary>
+        public bool GroundBlocked { get; set; }
+
+        public AircraftSpeed SpeedSetting { get; private set; } = AircraftSpeed.Normal;
+
+        /// <summary>How this aircraft uses the runway now, for the busy-runway rule (blueprint 15.4).</summary>
+        public RunwayUse RunwayUse
+        {
+            get
+            {
+                if (isCrashed)
+                    return RunwayUse.None;
+                if (isLanding)
+                    return !settlesOntoPad && !landsOnCarrierDeck ? RunwayUse.Landing : RunwayUse.None;
+                if (ground == null)
+                    return RunwayUse.None;
+                switch (ground.Phase)
+                {
+                    case GroundPhase.Crossing: return RunwayUse.Crossing;
+                    case GroundPhase.LiningUp: return RunwayUse.LineUp;
+                    case GroundPhase.TakeOffRoll: return RunwayUse.TakeOff;
+                    default: return RunwayUse.None;
+                }
+            }
+        }
+
+        /// <summary>Raised when a departure has climbed out of the screen, just before it is removed.</summary>
+        public event Action<AircraftController> Departed;
 
         /// <summary>True when the current line lands, so the aircraft will touch down at its end.</summary>
         public bool IsClearedToLand { get; private set; }
@@ -138,14 +191,52 @@ namespace AirTrafficControl
             return aircraft;
         }
 
-        /// <summary>Returns the airborne aircraft closest to <paramref name="point"/> within <paramref name="maxDistance"/>, or null.</summary>
+        /// <summary>
+        /// A departure parked at a gate (blueprint 15.4). It waits for Taxi; it is on the ground, so it cannot be drawn
+        /// for and does not collide until it lifts off.
+        /// </summary>
+        public static AircraftController SpawnAtGate(AircraftType type, AircraftMotion motion, GroundMovement groundMovement,
+                                                     Camera camera, LandingSystem landing, Material material, AircraftColors colors,
+                                                     float edgeMargin)
+        {
+            AircraftController aircraft = Spawn(type, motion, camera, landing, material, colors, edgeMargin);
+            aircraft.ground = groundMovement;
+            aircraft.visuals.Altitude = 0f;
+            aircraft.ShowStatus();
+            aircraft.ApplyGroundTransform();
+            return aircraft;
+        }
+
+        /// <summary>
+        /// The aircraft for a tap at <paramref name="point"/>: any aircraft in the air under control or on the ground,
+        /// closest first, within <paramref name="maxDistance"/>. Null if none.
+        /// </summary>
+        public static AircraftController FindNearestForTap(Vector2 point, float maxDistance)
+        {
+            AircraftController best = null;
+            float bestDistance = maxDistance;
+            foreach (AircraftController aircraft in active)
+            {
+                if (!aircraft.IsControllableInAir && aircraft.ground == null)
+                    continue;
+                float distance = Vector2.Distance(aircraft.transform.position, point);
+                if (distance <= bestDistance)
+                {
+                    best = aircraft;
+                    bestDistance = distance;
+                }
+            }
+            return best;
+        }
+
+        /// <summary>Returns the aircraft in the air under control closest to <paramref name="point"/> within <paramref name="maxDistance"/>, or null.</summary>
         public static AircraftController FindNearest(Vector2 point, float maxDistance)
         {
             AircraftController best = null;
             float bestDistance = maxDistance;
             foreach (AircraftController aircraft in active)
             {
-                if (!aircraft.IsAirborne)
+                if (!aircraft.IsControllableInAir)
                     continue;
                 float distance = Vector2.Distance(aircraft.Motion.Position, point);
                 if (distance <= bestDistance)
@@ -161,6 +252,7 @@ namespace AirTrafficControl
         {
             Type = type;
             Motion = motion;
+            normalSpeed = motion.Speed;
             worldCamera = camera;
             edgeMargin = margin;
 
@@ -201,6 +293,16 @@ namespace AirTrafficControl
                 new MeshBuilder().Ring(Vector2.zero, warningRadius - 0.06f, warningRadius, 48, colors.warning).Build("WarningRing"),
                 material, WarningSortingOrder);
 
+            // Waiting for a command on the ground: a white ring, "tap me" (white is not a status colour).
+            waitingRing = CreateChild("WaitingRing",
+                new MeshBuilder().Ring(Vector2.zero, statusRadius - RingThickness, statusRadius, 40, new Color(1f, 1f, 1f, 0.9f)).Build("WaitingRing"),
+                material, StatusSortingOrder);
+
+            // Speed icon beside the ring (blueprint 15.4): one chevron for slow, two for fast, on a dark disc.
+            Vector2 iconAt = new Vector2(statusRadius * 0.8f, -statusRadius * 0.8f);
+            slowIcon = CreateChild("SlowIcon", SpeedIcon(iconAt, 1), material, StatusSortingOrder);
+            fastIcon = CreateChild("FastIcon", SpeedIcon(iconAt, 2), material, StatusSortingOrder);
+
             float cross = 0.3f * type.size;
             crashMark = CreateChild("CrashMark", new MeshBuilder()
                 .Bar(new Vector2(-cross, -cross), new Vector2(cross, cross), 0.09f, colors.crashed)
@@ -224,6 +326,60 @@ namespace AirTrafficControl
             pathLine.positionCount = 0;
 
             ApplyTransform();
+        }
+
+        static Mesh SpeedIcon(Vector2 at, int chevrons)
+        {
+            var b = new MeshBuilder().Ellipse(at, new Vector2(0.13f, 0.13f), 20, new Color(0.08f, 0.14f, 0.2f, 0.9f));
+            if (chevrons == 1)
+            {
+                // Slow: a single chevron with a bar behind it.
+                b.Bar(at + new Vector2(-0.06f, -0.06f), at + new Vector2(-0.06f, 0.06f), 0.03f, Color.white);
+                b.Bar(at + new Vector2(0.0f, -0.06f), at + new Vector2(0.05f, 0f), 0.03f, Color.white);
+                b.Bar(at + new Vector2(0.0f, 0.06f), at + new Vector2(0.05f, 0f), 0.03f, Color.white);
+            }
+            else
+            {
+                for (int i = 0; i < 2; i++)
+                {
+                    float x = -0.05f + i * 0.06f;
+                    b.Bar(at + new Vector2(x, -0.06f), at + new Vector2(x + 0.05f, 0f), 0.03f, Color.white);
+                    b.Bar(at + new Vector2(x, 0.06f), at + new Vector2(x + 0.05f, 0f), 0.03f, Color.white);
+                }
+            }
+            return b.Build(chevrons == 1 ? "SlowIcon" : "FastIcon");
+        }
+
+        /// <summary>
+        /// Slow or Fast (blueprint 15.4): the kind's speed times its slow or fast factor. Choosing the active setting
+        /// again returns to normal. Only the speed changes; the drawn line and the aircraft's place on it stay exact.
+        /// </summary>
+        public void ToggleSpeed(AircraftSpeed requested)
+        {
+            if (!IsControllableInAir)
+                return;
+            SpeedSetting = SpeedRules.Toggle(SpeedSetting, requested);
+            Motion.SetSpeed(normalSpeed * SpeedRules.Factor(Type, SpeedSetting));
+            ShowStatus();
+        }
+
+        /// <summary>Taxi, Cross or Take off for a departure on the ground. Returns false if it does not apply now.</summary>
+        public bool GiveGroundCommand(AircraftCommand command)
+        {
+            if (ground == null || isCrashed)
+                return false;
+            bool done;
+            switch (command)
+            {
+                case AircraftCommand.Taxi: done = ground.Taxi(); break;
+                case AircraftCommand.Cross: done = ground.Cross(); break;
+                case AircraftCommand.TakeOff:
+                    done = landing != null && landing.Runways.Count > 0 && ground.TakeOff(landing.Runways[0]);
+                    break;
+                default: done = false; break;
+            }
+            ShowStatus();
+            return done;
         }
 
         GameObject CreateChild(string name, Mesh mesh, Material material, int sortingOrder)
@@ -353,7 +509,8 @@ namespace AirTrafficControl
         /// <summary>Stops the aircraft where it is and shows the crash. It is removed after a moment.</summary>
         public void Crash()
         {
-            if (isCrashed || isLanding)
+            // A landing roll can crash too: the busy-runway rule (blueprint 15.4) can hit an aircraft on the runway.
+            if (isCrashed)
                 return;
             isCrashed = true;
             crashTime = 0f;
@@ -370,9 +527,70 @@ namespace AirTrafficControl
 
         void ShowStatus()
         {
-            bool flying = !isCrashed && !isLanding;
+            bool flying = !isCrashed && !isLanding && ground == null && !departing;
             needsLineRing.SetActive(flying && !IsClearedToLand);
             clearedRing.SetActive(flying && IsClearedToLand);
+            waitingRing.SetActive(!isCrashed && ground != null && ground.IsWaitingForCommand);
+            slowIcon.SetActive(flying && SpeedSetting == AircraftSpeed.Slow);
+            fastIcon.SetActive(flying && SpeedSetting == AircraftSpeed.Fast);
+        }
+
+        void ApplyGroundTransform()
+        {
+            Motion.Place(ground.Position, ground.HeadingDegrees);
+            transform.SetPositionAndRotation(ground.Position, Quaternion.Euler(0f, 0f, ground.HeadingDegrees));
+            statusRoot.rotation = Quaternion.identity;
+        }
+
+        // On the ground: taxi (waiting behind others), cross, line up and roll. At lift-off it becomes a departure in
+        // the air, flying straight out of the screen in the runway direction.
+        void UpdateGround(float deltaTime)
+        {
+            if (landing != null)
+                ground.SetActiveEnd(landing.IsReversed);
+            GroundPhase before = ground.Phase;
+            ground.Step(deltaTime, GroundBlocked);
+            ApplyGroundTransform();
+            if (ground.Phase != before)
+                ShowStatus();
+
+            if (ground.Phase == GroundPhase.TakeOffRoll)
+                visuals.Altitude = 0f;
+
+            if (ground.Phase == GroundPhase.Airborne)
+            {
+                float heading = ground.HeadingDegrees;
+                Vector2 position = ground.Position;
+                ground = null;
+                departing = true;
+                climbTime = 0f;
+                Motion.Place(position, heading);
+                ShowStatus();
+            }
+
+            if (waitingRing.activeSelf)
+            {
+                float pulse = 1f + 0.06f * Mathf.Sin(Time.unscaledTime * 5f);
+                waitingRing.transform.localScale = Vector3.one * pulse;
+            }
+        }
+
+        void UpdateDeparting(float deltaTime)
+        {
+            // Straight out in the runway direction; no turning back at the edge.
+            Motion.Step(deltaTime, new Rect(-1000f, -1000f, 2000f, 2000f));
+            climbTime += deltaTime;
+            visuals.Altitude = Mathf.Clamp01(climbTime / 1.5f);
+            ApplyTransform();
+
+            float height = worldCamera.orthographicSize;
+            float width = height * worldCamera.aspect;
+            Vector2 p = Motion.Position - (Vector2)worldCamera.transform.position;
+            if (Mathf.Abs(p.x) > width + 1f || Mathf.Abs(p.y) > height + 1f)
+            {
+                Departed?.Invoke(this);
+                Destroy(gameObject);
+            }
         }
 
         void OnEnable() => active.Add(this);
@@ -405,6 +623,18 @@ namespace AirTrafficControl
             if (isLanding)
             {
                 UpdateLandingRoll();
+                return;
+            }
+
+            if (ground != null)
+            {
+                UpdateGround(Time.deltaTime);
+                return;
+            }
+
+            if (departing)
+            {
+                UpdateDeparting(Time.deltaTime);
                 return;
             }
 
@@ -462,6 +692,8 @@ namespace AirTrafficControl
         {
             isLanding = true;
             rollTime = 0f;
+            // Fast lands sooner but rolls further, so the runway stays busy for longer (blueprint 15.4).
+            rollDuration = RollDuration * (normalSpeed > 0f ? Motion.Speed / normalSpeed : 1f);
             graceTouchdown = null;
             touchdownPoint = Motion.Path[Motion.Path.Count - 1];
             pathLine.positionCount = 0;
@@ -490,7 +722,7 @@ namespace AirTrafficControl
         void UpdateLandingRoll()
         {
             rollTime += Time.deltaTime;
-            float t = Mathf.Clamp01(rollTime / RollDuration);
+            float t = Mathf.Clamp01(rollTime / rollDuration);
             if (landsOnCarrierDeck)
             {
                 // Roll along the deck, which sails on with the ship.
@@ -503,7 +735,7 @@ namespace AirTrafficControl
             }
             else
             {
-                float rolled = Motion.Speed * RollDuration * (t - t * t / 2f); // even deceleration to zero
+                float rolled = Motion.Speed * rollDuration * (t - t * t / 2f); // even deceleration to zero
                 transform.position = touchdownPoint + rollDirection * rolled;
             }
             transform.localScale = Vector3.one * Mathf.Lerp(1f, RollEndScale, t);

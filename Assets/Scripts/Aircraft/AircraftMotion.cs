@@ -41,7 +41,14 @@ namespace AirTrafficControl
 
         public Vector2 Position { get; private set; }
         public float HeadingDegrees { get; private set; }
-        public float Speed { get; }
+        /// <summary>Current speed in world units per second. Slow and Fast change it (blueprint 15.4); the path never changes.</summary>
+        public float Speed { get; private set; }
+
+        /// <summary>Changes the speed only. The drawn line, and where the aircraft is on it, stay exactly as they are.</summary>
+        public void SetSpeed(float speed)
+        {
+            Speed = Mathf.Max(0f, speed);
+        }
 
         /// <summary>Turn rate used only when flying without a path (the edge turn-back).</summary>
         public float TurnRateDegrees { get; }

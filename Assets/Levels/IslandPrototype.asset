@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: IslandPrototype
   m_EditorClassIdentifier: AirTrafficControl::AirTrafficControl.LevelData
   mapId: island
-  landingsToClear: 8
-  departuresToClear: 0
+  landingsToClear: 6
+  departuresToClear: 3
   result:
     twoStarSeconds: 100
     threeStarsNeedNoWarnings: 1
@@ -23,6 +23,9 @@ MonoBehaviour:
     coinsPerStar: 10
   islandCentre: {x: 1, y: -0.8}
   islandRadii: {x: 3.8, y: 2.1}
+  departures:
+    firstDepartureAfterSeconds: 6
+    secondsBetweenDepartures: 15
   scenery:
     palms:
     - {x: -2.3, y: -1.3}
@@ -114,7 +117,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: b84439bb6b5f54cd388ca53a4d425ee0, type: 2}
   - {fileID: 11400000, guid: c695963f6f1434ea188a4cef672c35ec, type: 2}
   - {fileID: 11400000, guid: 81585f62e792d4ee79f1220d35cd7695, type: 2}
-  aircraftInAir: 3
+  aircraftInAir: 2
   spawnPoints:
   - position: {x: -5.5, y: 3.3}
     headingDegrees: -10

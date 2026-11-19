@@ -13,6 +13,26 @@ namespace AirTrafficControl
         HotAirBalloon,
     }
 
+    /// <summary>Speed setting from the Slow / Fast buttons (blueprint 15.4).</summary>
+    public enum AircraftSpeed
+    {
+        Normal,
+        Slow,
+        Fast,
+    }
+
+    /// <summary>The Slow / Fast rules (blueprint 15.4). Plain C#, so it can be unit tested.</summary>
+    public static class SpeedRules
+    {
+        /// <summary>Pressing a speed button: the requested setting, or back to normal if it is already active.</summary>
+        public static AircraftSpeed Toggle(AircraftSpeed current, AircraftSpeed requested) =>
+            current == requested ? AircraftSpeed.Normal : requested;
+
+        /// <summary>The factor on the kind's speed for a setting.</summary>
+        public static float Factor(AircraftType type, AircraftSpeed setting) =>
+            setting == AircraftSpeed.Slow ? type.slowFactor : setting == AircraftSpeed.Fast ? type.fastFactor : 1f;
+    }
+
     /// <summary>Which kind of landing zone an aircraft kind uses (blueprint 13.1). A line lands only on a matching zone.</summary>
     public enum LandingZoneKind
     {
@@ -34,6 +54,12 @@ namespace AirTrafficControl
 
         [Tooltip("Speed relative to the airliner at 1x game speed (0.6 world units per second). Airliner 1.0.")]
         [Min(0.05f)] public float speedMultiplier = 1f;
+
+        [Tooltip("Slow button (blueprint 15.4): this times the kind's speed.")]
+        [Min(0.1f)] public float slowFactor = 0.6f;
+
+        [Tooltip("Fast button (blueprint 15.4): this times the kind's speed. Fast lands sooner but rolls further.")]
+        [Min(0.1f)] public float fastFactor = 1.4f;
 
         [Tooltip("Drawn size relative to the airliner. Airliner 1.0.")]
         [Min(0.1f)] public float size = 1f;
