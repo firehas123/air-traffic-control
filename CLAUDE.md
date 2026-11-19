@@ -30,10 +30,12 @@ M0 and M1 are done (M1 passed on 15 Nov 2026). **M2 started on 19 Nov 2026.** Th
 
 1. Aircraft kinds as data (an AircraftType asset per kind: name, speed, size, colour, silhouette, landing zone kind). Status moves from colouring the whole aircraft to a ring and icon (green ring with a tick when cleared, yellow ring when it needs a new line, red pulsing ring for danger). Airliner, jumbo jet and fighter jet on the runway.
 2. Helipad with helicopter and drone; balloon field with hot air balloon. A line lands only on a zone that matches the aircraft kind; matching zones glow while drawing.
-3. Carrier ship level feature (AGREED 19 Nov 2026, section 13.2). A carrier crosses the sea; a fighter jet lands on its moving deck while it passes, with a countdown. A line connected to the deck moves with the ship: the one exception to the exact-line rule. If the ship leaves the screen before touchdown, even at the last moment, the connection is lost and the fighter keeps flying, turning back at the screen edges (like C5) until the next ship. The owner wants that chaos. Starting values as level data: a ship every 40 to 60 s, about 20 s to cross, fighters only.
+3. Carrier ship level feature (AGREED 19 Nov 2026, section 13.2). A carrier crosses the sea; a fighter jet lands on its moving deck while it passes, with a countdown. The drawn line stays exact; only a dashed tether from its end to the deck moves with the ship (section 14.2), the one exception to the exact-line rule. A fighter can connect only once the ship is fully on screen. If the ship leaves the screen before touchdown, even at the last moment, the connection is lost and the fighter keeps flying, turning back at the screen edges (like C5) until the next ship. The owner wants that chaos. Starting values as level data: a ship every 40 to 60 s, about 20 s to cross, fighters only.
 4. Sound and vibration for landing, warning and collision; the level result screen (C10).
 5. First-time help that teaches by doing; check that a cleared level takes 60 to 120 seconds (C3).
 6. M2 pass test: a player who has never seen the game understands it without coaching.
+
+Collision size per kind (section 14.1, AGREED 19 Nov 2026): each AircraftType has a collision radius. Two aircraft collide when their centres are closer than the two radii added together, and warning distances scale the same way. Airliner 0.25 (so two airliners still collide at 0.5), fighter jet and drone smaller, jumbo jet 1.4x the airliner. Tunable in the Inspector.
 
 Aircraft kinds (section 13.1, AGREED). Speed is relative to the current plane at 1x (0.6 world units per second):
 
@@ -57,7 +59,7 @@ M1 gameplay rules still apply (details in the commit messages):
 
 Rules that apply from the M1 prototype onwards:
 
-- C1: each map has one rule of its own. Island uses changing wind that reverses the runway landing direction. Build it with an on/off switch.
+- C1: each map has one rule of its own. Island uses changing wind that reverses the runway landing direction. Build it with an on/off switch. Wind moves the runway's touchdown zone to the other end; a line may still arrive from any direction. An aircraft within about 1.5 s of touchdown when the wind changes still lands (section 14.3). Wind affects runways only.
 - C3: levels last 60 to 120 seconds, and restart after a collision takes under two seconds.
 - C4: slow time while the player is drawing, with an on/off switch so both versions can be compared. Whether players see the wind and slow-time switches in the release is still OPEN.
 - C5: an aircraft with no path flies straight and turns back at the map edge. When a path ends away from a runway, the aircraft continues on its last heading.

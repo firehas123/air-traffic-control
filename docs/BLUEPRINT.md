@@ -235,6 +235,8 @@ Wind and slow-time on/off switches — OPEN: a player setting in the release, or
 
 19 Nov 2026 — AGREED: Carrier ship level feature (section 13.2). A fighter jet lands on the moving deck while the ship passes; if the ship leaves first, the fighter turns back at the screen edges and waits for the next ship, adding traffic. A line connected to the deck moves with the ship, the only exception to the exact-line rule.
 
+19 Nov 2026 — AGREED: ChatGPT's review (section 14), with Claude's notes. Each aircraft kind has a collision radius; two aircraft collide when their centres are closer than the two radii added together (airliner 0.25, so two airliners still collide at 0.5). On the carrier, the drawn line stays exact and only a dashed tether to the deck moves with the ship. Wind moves the runway's touchdown zone to the other end; a line may still arrive from any direction, and an aircraft within about 1.5 seconds of touchdown when the wind changes still lands. New kinds arrive one at a time in the real levels.
+
 ## 11. ENGAGEMENT, GAMIFICATION AND BUSINESS MODEL
 
 Added by Claude on 14 November 2026 after a full read of version 0.1. The owner accepted every item in this section on 14 November 2026. Each item has an ID so it can be referred to or changed by number. External figures were checked on 14 November 2026 and should be verified again before any payment or release.
@@ -349,11 +351,11 @@ Starting values chosen by Claude, all level data the owner can tune after playin
 
 ### 13.3 M2 STEPS (each built, installed and checked on the iPad before the next starts)
 
-1. Aircraft kinds as data, and status shown as a ring and icon; airliner, jumbo jet and fighter jet on the runway.
+1. Aircraft kinds as data, and status shown as a ring and icon; airliner, jumbo jet and fighter jet on the runway. Each kind has its own collision radius (14.1), and wind gets the 1.5-second landing grace period (14.3).
 
 2. Helipad with helicopter and drone; balloon field with hot air balloon; a line lands only on a matching zone.
 
-3. Carrier ship level feature (13.2).
+3. Carrier ship level feature (13.2), with the dashed tether from the end of the drawn line to the deck (14.2).
 
 4. Feel and feedback: sound and vibration for landing, warning and collision; the level result screen (C10).
 
@@ -363,4 +365,60 @@ Starting values chosen by Claude, all level data the owner can tune after playin
 
 ## NEXT STEP
 
-M2 started on 19 Nov 2026 (plan in section 13). Step 1: aircraft kinds as data, with status shown as a ring and icon; airliner, jumbo jet and fighter jet on the runway. Each step is built, installed and checked on the iPad before the next starts. The carrier ship (13.2) was confirmed by the owner on 19 Nov 2026.
+M2 started on 19 Nov 2026 (plan in section 13). Step 1: aircraft kinds as data, with status shown as a ring and icon; airliner, jumbo jet and fighter jet on the runway; collision radius per kind (14.1) and the wind grace period (14.3). Each step is built, installed and checked on the iPad before the next starts. The carrier ship (13.2) was confirmed by the owner on 19 Nov 2026.
+
+## 14. CHATGPT REVIEW RECOMMENDATIONS — 19 NOVEMBER 2026
+
+Status: AGREED by the owner on 19 Nov 2026, after Claude's review (Claude's notes under each item say how it is built). These suggestions do not replace the agreed C1–C21 decisions or section 13. They are specific M2 engineering and gameplay refinements.
+
+### 14.1 TYPE-DEPENDENT AIRCRAFT COLLISION BOUNDARIES (HIGH PRIORITY)
+
+Current reference: section 12 uses a fixed 0.5-world-unit centre-distance collision threshold; section 13.1 introduces six aircraft kinds with different sizes, including a 1.4x jumbo jet.
+
+Proposal: Define collision/separation geometry from each aircraft type's footprint rather than using the same centre-distance threshold for every pair. A simple first version can use per-type collision radii and a collision condition based on the sum of two radii; keep warning and predictive-separation calculations consistent with these sizes. Tune forgiving visual margins against the actual sprites and playtest on the iPad. Avoid size-dependent visual surprises, especially for fighter jets, drones and jumbo jets.
+
+Validation: Test airliner–airliner, jumbo–drone, fighter–jumbo and helicopter–airliner pairs; confirm larger aircraft require visibly greater separation and that warnings precede danger. Include fast crossing cases where aircraft might pass between frames.
+
+Claude's view (19 Nov): Agree; build it into M2 step 1. Each kind gets a collision radius as data. Two aircraft collide when their centres are closer than their two radii added together, and the warning distances grow the same way. Today's rule (collision at 0.5 units between centres) becomes an airliner radius of 0.25; fighter jet and drone get smaller radii, the jumbo jet 1.4 times the airliner's. Passing between frames is not a real risk at these speeds (the fastest aircraft moves about 0.03 units per frame at 60 FPS), and the existing closest-approach check already covers it.
+
+Owner decision: AGREED 19 Nov 2026, as described in Claude's view.
+
+### 14.2 MOVING CARRIER: PRESERVE PATH PREDICTABILITY (HIGH PRIORITY)
+
+Current reference: section 13.2 allows a fighter jet's line endpoint to follow the moving aircraft carrier, as the sole exception to exact path following.
+
+Proposal: Make the moving touchdown point visibly attached to the carrier. Prefer updating only the terminal approach segment or a clearly designated moving-target segment; do not silently reshape the full user-drawn route while the plane is far away. Define what happens if the carrier departs during the final approach: the connection disengages visibly, the aircraft continues according to the already agreed missed-ship behavior, and the player can draw a new path. Avoid sudden positional jumps or accidental landing after the ship leaves.
+
+Validation: Playtest ship movement during drawing, active approach, touchdown and departure; verify no teleporting, no impossible snapping and an understandable missed-ship outcome.
+
+Claude's view (19 Nov): Agree, and it fits the owner's rule. The part the player drew stays exactly as drawn. Only a short connecting segment, from the end of the drawn line to the deck, moves with the ship, shown as a dashed tether. A fighter can connect only once the ship is fully on screen. If the ship leaves first, the tether disappears, the fighter loses its green ring and follows the agreed missed-ship behaviour, and the player can draw a new line.
+
+Owner decision: AGREED 19 Nov 2026, as described in Claude's view.
+
+### 14.3 RECONCILE WIND WITH LANDING DIRECTION (HIGH PRIORITY)
+
+Current reference: the 15 Nov prototype rule permits touchdown from any direction as long as the drawn line reaches the zone; C1 says wind reverses the runway's landing direction.
+
+Clarification required: Does wind change which approach direction is VALID, or merely indicate a preferred direction/alter the challenge? Both rules cannot be enforced literally without specifying an exception. For M2, recommend choosing one coherent rule and making it visible to the player. If direction becomes mandatory, provide an unambiguous approach arrow, sufficient warning before reversal and a grace period for aircraft already committed to land. If it remains cosmetic/informational, describe its actual gameplay effect rather than implying a restriction.
+
+Validation: Test a wind change before path drawing, during approach and immediately before touchdown. No sudden unexplained failure.
+
+Claude's view (19 Nov): The two rules already fit together in the build, but this document does not say so clearly. Wind does not limit the approach angle. It moves the touchdown zone to the other end of the runway (the arrows and highlight move), with a 5-second warning. A line must end in the current zone, from any direction. A cleared aircraft whose line ends at the old end loses its clearance and needs a new line. Proposed addition: a grace period, so an aircraft within about 1.5 seconds of touchdown when the wind changes still lands. Wind affects runways only, not helipads, the balloon field or the carrier.
+
+Owner decision: AGREED 19 Nov 2026, as described in Claude's view.
+
+### 14.4 INTRODUCE THE SIX AIRCRAFT TYPES GRADUALLY (MEDIUM PRIORITY)
+
+Current reference: section 13.1 defines balloon, helicopter, drone, airliner, jumbo jet and fighter jet, each with different speed, size and landing zone.
+
+Proposal: Unlock a new aircraft kind only after players understand the previous kind's destination and handling. Start the first levels with the familiar airliner, introduce a contrasting slower or larger kind next, then helipad/balloon destinations, and reserve the fast fighter/carrier combination for later. Give every new kind a short, interactive first encounter rather than a large tutorial panel. This aligns with section 13.1's agreed principle of not introducing every type simultaneously.
+
+Validation: A new player should identify where each newly introduced kind lands without coaching, and be able to explain its distinguishing behavior after one level.
+
+Claude's view (19 Nov): Agree; it matches 13.1. It guides level design in M3. During M2 the test level may show all kinds together so the owner can try them. Suggested order for the real levels: airliner, jumbo jet, helicopter with the helipad, balloon with the balloon field, drone, fighter jet, and the carrier last.
+
+Owner decision: AGREED 19 Nov 2026, as described in Claude's view.
+
+### RECOMMENDED SEQUENCE FOR REVIEW
+
+First settle 14.1 and 14.3 before balancing M2 collisions/landing rules; use 14.2 when implementing the carrier in M2 step 3; apply 14.4 during level design and first-time-player testing. The owner accepted all four on 19 Nov 2026: 14.1 is built in M2 step 1, 14.3 (clearer rule plus grace period) in step 1, 14.2 in step 3, 14.4 in M3 level design. Claude Code remains the code implementer; these are not instructions to edit code immediately.
