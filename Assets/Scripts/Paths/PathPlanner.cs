@@ -25,6 +25,7 @@ namespace AirTrafficControl
         readonly List<Vector2> newPoints = new List<Vector2>();
         InputAdapter input;
         LandingSystem landing;
+        CarrierSystem carrier;
         PathRecorder recorder;
         AircraftController selected;
 
@@ -34,9 +35,10 @@ namespace AirTrafficControl
         /// <summary>The aircraft whose line is being drawn, or null.</summary>
         public AircraftController DrawingFor => IsDrawing ? selected : null;
 
-        public void Initialise(InputAdapter inputAdapter, LandingSystem landingSystem)
+        public void Initialise(InputAdapter inputAdapter, LandingSystem landingSystem, CarrierSystem carrierSystem = null)
         {
             landing = landingSystem;
+            carrier = carrierSystem;
             recorder = new PathRecorder(minSampleDistance);
             input = inputAdapter;
             input.PressStarted += OnPressStarted;
@@ -108,8 +110,14 @@ namespace AirTrafficControl
 
             if (landing != null && landing.TryLand(recorder.Points, selected.Type.landsOn, out _))
             {
-                // Connected to the runway: end the line here and ignore the rest of the stroke.
+                // Connected to a matching zone: end the line here and ignore the rest of the stroke.
                 selected.SetClearedToLand(true);
+                EndStroke();
+            }
+            else if (carrier != null && selected.Type.landsOnCarrier && carrier.TryConnect(recorder.Points))
+            {
+                // Connected to the carrier deck (blueprint 13.2): the line ends here; a tether follows the ship.
+                selected.ConnectToCarrier(carrier.CurrentPass);
                 EndStroke();
             }
         }

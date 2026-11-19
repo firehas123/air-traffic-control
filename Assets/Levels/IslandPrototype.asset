@@ -30,6 +30,19 @@ MonoBehaviour:
   - kind: 2
     centre: {x: 3.55, y: 0.2}
     radius: 0.55
+  carrier:
+    hasCarrier: 1
+    firstShipAfterSeconds: 10
+    minSecondsBetweenShips: 40
+    maxSecondsBetweenShips: 60
+    secondsToCross: 20
+    laneY: -4.1
+    shipLength: 2.6
+    shipWidth: 0.7
+    deckLength: 2.1
+    deckWidth: 0.5
+    touchdownZoneStart: 0.1
+    touchdownZoneLength: 0.7
   wind:
     hasWind: 1
     onAtStart: 1

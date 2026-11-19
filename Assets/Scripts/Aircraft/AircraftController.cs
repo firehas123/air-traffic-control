@@ -83,6 +83,13 @@ namespace AirTrafficControl
         bool isCrashed;
         float crashTime;
 
+        // Carrier (blueprint 13.2, 14.2): the connection, and the dashed tether from the end of the line to the deck.
+        CarrierApproach carrierApproach;
+        bool landsOnCarrierDeck;
+        GameObject tetherObject;
+        Mesh tetherMesh;
+        static readonly Color TetherColor = new Color(1f, 1f, 1f, 0.9f);
+
         public AircraftMotion Motion { get; private set; }
         public AircraftType Type { get; private set; }
 
@@ -106,6 +113,9 @@ namespace AirTrafficControl
         public bool IsInWindGrace => graceTouchdown.HasValue;
 
         public bool IsWarningShown => warningRing != null && warningRing.activeSelf;
+
+        /// <summary>True while a fighter's line is connected to the carrier deck.</summary>
+        public bool IsConnectedToCarrier => carrierApproach != null && carrierApproach.IsConnected;
 
         /// <summary>Raised once the landing roll has finished, just before the aircraft is removed.</summary>
         public event Action<AircraftController> Landed;
@@ -221,8 +231,93 @@ namespace AirTrafficControl
             if (isCrashed)
                 return;
             graceTouchdown = null;
+            if (!cleared)
+                DropCarrierConnection();
             IsClearedToLand = cleared;
             ShowStatus();
+        }
+
+        /// <summary>
+        /// The fighter's line has connected to the carrier deck (blueprint 13.2). The line stays as drawn; from its end
+        /// a dashed tether to the deck moves with the ship (14.2).
+        /// </summary>
+        public void ConnectToCarrier(CarrierPass pass)
+        {
+            if (isCrashed || isLanding || Motion.Path.Count == 0)
+                return;
+            graceTouchdown = null;
+            carrierApproach = new CarrierApproach(pass, Motion.Path[Motion.Path.Count - 1]);
+            IsClearedToLand = true;
+            ShowStatus();
+            EnsureTetherObject();
+        }
+
+        void DropCarrierConnection()
+        {
+            carrierApproach = null;
+            if (tetherObject != null)
+                tetherObject.SetActive(false);
+        }
+
+        void EnsureTetherObject()
+        {
+            if (tetherObject == null)
+            {
+                // Lives in world space (not a child), so the dashes are not turned or scaled with the aircraft.
+                tetherMesh = new Mesh { name = "Tether" };
+                tetherObject = MeshBuilder.CreateObject("Tether", tetherMesh, GetComponent<MeshRenderer>().sharedMaterial,
+                    PathSortingOrder, Vector2.zero, 0f);
+            }
+            tetherObject.SetActive(true);
+        }
+
+        void UpdateTetherView()
+        {
+            if (carrierApproach == null || !carrierApproach.IsConnected || tetherObject == null)
+                return;
+            Vector2 from = carrierApproach.State == CarrierApproachState.Tethered ? Motion.Position : carrierApproach.LineEnd;
+            var builder = new MeshBuilder();
+            MapShapes.BuildDashes(builder, from, carrierApproach.DeckPoint, TetherColor);
+            builder.Fill(tetherMesh);
+        }
+
+        // The ship began to leave the screen before touchdown (blueprint 13.2): the tether goes, the green ring goes,
+        // and a fighter already on the tether flies straight on from where it is (C5).
+        void LoseCarrierConnection(bool wasTethered)
+        {
+            if (wasTethered)
+                Motion.Place(Motion.Position, Motion.HeadingDegrees);
+            DropCarrierConnection();
+            IsClearedToLand = false;
+            ShowStatus();
+        }
+
+        void UpdateTether(float deltaTime)
+        {
+            bool touchedDown = carrierApproach.StepTether(Motion.Speed * deltaTime);
+            Motion.Place(carrierApproach.TetherPosition, carrierApproach.TetherHeadingDegrees);
+            if (touchedDown)
+            {
+                StartCarrierLanding();
+                return;
+            }
+            ApplyTransform();
+            pathLine.positionCount = 0;
+            UpdateTetherView();
+        }
+
+        void StartCarrierLanding()
+        {
+            isLanding = true;
+            landsOnCarrierDeck = true;
+            rollTime = 0f;
+            pathLine.positionCount = 0;
+            warningRing.SetActive(false);
+            if (tetherObject != null)
+                tetherObject.SetActive(false);
+            ShowStatus();
+            transform.rotation = Quaternion.Euler(0f, 0f, carrierApproach.Pass.HeadingDegrees);
+            statusRoot.rotation = Quaternion.identity;
         }
 
         /// <summary>
@@ -254,6 +349,7 @@ namespace AirTrafficControl
             isCrashed = true;
             crashTime = 0f;
             graceTouchdown = null;
+            DropCarrierConnection();
             Motion.ClearPath(); // also ends any stroke being drawn for this aircraft
             pathLine.positionCount = 0;
             warningRing.SetActive(false);
@@ -271,6 +367,14 @@ namespace AirTrafficControl
 
         void OnEnable() => active.Add(this);
         void OnDisable() => active.Remove(this);
+
+        void OnDestroy()
+        {
+            if (tetherObject != null)
+                Destroy(tetherObject);
+            if (tetherMesh != null)
+                Destroy(tetherMesh);
+        }
 
         void Update()
         {
@@ -294,11 +398,30 @@ namespace AirTrafficControl
                 return;
             }
 
+            if (carrierApproach != null)
+            {
+                bool wasTethered = carrierApproach.State == CarrierApproachState.Tethered;
+                if (carrierApproach.CheckShip())
+                    LoseCarrierConnection(wasTethered);
+                else if (wasTethered)
+                {
+                    UpdateTether(Time.deltaTime);
+                    return;
+                }
+            }
+
             bool wasFollowing = Motion.HasPath;
             Motion.Step(Time.deltaTime, TurnBackBounds());
 
             if (wasFollowing && !Motion.HasPath)
             {
+                // Connected to the carrier: at the end of the drawn line, carry on along the tether to the deck.
+                if (carrierApproach != null && carrierApproach.State == CarrierApproachState.FlyingLine)
+                {
+                    carrierApproach.StartTether();
+                    UpdateTether(0f);
+                    return;
+                }
                 // A landing kept through a wind change lands on the runway as it was; otherwise ask the landing system.
                 if (graceTouchdown.HasValue)
                 {
@@ -316,6 +439,7 @@ namespace AirTrafficControl
 
             ApplyTransform();
             UpdatePathLine();
+            UpdateTetherView();
 
             if (warningRing.activeSelf)
             {
@@ -355,7 +479,13 @@ namespace AirTrafficControl
         {
             rollTime += Time.deltaTime;
             float t = Mathf.Clamp01(rollTime / RollDuration);
-            if (settlesOntoPad)
+            if (landsOnCarrierDeck)
+            {
+                // Roll along the deck, which sails on with the ship.
+                float rolledOnDeck = Motion.Speed * RollDuration * (t - t * t / 2f) * 0.5f;
+                transform.position = carrierApproach.Pass.ToWorld(carrierApproach.DeckLocalPoint + new Vector2(rolledOnDeck, 0f));
+            }
+            else if (settlesOntoPad)
             {
                 transform.position = Vector2.Lerp(touchdownPoint, padCentre, Mathf.SmoothStep(0f, 1f, t));
             }

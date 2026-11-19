@@ -85,6 +85,37 @@ namespace AirTrafficControl
                 .Build("TouchdownZoneGlow");
         }
 
+        static readonly Color Hull = new Color(0.42f, 0.46f, 0.5f);
+        static readonly Color HullEdge = new Color(0.3f, 0.33f, 0.37f);
+
+        /// <summary>Carrier hull seen from above, bow along local +x: a long grey hull with a pointed bow and an island tower.</summary>
+        public static Mesh CreateCarrierHullMesh(float length, float width)
+        {
+            float half = length / 2f;
+            float w = width / 2f;
+            float bowStart = half - width * 0.7f;
+            return new MeshBuilder()
+                .Quad(new Vector2(-half, -w), new Vector2(bowStart, -w), new Vector2(bowStart, w), new Vector2(-half, w), HullEdge)
+                .Triangle(new Vector2(bowStart, -w), new Vector2(half, 0f), new Vector2(bowStart, w), HullEdge)
+                .Quad(new Vector2(-half + 0.05f, -w + 0.05f), new Vector2(bowStart, -w + 0.05f), new Vector2(bowStart, w - 0.05f), new Vector2(-half + 0.05f, w - 0.05f), Hull)
+                .Triangle(new Vector2(bowStart, -w + 0.05f), new Vector2(half - 0.08f, 0f), new Vector2(bowStart, w - 0.05f), Hull)
+                .Rect(new Vector2(0.25f, w - 0.06f), new Vector2(0.35f, 0.12f), HullEdge) // island tower on the starboard edge
+                .Build("CarrierHull");
+        }
+
+        /// <summary>Dashes from <paramref name="from"/> to <paramref name="to"/>, for the carrier tether (blueprint 14.2).</summary>
+        public static void BuildDashes(MeshBuilder builder, Vector2 from, Vector2 to, Color color)
+        {
+            const float dash = 0.12f;
+            const float gap = 0.08f;
+            float length = Vector2.Distance(from, to);
+            if (length <= 1e-4f)
+                return;
+            Vector2 dir = (to - from) / length;
+            for (float d = 0f; d < length; d += dash + gap)
+                builder.Bar(from + dir * d, from + dir * Mathf.Min(d + dash, length), 0.06f, color);
+        }
+
         public static Mesh CreateIslandMesh(Vector2 radii)
         {
             return new MeshBuilder()

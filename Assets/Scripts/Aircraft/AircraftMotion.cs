@@ -89,6 +89,17 @@ namespace AirTrafficControl
             following = false;
         }
 
+        /// <summary>
+        /// Puts the aircraft at a position and heading with no path. Used only when something other than a drawn line
+        /// moves it: the carrier tether (blueprint 14.2). It then flies straight on and turns back at the edges (C5).
+        /// </summary>
+        public void Place(Vector2 position, float headingDegrees)
+        {
+            ClearPath();
+            Position = position;
+            HeadingDegrees = Mathf.Repeat(headingDegrees, 360f);
+        }
+
         /// <summary>Starts a new path at the aircraft's current position, replacing any old one.</summary>
         public void BeginPath()
         {

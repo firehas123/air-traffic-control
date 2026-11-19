@@ -40,14 +40,17 @@ namespace AirTrafficControl
             var input = new GameObject("InputAdapter").AddComponent<InputAdapter>();
             input.Initialise(worldCamera);
 
+            var carrier = new GameObject("CarrierSystem").AddComponent<CarrierSystem>();
+            carrier.Initialise(level.carrier, worldCamera, shapeMaterial);
+
             var planner = new GameObject("PathPlanner").AddComponent<PathPlanner>();
-            planner.Initialise(input, landing);
+            planner.Initialise(input, landing, carrier);
 
             var hud = new GameObject("HudView").AddComponent<HudView>();
             hud.Initialise();
 
             var director = new GameObject("LevelDirector").AddComponent<LevelDirector>();
-            director.Initialise(level, worldCamera, landing, safety, input, planner, hud, shapeMaterial, aircraft);
+            director.Initialise(level, worldCamera, landing, safety, input, planner, carrier, hud, shapeMaterial, aircraft);
             director.StartLevel();
         }
     }

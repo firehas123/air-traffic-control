@@ -36,6 +36,9 @@ namespace AirTrafficControl
             new LandingPadDefinition(LandingZoneKind.BalloonField, new Vector2(3.55f, 0.2f), 0.55f),
         };
 
+        [Header("Level feature: carrier ship (blueprint 13.2)")]
+        public CarrierSettings carrier = new CarrierSettings();
+
         [Header("Map rule: wind (C1, Island)")]
         public WindRuleSettings wind = new WindRuleSettings();
 
@@ -74,6 +77,39 @@ namespace AirTrafficControl
         }
 
         public LandingPad ToPad() => new LandingPad(kind, centre, radius);
+    }
+
+    /// <summary>
+    /// The carrier ship level feature (blueprint 13.2): a ship crosses the sea from time to time and fighter jets can
+    /// land on its moving deck while it is fully on screen. Starting values chosen by Claude; the owner tunes them.
+    /// </summary>
+    [Serializable]
+    public sealed class CarrierSettings
+    {
+        [Tooltip("Whether this level has the carrier at all.")]
+        public bool hasCarrier = true;
+
+        [Tooltip("Seconds into the level before the first ship. Kept short in the test level so the owner sees it early.")]
+        [Min(0f)] public float firstShipAfterSeconds = 10f;
+
+        [Tooltip("A new ship every this many seconds, counted from the previous ship's appearance (13.2: 40 to 60).")]
+        [Min(1f)] public float minSecondsBetweenShips = 40f;
+        [Min(1f)] public float maxSecondsBetweenShips = 60f;
+
+        [Tooltip("Seconds from just off one side of the screen to just off the other (13.2: about 20).")]
+        [Min(1f)] public float secondsToCross = 20f;
+
+        [Tooltip("Height of the sea lane the ship sails along, below the island.")]
+        public float laneY = -4.1f;
+
+        public float shipLength = 2.6f;
+        public float shipWidth = 0.7f;
+
+        [Tooltip("The deck is a small runway on the ship, with its own touchdown zone and arrows.")]
+        public float deckLength = 2.1f;
+        public float deckWidth = 0.5f;
+        public float touchdownZoneStart = 0.1f;
+        public float touchdownZoneLength = 0.7f;
     }
 
     /// <summary>The Island map rule (C1): the wind changes and reverses the runway's landing direction.</summary>

@@ -80,6 +80,16 @@ namespace AirTrafficControl
             return Quad(from - side, to - side, to + side, from + side, color);
         }
 
+        /// <summary>Replaces the contents of an existing mesh, for shapes rebuilt every frame (the carrier tether).</summary>
+        public void Fill(Mesh mesh)
+        {
+            mesh.Clear();
+            mesh.SetVertices(vertices);
+            mesh.SetColors(colors);
+            mesh.SetTriangles(triangles, 0);
+            mesh.RecalculateBounds();
+        }
+
         public Mesh Build(string name)
         {
             var mesh = new Mesh { name = name };

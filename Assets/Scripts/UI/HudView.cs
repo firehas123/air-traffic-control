@@ -36,6 +36,8 @@ namespace AirTrafficControl
         Text slowDrawLabel;
         GameObject windWarning;
         Text windWarningText;
+        GameObject carrierCountdown;
+        Text carrierCountdownText;
         GameObject endPanel;
         Text endTitle;
         Text endDetail;
@@ -88,6 +90,15 @@ namespace AirTrafficControl
             windWarningText = CreateText("Text", warning, 32, ButtonColor, FontStyle.Bold);
             windWarning = warning.gameObject;
             windWarning.SetActive(false);
+
+            // Carrier countdown (blueprint 13.2), below the wind countdown, while a ship can be reached.
+            RectTransform countdown = CreateBox("CarrierCountdown", root, PillColor);
+            countdown.anchorMin = countdown.anchorMax = countdown.pivot = new Vector2(0.5f, 1f);
+            countdown.anchoredPosition = new Vector2(0f, -186f);
+            countdown.sizeDelta = new Vector2(420f, 64f);
+            carrierCountdownText = CreateText("Text", countdown, 32, Color.white, FontStyle.Bold);
+            carrierCountdown = countdown.gameObject;
+            carrierCountdown.SetActive(false);
 
             // End panel, centred, hidden until the level ends.
             RectTransform panel = CreateBox("EndPanel", root, PanelColor);
@@ -147,6 +158,16 @@ namespace AirTrafficControl
                 windWarning.SetActive(show);
             if (show)
                 windWarningText.text = $"Wind changing in {secondsLeft}";
+        }
+
+        /// <summary>Shows "Carrier leaving in N", or hides it when <paramref name="secondsLeft"/> is 0 or less.</summary>
+        public void SetCarrierCountdown(int secondsLeft)
+        {
+            bool show = secondsLeft > 0;
+            if (carrierCountdown.activeSelf != show)
+                carrierCountdown.SetActive(show);
+            if (show)
+                carrierCountdownText.text = $"Carrier leaving in {secondsLeft}";
         }
 
         public void ShowCollision(float elapsedSeconds, int landedCount, int target)

@@ -48,6 +48,7 @@ namespace AirTrafficControl
         AirspaceSafety safety;
         InputAdapter input;
         PathPlanner planner;
+        CarrierSystem carrier;
         HudView hud;
         Material material;
         AircraftSettings aircraftSettings;
@@ -64,9 +65,10 @@ namespace AirTrafficControl
         public GameClock Clock => clock;
 
         public void Initialise(LevelData levelData, Camera camera, LandingSystem landingSystem, AirspaceSafety airspaceSafety,
-                               InputAdapter inputAdapter, PathPlanner pathPlanner, HudView hudView, Material shapeMaterial,
-                               AircraftSettings settings)
+                               InputAdapter inputAdapter, PathPlanner pathPlanner, CarrierSystem carrierSystem, HudView hudView,
+                               Material shapeMaterial, AircraftSettings settings)
         {
+            carrier = carrierSystem;
             level = levelData;
             session = new LevelSession(level.landingsToClear);
             planner = pathPlanner;
@@ -132,6 +134,9 @@ namespace AirTrafficControl
             input.enabled = true;
             attempt++;
             kindPicker = new System.Random(unchecked(attempt * 104729 + Environment.TickCount));
+            if (carrier != null)
+                carrier.ResetForNewAttempt(unchecked(attempt * 15485863 + Environment.TickCount));
+            hud.SetCarrierCountdown(0);
             ResetWind();
 
             nextSpawnIndex = 0;
@@ -151,6 +156,12 @@ namespace AirTrafficControl
             // Matching landing zones glow while the player draws (blueprint 13.1).
             AircraftController drawingFor = session.IsPlaying && planner != null ? planner.DrawingFor : null;
             landing.SetHighlight(drawingFor != null ? drawingFor.Type.landsOn : (LandingZoneKind?)null);
+            if (carrier != null)
+            {
+                carrier.SetHighlight(drawingFor != null && drawingFor.Type.landsOnCarrier);
+                hud.SetCarrierCountdown(session.IsPlaying && carrier.CanConnectNow
+                    ? Mathf.CeilToInt(carrier.CurrentPass.SecondsUntilLeavesScreen) : 0);
+            }
 
             // C4: slow time while the player is drawing an aircraft's line.
             bool drawing = drawingFor != null;
@@ -227,7 +238,7 @@ namespace AirTrafficControl
             landingBeforeWindChange.Clear();
             foreach (AircraftController aircraft in AircraftController.Active)
             {
-                if (aircraft.IsAirborne && aircraft.Motion.HasPath && aircraft.IsClearedToLand
+                if (aircraft.IsAirborne && aircraft.Motion.HasPath && aircraft.IsClearedToLand && !aircraft.IsConnectedToCarrier
                     && landing.TryLand(aircraft.Motion.Path, aircraft.Type.landsOn, out Touchdown before))
                     landingBeforeWindChange[aircraft] = before;
             }
@@ -244,7 +255,8 @@ namespace AirTrafficControl
             float grace = level.wind.landingGraceSeconds;
             foreach (AircraftController aircraft in AircraftController.Active)
             {
-                if (!aircraft.IsAirborne || !aircraft.Motion.HasPath || aircraft.IsInWindGrace)
+                // Wind affects runways only (blueprint 14.3): carrier connections are left alone.
+                if (!aircraft.IsAirborne || !aircraft.Motion.HasPath || aircraft.IsInWindGrace || aircraft.IsConnectedToCarrier)
                     continue;
 
                 bool wasCleared = landingBeforeWindChange.TryGetValue(aircraft, out Touchdown oldTouchdown);
@@ -291,6 +303,7 @@ namespace AirTrafficControl
             ApplyClock();
             input.enabled = false;
             hud.SetWindWarning(0);
+            hud.SetCarrierCountdown(0);
         }
 
         IEnumerator ShowEndPanel(float delay, Action show)
