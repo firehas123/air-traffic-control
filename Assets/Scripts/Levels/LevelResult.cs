@@ -58,3 +58,32 @@ namespace AirTrafficControl
         }
     }
 }
+
+namespace AirTrafficControl
+{
+    /// <summary>How an attempt at a level ended, for saving and the result screen.</summary>
+    public readonly struct LevelOutcome
+    {
+        public LevelOutcome(bool cleared, int stars, float seconds, int landed, int landingTarget,
+                            int departed, int departureTarget, float closestGap)
+        {
+            Cleared = cleared;
+            Stars = stars;
+            Seconds = seconds;
+            Landed = landed;
+            LandingTarget = landingTarget;
+            Departed = departed;
+            DepartureTarget = departureTarget;
+            ClosestGap = closestGap;
+        }
+
+        public bool Cleared { get; }
+        public int Stars { get; }
+        public float Seconds { get; }
+        public int Landed { get; }
+        public int LandingTarget { get; }
+        public int Departed { get; }
+        public int DepartureTarget { get; }
+        public float ClosestGap { get; }
+    }
+}

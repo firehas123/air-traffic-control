@@ -14,10 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: AirTrafficControl::AirTrafficControl.LevelData
   mapId: island
   landingsToClear: 8
+  departuresToClear: 0
   result:
     twoStarSeconds: 100
     threeStarsNeedNoWarnings: 1
     coinsPerLanding: 5
+    coinsPerDeparture: 5
     coinsPerStar: 10
   islandCentre: {x: 1, y: -0.8}
   islandRadii: {x: 3.8, y: 2.1}

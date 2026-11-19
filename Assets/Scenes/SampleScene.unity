@@ -340,7 +340,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1052399085
+--- !u!1 &1419798766
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -348,28 +348,28 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1052399087}
-  - component: {fileID: 1052399086}
+  - component: {fileID: 1419798768}
+  - component: {fileID: 1419798767}
   m_Layer: 0
-  m_Name: Prototype
+  m_Name: Game
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1052399086
+--- !u!114 &1419798767
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1052399085}
+  m_GameObject: {fileID: 1419798766}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 72ce9ae185b13459fa56b9493a047213, type: 3}
+  m_Script: {fileID: 11500000, guid: ab59d02a45f8b4c4d867fed1ca5d9633, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: AirTrafficControl::AirTrafficControl.PrototypeSetup
-  level: {fileID: 11400000, guid: b14a35fc4d0754ae8a8e7a57c87a40ad, type: 2}
+  m_EditorClassIdentifier: AirTrafficControl::AirTrafficControl.GameFlow
+  catalog: {fileID: 11400000, guid: 86f721e93d4f04b4bb99421f799c7ea4, type: 2}
   shapeMaterial: {fileID: 2100000, guid: 77cc1d0e24d7a43e7b96384d01d133db, type: 2}
   aircraft:
     colors:
@@ -380,13 +380,13 @@ MonoBehaviour:
     speed: 0.6
     turnRate: 200
     edgeMargin: 0.8
---- !u!4 &1052399087
+--- !u!4 &1419798768
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1052399085}
+  m_GameObject: {fileID: 1419798766}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -401,4 +401,4 @@ SceneRoots:
   m_Roots:
   - {fileID: 519420032}
   - {fileID: 619394802}
-  - {fileID: 1052399087}
+  - {fileID: 1419798768}

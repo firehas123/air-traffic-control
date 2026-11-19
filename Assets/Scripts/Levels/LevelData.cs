@@ -18,6 +18,9 @@ namespace AirTrafficControl
         [Tooltip("Landings needed to clear the level. 0 means no target: the level only ends on a collision.")]
         [Min(0)] public int landingsToClear = 8;
 
+        [Tooltip("Departures needed to clear the level (blueprint 15.4: for example land 6, launch 3). 0 means none.")]
+        [Min(0)] public int departuresToClear = 0;
+
         [Header("Result screen (C10)")]
         public ResultSettings result = new ResultSettings();
 
@@ -73,6 +76,9 @@ namespace AirTrafficControl
         public bool threeStarsNeedNoWarnings = true;
 
         [Min(0)] public int coinsPerLanding = 5;
+        [Min(0)] public int coinsPerDeparture = 5;
+
+        [Tooltip("Paid only the first time each star is earned (C9).")]
         [Min(0)] public int coinsPerStar = 10;
     }
 

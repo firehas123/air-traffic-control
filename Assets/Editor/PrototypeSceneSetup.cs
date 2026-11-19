@@ -16,7 +16,9 @@ public static class PrototypeSceneSetup
     const string MaterialPath = "Assets/Materials/UnlitVertexColor.mat";
     const string LevelPath = "Assets/Levels/IslandPrototype.asset";
     const string AircraftFolder = "Assets/Aircraft";
-    const string RootName = "Prototype";
+    const string CatalogPath = "Assets/Levels/IslandCatalog.asset";
+    const string RootName = "Game";
+    const string OldRootName = "Prototype"; // the M1/M2 scene object
 
     [MenuItem("Tools/Air Traffic Control/Set Up Prototype Scene")]
     public static void Run()
@@ -26,23 +28,44 @@ public static class PrototypeSceneSetup
 
         var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
 
-        GameObject existing = GameObject.Find(RootName);
-        if (existing != null)
-            Object.DestroyImmediate(existing);
+        foreach (string name in new[] { RootName, OldRootName })
+        {
+            GameObject existing = GameObject.Find(name);
+            if (existing != null)
+                Object.DestroyImmediate(existing);
+        }
 
         LevelData level = LoadOrCreateLevel();
 
+        LevelCatalog catalog = LoadOrCreateCatalog(level);
+
         var root = new GameObject(RootName);
-        var setup = root.AddComponent<PrototypeSetup>();
-        var serialized = new SerializedObject(setup);
+        var flow = root.AddComponent<GameFlow>();
+        var serialized = new SerializedObject(flow);
         serialized.FindProperty("shapeMaterial").objectReferenceValue = material;
-        serialized.FindProperty("level").objectReferenceValue = level;
+        serialized.FindProperty("catalog").objectReferenceValue = catalog;
         serialized.ApplyModifiedPropertiesWithoutUndo();
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
         AssetDatabase.SaveAssets();
         Debug.Log("PrototypeSceneSetup: SampleScene is ready.");
+    }
+
+    // M3 step 1: the Island levels 1 to 10. Until step 4 every entry reuses the test level's data.
+    // An existing catalog is kept, so ids and edits survive re-running this setup.
+    static LevelCatalog LoadOrCreateCatalog(LevelData level)
+    {
+        var catalog = AssetDatabase.LoadAssetAtPath<LevelCatalog>(CatalogPath);
+        if (catalog != null)
+            return catalog;
+
+        catalog = ScriptableObject.CreateInstance<LevelCatalog>();
+        catalog.mapName = "Island Airport";
+        for (int i = 1; i <= 10; i++)
+            catalog.levels.Add(new LevelEntry { id = $"island-{i:00}", title = $"Island {i}", data = level });
+        AssetDatabase.CreateAsset(catalog, CatalogPath);
+        return catalog;
     }
 
     // Creates the Island prototype level with LevelData's default values, if it does not exist yet.

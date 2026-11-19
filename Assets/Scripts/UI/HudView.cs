@@ -43,13 +43,21 @@ namespace AirTrafficControl
         GameObject endPanel;
         Text endTitle;
         Text endDetail;
-        Text endButtonLabel;
+        Text primaryLabel;
+        bool primaryIsNextLevel;
+        GameObject playAgainButton;
         readonly Image[] endStars = new Image[3];
         static readonly Color StarEarned = new Color(1f, 0.78f, 0.1f);
         static readonly Color StarMissing = new Color(0.78f, 0.8f, 0.82f);
 
         /// <summary>Raised when the player taps Retry or Play again.</summary>
         public event Action RetryPressed;
+
+        /// <summary>Raised when the player taps Next level on the result screen.</summary>
+        public event Action NextLevelPressed;
+
+        /// <summary>Raised when the player taps Levels (during play or on an end panel).</summary>
+        public event Action LevelsPressed;
 
         /// <summary>Raised when the player taps the Speed button.</summary>
         public event Action SpeedPressed;
@@ -81,9 +89,19 @@ namespace AirTrafficControl
             if (FindAnyObjectByType<EventSystem>() == null)
                 new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
 
-            // Top left: landing counter and timer.
-            landedText = CreateText("Landed", TopLeftPill("LandedPill", root, 24f, 260f), 32, Color.white, FontStyle.Bold);
-            timeText = CreateText("Time", TopLeftPill("TimePill", root, 300f, 120f), 32, Color.white, FontStyle.Bold);
+            // Top left: the level goal and timer, and a Levels button below them.
+            landedText = CreateText("Landed", TopLeftPill("LandedPill", root, 24f, 340f), 28, Color.white, FontStyle.Bold);
+            timeText = CreateText("Time", TopLeftPill("TimePill", root, 376f, 100f), 30, Color.white, FontStyle.Bold);
+
+            RectTransform levels = CreateBox("LevelsButton", root, PillColor);
+            levels.anchorMin = levels.anchorMax = levels.pivot = new Vector2(0f, 1f);
+            levels.anchoredPosition = new Vector2(24f, -100f);
+            levels.sizeDelta = new Vector2(140f, 56f);
+            var levelsButton = levels.gameObject.AddComponent<Button>();
+            levelsButton.targetGraphic = levels.GetComponent<Image>();
+            levelsButton.onClick.AddListener(() => LevelsPressed?.Invoke());
+            touchBlockers.Add(levels);
+            CreateText("Label", levels, 26, Color.white, FontStyle.Bold).text = "Levels";
 
             // Top right: Speed, Wind, Slow draw.
             speedLabel = CreateTopRightButton("SpeedButton", root, 0, () => SpeedPressed?.Invoke(), out _);
@@ -93,7 +111,7 @@ namespace AirTrafficControl
             // "?" replays the first-time help, top right after the other buttons.
             RectTransform helpButton = CreateBox("HelpButton", root, PillColor);
             helpButton.anchorMin = helpButton.anchorMax = helpButton.pivot = new Vector2(1f, 1f);
-            helpButton.anchoredPosition = new Vector2(-24f - 3 * 230f, -24f);
+            helpButton.anchoredPosition = new Vector2(-24f - 4 * TopRightSlot, -24f); // slot 3 is kept for the Anims switch
             helpButton.sizeDelta = new Vector2(64f, 64f);
             var help = helpButton.gameObject.AddComponent<Button>();
             help.targetGraphic = helpButton.GetComponent<Image>();
@@ -131,12 +149,12 @@ namespace AirTrafficControl
             // End panel, centred, hidden until the level ends.
             RectTransform panel = CreateBox("EndPanel", root, PanelColor);
             panel.anchorMin = panel.anchorMax = panel.pivot = new Vector2(0.5f, 0.5f);
-            panel.sizeDelta = new Vector2(660f, 460f);
+            panel.sizeDelta = new Vector2(760f, 520f);
             endPanel = panel.gameObject;
             touchBlockers.Add(panel); // the whole panel, so a tap beside the button cannot grab an aircraft
 
             endTitle = CreateText("Title", panel, 48, AlertRed, FontStyle.Bold);
-            Place(endTitle.rectTransform, new Vector2(0f, 170f), new Vector2(620f, 70f));
+            Place(endTitle.rectTransform, new Vector2(0f, 200f), new Vector2(720f, 70f));
 
             // Stars (result screen only).
             for (int i = 0; i < 3; i++)
@@ -146,20 +164,28 @@ namespace AirTrafficControl
                 Image star = starObject.GetComponent<Image>();
                 star.sprite = StarSprite.Get();
                 star.raycastTarget = false;
-                Place(star.rectTransform, new Vector2((i - 1) * 90f, 95f), new Vector2(78f, 78f));
+                Place(star.rectTransform, new Vector2((i - 1) * 90f, 125f), new Vector2(78f, 78f));
                 endStars[i] = star;
             }
 
-            endDetail = CreateText("Detail", panel, 30, Ink, FontStyle.Normal);
+            endDetail = CreateText("Detail", panel, 27, Ink, FontStyle.Normal);
             endDetail.lineSpacing = 1.15f;
-            Place(endDetail.rectTransform, new Vector2(0f, -5f), new Vector2(620f, 120f));
+            Place(endDetail.rectTransform, new Vector2(0f, 25f), new Vector2(720f, 110f));
 
-            RectTransform buttonBox = CreateBox("EndButton", panel, ButtonColor);
-            Place(buttonBox, new Vector2(0f, -150f), new Vector2(320f, 110f));
+            // One large button onward (C10), and two smaller ones: Play again and Levels.
+            RectTransform buttonBox = CreateBox("PrimaryButton", panel, ButtonColor);
+            Place(buttonBox, new Vector2(0f, -120f), new Vector2(340f, 100f));
             var button = buttonBox.gameObject.AddComponent<Button>();
             button.targetGraphic = buttonBox.GetComponent<Image>();
-            button.onClick.AddListener(() => RetryPressed?.Invoke());
-            endButtonLabel = CreateText("Label", buttonBox, 46, Ink, FontStyle.Bold);
+            button.onClick.AddListener(() =>
+            {
+                if (primaryIsNextLevel) NextLevelPressed?.Invoke();
+                else RetryPressed?.Invoke();
+            });
+            primaryLabel = CreateText("Label", buttonBox, 42, Ink, FontStyle.Bold);
+
+            playAgainButton = CreateSecondaryButton(panel, "Play again", new Vector2(-120f, -205f), () => RetryPressed?.Invoke());
+            CreateSecondaryButton(panel, "Levels", new Vector2(120f, -205f), () => LevelsPressed?.Invoke());
 
             endPanel.SetActive(false);
             SetLanded(0, 0);
@@ -167,9 +193,13 @@ namespace AirTrafficControl
         }
 
         /// <summary>"Landed N of M", or "Landed N" when the level has no landing target.</summary>
-        public void SetLanded(int count, int target)
+        public void SetLanded(int count, int target) => SetGoal(count, target, 0, 0);
+
+        /// <summary>"Landed 2 of 6 · Launched 1 of 3"; the launched part only when the level has departures.</summary>
+        public void SetGoal(int landed, int landingTarget, int departed, int departureTarget)
         {
-            landedText.text = target > 0 ? $"Landed {count} of {target}" : $"Landed {count}";
+            string landing = landingTarget > 0 ? $"Landed {landed} of {landingTarget}" : $"Landed {landed}";
+            landedText.text = departureTarget > 0 ? $"{landing} · Launched {departed} of {departureTarget}" : landing;
         }
 
         public void SetTime(float elapsedSeconds)
@@ -222,30 +252,40 @@ namespace AirTrafficControl
                 carrierCountdownText.text = $"Carrier leaving in {secondsLeft}";
         }
 
-        public void ShowCollision(float elapsedSeconds, int landedCount, int target)
+        public void ShowCollision(LevelOutcome outcome)
         {
-            string landed = target > 0 ? $"{landedCount} of {target}" : (landedCount == 1 ? "1 aircraft" : $"{landedCount} aircraft");
             ShowEnd("Two aircraft collided", AlertRed,
-                    $"after {LevelSession.FormatTime(elapsedSeconds)}. You had landed {landed}.", "Retry");
+                    $"after {LevelSession.FormatTime(outcome.Seconds)}. You had {GoalText(outcome)}.", "Retry", false, false);
             foreach (Image star in endStars)
                 star.gameObject.SetActive(false);
         }
 
         /// <summary>
-        /// The level result screen (C10): landed, time, closest pass, stars and coins, with one button onward.
-        /// There is only one level so far, so the button plays it again.
+        /// The level result screen (C10): stars, landed and launched, time, closest pass and coins, with one large
+        /// button onward. Next level when there is one, otherwise Play again.
         /// </summary>
-        public void ShowCleared(float elapsedSeconds, int landedCount, int target, float closestGap, int stars, int coins)
+        public void ShowCleared(LevelOutcome outcome, LevelRewards rewards, int totalCoins, bool hasNextLevel)
         {
+            string best = rewards.NewBestTime ? "  (best)" : "";
+            string stars = rewards.NewStars > 0 ? $" ({rewards.NewStars} new star{(rewards.NewStars == 1 ? "" : "s")})" : "";
             ShowEnd("Level cleared", SuccessGreen,
-                    $"Landed {landedCount} of {target} in {LevelSession.FormatTime(elapsedSeconds)}\n" +
-                    $"{LevelResult.ClosestPassText(closestGap)}   ·   +{coins} coins", "Play again");
+                    $"{Capitalise(GoalText(outcome))} in {LevelSession.FormatTime(outcome.Seconds)}{best}\n" +
+                    $"{LevelResult.ClosestPassText(outcome.ClosestGap)}   ·   +{rewards.CoinsEarned} coins{stars}   ·   {totalCoins} total",
+                    hasNextLevel ? "Next level" : "Play again", hasNextLevel, hasNextLevel);
             for (int i = 0; i < endStars.Length; i++)
             {
                 endStars[i].gameObject.SetActive(true);
-                endStars[i].color = i < stars ? StarEarned : StarMissing;
+                endStars[i].color = i < outcome.Stars ? StarEarned : StarMissing;
             }
         }
+
+        static string GoalText(LevelOutcome o)
+        {
+            string landed = o.LandingTarget > 0 ? $"landed {o.Landed} of {o.LandingTarget}" : $"landed {o.Landed}";
+            return o.DepartureTarget > 0 ? $"{landed} and launched {o.Departed} of {o.DepartureTarget}" : landed;
+        }
+
+        static string Capitalise(string text) => string.IsNullOrEmpty(text) ? text : char.ToUpperInvariant(text[0]) + text.Substring(1);
 
         public void HideEnd()
         {
@@ -266,13 +306,26 @@ namespace AirTrafficControl
             return false;
         }
 
-        void ShowEnd(string title, Color titleColor, string detail, string buttonLabel)
+        void ShowEnd(string title, Color titleColor, string detail, string primary, bool primaryIsNext, bool showPlayAgain)
         {
             endTitle.text = title;
             endTitle.color = titleColor;
             endDetail.text = detail;
-            endButtonLabel.text = buttonLabel;
+            primaryLabel.text = primary;
+            primaryIsNextLevel = primaryIsNext;
+            playAgainButton.SetActive(showPlayAgain);
             endPanel.SetActive(true);
+        }
+
+        GameObject CreateSecondaryButton(RectTransform parent, string label, Vector2 position, Action onClick)
+        {
+            RectTransform box = CreateBox(label + "Button", parent, new Color(0.87f, 0.91f, 0.91f));
+            Place(box, position, new Vector2(210f, 64f));
+            var button = box.gameObject.AddComponent<Button>();
+            button.targetGraphic = box.GetComponent<Image>();
+            button.onClick.AddListener(() => onClick());
+            CreateText("Label", box, 28, Ink, FontStyle.Bold).text = label;
+            return box.gameObject;
         }
 
         RectTransform TopLeftPill(string name, Transform parent, float x, float width)
@@ -289,15 +342,17 @@ namespace AirTrafficControl
         {
             RectTransform box = CreateBox(name, parent, PillColor);
             box.anchorMin = box.anchorMax = box.pivot = new Vector2(1f, 1f);
-            box.anchoredPosition = new Vector2(-24f - slot * 230f, -24f);
-            box.sizeDelta = new Vector2(214f, 64f);
+            box.anchoredPosition = new Vector2(-24f - slot * TopRightSlot, -24f);
+            box.sizeDelta = new Vector2(TopRightSlot - 12f, 64f);
             var button = box.gameObject.AddComponent<Button>();
             button.targetGraphic = box.GetComponent<Image>();
             button.onClick.AddListener(() => onClick());
             touchBlockers.Add(box);
             buttonObject = box.gameObject;
-            return CreateText("Label", box, 28, Color.white, FontStyle.Bold);
+            return CreateText("Label", box, 24, Color.white, FontStyle.Bold);
         }
+
+        const float TopRightSlot = 192f;
 
         static RectTransform CreateBox(string name, Transform parent, Color color)
         {

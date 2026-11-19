@@ -7,7 +7,7 @@ using Debug = UnityEngine.Debug;
 
 namespace AirTrafficControl
 {
-    /// <summary>How aircraft fly and look. Set on PrototypeSetup in the scene.</summary>
+    /// <summary>How aircraft fly and look. Set on GameFlow in the scene.</summary>
     [Serializable]
     public sealed class AircraftSettings
     {
@@ -66,6 +66,12 @@ namespace AirTrafficControl
         Transform windIndicator;
 
         public LevelSession Session => session;
+
+        /// <summary>Raised when the level is cleared, with its stars; the game flow saves it and shows the result.</summary>
+        public event Action<LevelOutcome> Cleared;
+
+        /// <summary>Raised when a collision ends the attempt.</summary>
+        public event Action<LevelOutcome> Failed;
         public GameClock Clock => clock;
 
         public void Initialise(LevelData levelData, Camera camera, LandingSystem landingSystem, AirspaceSafety airspaceSafety,
@@ -81,7 +87,7 @@ namespace AirTrafficControl
             helpDemo.transform.SetParent(transform, false);
             helpDemo.Initialise(shapeMaterial);
             level = levelData;
-            session = new LevelSession(level.landingsToClear);
+            session = new LevelSession(level.landingsToClear, level.departuresToClear);
             planner = pathPlanner;
             worldCamera = camera;
             landing = landingSystem;
@@ -145,7 +151,7 @@ namespace AirTrafficControl
             RemoveAllAircraft();
 
             session.Restart();
-            hud.SetLanded(0, session.LandingsToClear);
+            hud.SetGoal(0, session.LandingsToClear, 0, session.DeparturesToClear);
             hud.SetTime(0f);
             hud.HideEnd();
             clock.Paused = false; // the Speed and Slow draw settings carry over between attempts
@@ -388,20 +394,22 @@ namespace AirTrafficControl
             // Freeze everything so the crash can be seen, and stop drawing while the panel is up.
             feedback?.Collision();
             EndAttempt();
-            StartCoroutine(ShowEndPanel(CrashPauseSeconds,
-                () => hud.ShowCollision(session.ElapsedSeconds, session.LandedCount, session.LandingsToClear)));
+            LevelOutcome outcome = Outcome(false);
+            StartCoroutine(ShowEndPanel(CrashPauseSeconds, () => Failed?.Invoke(outcome)));
         }
 
         void OnLevelCleared()
         {
             EndAttempt();
-            ResultSettings rules = level.result;
-            int stars = LevelResult.Stars(true, session.ElapsedSeconds, session.WarningCount, rules);
-            int coins = LevelResult.Coins(session.LandedCount, stars, rules);
-            StartCoroutine(ShowEndPanel(ClearedPauseSeconds,
-                () => hud.ShowCleared(session.ElapsedSeconds, session.LandedCount, session.LandingsToClear,
-                                      session.ClosestGap, stars, coins)));
+            LevelOutcome outcome = Outcome(true);
+            StartCoroutine(ShowEndPanel(ClearedPauseSeconds, () => Cleared?.Invoke(outcome)));
         }
+
+        LevelOutcome Outcome(bool cleared) => new LevelOutcome(
+            cleared,
+            LevelResult.Stars(cleared, session.ElapsedSeconds, session.WarningCount, level.result),
+            session.ElapsedSeconds, session.LandedCount, session.LandingsToClear,
+            session.DepartureCount, session.DeparturesToClear, session.ClosestGap);
 
         void EndAttempt()
         {
@@ -432,11 +440,19 @@ namespace AirTrafficControl
         {
             aircraft.Landed -= OnAircraftLanded;
             bool cleared = session.RecordLanding();
-            hud.SetLanded(session.LandedCount, session.LandingsToClear);
+            hud.SetGoal(session.LandedCount, session.LandingsToClear, session.DepartureCount, session.DeparturesToClear);
             if (cleared)
                 OnLevelCleared();
             else if (session.IsPlaying)
                 StartCoroutine(SpawnWhenClear(RespawnDelay));
+        }
+
+        /// <summary>Stops the level and removes its aircraft, before the level is left.</summary>
+        public void Shutdown()
+        {
+            StopAllCoroutines();
+            RemoveAllAircraft();
+            Time.timeScale = 1f;
         }
 
         void RemoveAllAircraft()

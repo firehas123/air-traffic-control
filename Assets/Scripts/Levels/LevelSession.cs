@@ -16,13 +16,23 @@ namespace AirTrafficControl
     /// </summary>
     public sealed class LevelSession
     {
-        public LevelSession(int landingsToClear = 0)
+        public LevelSession(int landingsToClear = 0, int departuresToClear = 0)
         {
             LandingsToClear = Mathf.Max(0, landingsToClear);
+            DeparturesToClear = Mathf.Max(0, departuresToClear);
         }
 
-        /// <summary>Landings needed to clear the level. 0 means no target: the level only ends on a collision.</summary>
+        /// <summary>Landings needed to clear the level. 0 means no landing target.</summary>
         public int LandingsToClear { get; }
+
+        /// <summary>Departures needed to clear the level (M3, blueprint 15.4). 0 means none are needed.</summary>
+        public int DeparturesToClear { get; }
+
+        public int DepartureCount { get; private set; }
+
+        bool HasTarget => LandingsToClear > 0 || DeparturesToClear > 0;
+
+        bool TargetReached => LandedCount >= LandingsToClear && DepartureCount >= DeparturesToClear;
 
         public SessionState State { get; private set; } = SessionState.Playing;
         public int LandedCount { get; private set; }
@@ -63,7 +73,24 @@ namespace AirTrafficControl
             if (!IsPlaying)
                 return false;
             LandedCount++;
-            if (LandingsToClear > 0 && LandedCount >= LandingsToClear)
+            return CheckCleared();
+        }
+
+        /// <summary>
+        /// Counts a departure (an aircraft that took off and left the screen). Returns true for the one that completes
+        /// the level's goal and clears it.
+        /// </summary>
+        public bool RecordDeparture()
+        {
+            if (!IsPlaying)
+                return false;
+            DepartureCount++;
+            return CheckCleared();
+        }
+
+        bool CheckCleared()
+        {
+            if (HasTarget && TargetReached)
             {
                 State = SessionState.Cleared;
                 return true;
@@ -85,6 +112,7 @@ namespace AirTrafficControl
         {
             State = SessionState.Playing;
             LandedCount = 0;
+            DepartureCount = 0;
             ElapsedSeconds = 0f;
             WarningCount = 0;
             ClosestGap = float.PositiveInfinity;
