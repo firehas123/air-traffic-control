@@ -245,6 +245,8 @@ Wind and slow-time on/off switches — OPEN: a player setting in the release, or
 
 20 Nov 2026 — AGREED: Hybrid controls in M3, built for real: drawing stays the way to fly; tapping an aircraft opens buttons for Slow and Fast in the air and Taxi, Cross and Take off on the ground, with departures from gates and a busy-runway rule; details delegated to Claude (section 15.4). Blimp, rocket and space theme are PROPOSED (section 15.5).
 
+20 Nov 2026 — AGREED: Art comes from ChatGPT's image generator, not from shapes drawn in code: a painted top-down Island map first, then aircraft images. Claude Code fits the runway, pads, gates and taxi routes to the picture and zooms the camera so the airport fills the screen.
+
 ## 11. ENGAGEMENT, GAMIFICATION AND BUSINESS MODEL
 
 Added by Claude on 14 November 2026 after a full read of version 0.1. The owner accepted every item in this section on 14 November 2026. Each item has an ID so it can be referred to or changed by number. External figures were checked on 14 November 2026 and should be verified again before any payment or release.
@@ -461,7 +463,7 @@ Later in M3 (or as updates after release, per C16): City Airport (runways that c
 
 ### 15.2 QUESTIONS FOR THE OWNER
 
-Approve the order above, or change it. Decide whether City and Desert are built in M3 or after the first release. C17: Google Play's closed test needs at least 12 testers for 14 days; recruiting 15 to 20 Android testers should start during M3. The game title is still OPEN and is needed before the store listings. Art source for 15.3: Claude proposes original art made by Claude Code (vector shapes turned into sprites) in one consistent style, at no cost; the alternatives are free CC0 art packs (faster, less unique, licence to check) or a paid artist.
+Approve the order above, or change it. Decide whether City and Desert are built in M3 or after the first release. C17: Google Play's closed test needs at least 12 testers for 14 days; recruiting 15 to 20 Android testers should start during M3. The game title is still OPEN and is needed before the store listings. Art source for 15.3: DECIDED 20 Nov 2026. The first try (shapes drawn in code by Claude Code, commit e549288) still looked like the prototype, because code shapes cannot reach a painted look. The owner chose painted images made with ChatGPT's image generator: a hand-painted, top-down Island map (2732 x 2048) and, next, one image per aircraft kind. Claude Code places them in the game, fits the level data to the picture and keeps its animations (lights, rotors, shadows, clouds, effects) on top. A paid artist stays an option before the store release.
 
 ### 15.3 MAP ART AND ANIMATIONS (AGREED 19 Nov 2026, details delegated to Claude)
 
