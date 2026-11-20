@@ -14,10 +14,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: AirTrafficControl::AirTrafficControl.AircraftType
   displayName: Fighter jet
   speedMultiplier: 1.6
+  slowFactor: 0.6
+  fastFactor: 1.4
   size: 0.75
   collisionRadius: 0.18
   color: {r: 0.36, g: 0.38, b: 0.42, a: 1}
+  accentColor: {r: 0.96, g: 0.96, b: 0.96, a: 1}
   silhouette: 2
   landsOn: 0
+  sprite: {fileID: 21300000, guid: e744767afd00c4b32a900ccb27b8b856, type: 3}
+  spriteRotation: -90
+  spriteWorldSize: 0.8
+  lightPoints: []
+  enginePoints:
+  - {x: -0.36, y: 0}
+  rotorPoints: []
   landsOnCarrier: 1
   keepsUpright: 0

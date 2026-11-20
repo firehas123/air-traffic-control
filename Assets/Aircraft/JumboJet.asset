@@ -14,8 +14,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: AirTrafficControl::AirTrafficControl.AircraftType
   displayName: Jumbo jet
   speedMultiplier: 0.85
+  slowFactor: 0.6
+  fastFactor: 1.4
   size: 1.4
   collisionRadius: 0.35
   color: {r: 0.52, g: 0.78, b: 0.98, a: 1}
+  accentColor: {r: 0.96, g: 0.96, b: 0.96, a: 1}
   silhouette: 1
   landsOn: 0
+  sprite: {fileID: 21300000, guid: ecf572619e9c34364a8d7785255b19c9, type: 3}
+  spriteRotation: -90
+  spriteWorldSize: 0.8
+  lightPoints:
+  - {x: -0.095, y: 0.359}
+  - {x: -0.095, y: -0.359}
+  - {x: -0.352, y: 0}
+  enginePoints:
+  - {x: 0.02, y: 0.2}
+  - {x: 0.02, y: -0.2}
+  rotorPoints: []
+  landsOnCarrier: 0
+  keepsUpright: 0

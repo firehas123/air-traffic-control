@@ -14,8 +14,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: AirTrafficControl::AirTrafficControl.AircraftType
   displayName: Airliner
   speedMultiplier: 1
+  slowFactor: 0.6
+  fastFactor: 1.4
   size: 1
   collisionRadius: 0.25
   color: {r: 0.96, g: 0.96, b: 0.96, a: 1}
+  accentColor: {r: 0.96, g: 0.96, b: 0.96, a: 1}
   silhouette: 0
   landsOn: 0
+  sprite: {fileID: 21300000, guid: 34e1f9e6c51ee4c92b435ca2cdc5ab00, type: 3}
+  spriteRotation: -90
+  spriteWorldSize: 0.8
+  lightPoints:
+  - {x: -0.108, y: 0.325}
+  - {x: -0.108, y: -0.323}
+  - {x: -0.355, y: 0}
+  enginePoints:
+  - {x: 0.05, y: 0.12}
+  - {x: 0.05, y: -0.12}
+  rotorPoints: []
+  landsOnCarrier: 0
+  keepsUpright: 0

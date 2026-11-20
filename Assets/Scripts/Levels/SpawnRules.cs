@@ -10,6 +10,16 @@ namespace AirTrafficControl
         public const float MinClearDistance = 2.5f;
 
         /// <summary>
+        /// Keeps a spawn point just inside the screen, so aircraft still enter from the screen edges on any screen
+        /// shape (the camera crops the picture differently on wider screens).
+        /// </summary>
+        public static Vector2 ClampToView(Vector2 point, Rect view, float inset)
+        {
+            return new Vector2(Mathf.Clamp(point.x, view.xMin + inset, view.xMax - inset),
+                               Mathf.Clamp(point.y, view.yMin + inset, view.yMax - inset));
+        }
+
+        /// <summary>
         /// Starting at <paramref name="firstIndex"/> and wrapping round, returns the first spawn point with no
         /// aircraft within <see cref="MinClearDistance"/>, or -1 if every point is busy.
         /// </summary>

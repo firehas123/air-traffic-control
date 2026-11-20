@@ -124,6 +124,35 @@ namespace AirTrafficControl
         }
 
         /// <summary>
+        /// For a painted map: only the overlays that the picture does not show, in the runway's local coordinates:
+        /// the highlighted touchdown zone (tint and edges) and the two landing-direction arrows. The painted runway,
+        /// its stripes and centreline stay visible underneath.
+        /// </summary>
+        public static Mesh CreateRunwayOverlayMesh(Runway runway)
+        {
+            float zoneStart = -runway.Length / 2f + runway.TouchdownZoneStart;
+            float zoneLength = runway.TouchdownZoneLength;
+            float zoneEnd = zoneStart + zoneLength;
+            float width = runway.Width;
+            const float edge = 0.04f;
+
+            var builder = new MeshBuilder()
+                .Rect(new Vector2(zoneStart + zoneLength / 2f, 0f), new Vector2(zoneLength, width), ZoneFill)
+                .Rect(new Vector2(zoneStart + edge / 2f, 0f), new Vector2(edge, width), Arrow)
+                .Rect(new Vector2(zoneEnd - edge / 2f, 0f), new Vector2(edge, width), Arrow);
+
+            float arrowLength = Mathf.Min(0.28f, zoneLength * 0.4f);
+            float arrowHalfHeight = width / 2f * 0.55f;
+            for (int i = 0; i < 2; i++)
+            {
+                float back = zoneStart + zoneLength * (0.1f + 0.45f * i);
+                builder.Triangle(new Vector2(back, -arrowHalfHeight), new Vector2(back + arrowLength, 0f),
+                                 new Vector2(back, arrowHalfHeight), Arrow);
+            }
+            return builder.Build("RunwayOverlay");
+        }
+
+        /// <summary>
         /// Runway in local coordinates: centred on the origin, landing direction along +x.
         /// The touchdown zone (where lines must end to land) is highlighted, and yellow arrows inside it
         /// point the way aircraft must land.

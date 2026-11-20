@@ -14,11 +14,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: AirTrafficControl::AirTrafficControl.AircraftType
   displayName: Hot air balloon
   speedMultiplier: 0.35
+  slowFactor: 0.6
+  fastFactor: 1.4
   size: 1
   collisionRadius: 0.28
   color: {r: 1, g: 0.52, b: 0.76, a: 1}
   accentColor: {r: 0.55, g: 0.3, b: 0.82, a: 1}
   silhouette: 5
   landsOn: 2
+  sprite: {fileID: 21300000, guid: 963339a1e934a489aa775b0d99496626, type: 3}
+  spriteRotation: 0
+  spriteWorldSize: 0.8
+  lightPoints: []
+  enginePoints: []
+  rotorPoints: []
   landsOnCarrier: 0
   keepsUpright: 1

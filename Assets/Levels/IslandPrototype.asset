@@ -21,6 +21,15 @@ MonoBehaviour:
     coinsPerLanding: 5
     coinsPerDeparture: 5
     coinsPerStar: 10
+  mapArt:
+    sprite: {fileID: 21300000, guid: 67b4b831969eb46e28747180e7f0269c, type: 3}
+    pixelsPerUnit: 108.6
+    keepVisible:
+      serializedVersion: 2
+      x: -6.164825
+      y: -1.3996317
+      width: 12.384899
+      height: 5.847146
   islandCentre: {x: 1, y: -0.8}
   islandRadii: {x: 3.8, y: 2.1}
   departures:
@@ -47,55 +56,75 @@ MonoBehaviour:
     parkedPlanes:
     - {x: 1.3, y: 0.45}
     - {x: 1.9, y: 0.45}
-    windsockPosition: {x: -1.05, y: -1.5}
+    windsockPosition: {x: 2.2421732, y: 3.6187847}
     boatLanes:
-    - 4.3
-    - 2.3
+    - -2.4585636
+    - -4.6685085
     clouds: 3
     birds: 3
-    approachLights: 6
-    approachLightSpacing: 0.22
+    approachLights: 3
+    approachLightSpacing: 0.2
   ground:
     mainTaxiway:
-    - {x: -0.6, y: -0.15}
-    - {x: 2.6, y: -0.15}
+    - {x: -3.9548802, y: 1.3627993}
+    - {x: -3.9548802, y: 1.5009208}
+    - {x: -3.918048, y: 1.7311234}
+    - {x: -3.8167589, y: 1.8968693}
+    - {x: -3.5128913, y: 1.9797422}
+    - {x: 3.3655617, y: 1.9797422}
+    - {x: 3.6233885, y: 1.8876612}
+    - {x: 3.7523022, y: 1.7311234}
+    - {x: 3.7983427, y: 1.5009208}
+    - {x: 3.7983427, y: 1.3627993}
     gates:
-    - position: {x: 0.4, y: 0.45}
-      headingDegrees: 270
-      connector:
-      - {x: 0.4, y: 0.45}
-      - {x: 0.4, y: -0.15}
-      crossingIndex: -1
-    - position: {x: 1.6, y: -1.75}
+    - position: {x: -1.0451198, y: 2.3941069}
       headingDegrees: 90
       connector:
-      - {x: 1.6, y: -1.75}
-      - {x: 1.6, y: -1.32}
-      - {x: 1.6, y: -0.15}
+      - {x: -1.0451198, y: 2.3941069}
+      - {x: -1.0451198, y: 1.9797422}
+      crossingIndex: -1
+    - position: {x: 0.69521177, y: 2.3941069}
+      headingDegrees: 90
+      connector:
+      - {x: 0.69521177, y: 2.3941069}
+      - {x: 0.69521177, y: 1.9797422}
+      crossingIndex: -1
+    - position: {x: -0.17955801, y: -0.89318603}
+      headingDegrees: 90
+      connector:
+      - {x: -0.17955801, y: -0.89318603}
+      - {x: -0.17955801, y: -0.018416207}
+      - {x: -0.17955801, y: 1.3627993}
+      - {x: -0.17955801, y: 1.9797422}
       crossingIndex: 1
+    useLineUpPoints: 1
+    normalLineUp: {x: -3.9548802, y: 0.69981587}
+    reversedLineUp: {x: 3.7983427, y: 0.69981587}
+    liftOffDistance: 3
     taxiSpeed: 0.35
     queueSpacing: 0.75
   runways:
-  - centre: {x: 1, y: -0.8}
+  - centre: {x: -0.036832415, y: 0.69981587}
     landingHeadingDegrees: 0
-    length: 3.2
-    width: 0.6
-    touchdownZoneStart: 0.1
-    touchdownZoneLength: 0.7
+    length: 11.906077
+    width: 0.7918969
+    touchdownZoneStart: 0.12891345
+    touchdownZoneLength: 0.47882137
   landingPads:
   - kind: 1
-    centre: {x: -1.8, y: 0.15}
-    radius: 0.45
+    centre: {x: -3.9732966, y: 2.854512}
+    radius: 0.46040517
   - kind: 2
-    centre: {x: 3.55, y: 0.2}
-    radius: 0.55
+    centre: {x: 4.0561695, y: 2.9097607}
+    radius: 0.8563536
   carrier:
     hasCarrier: 1
     firstShipAfterSeconds: 10
     minSecondsBetweenShips: 40
     maxSecondsBetweenShips: 60
     secondsToCross: 20
-    laneY: -4.1
+    laneY: -3.8397791
+    highestLaneY: -2.3664825
     shipLength: 2.6
     shipWidth: 0.7
     deckLength: 2.1
@@ -109,7 +138,7 @@ MonoBehaviour:
     maxSecondsBetweenChanges: 40
     warningSeconds: 5
     landingGraceSeconds: 1.5
-    indicatorPosition: {x: 5.3, y: 1.8}
+    indicatorPosition: {x: 6.146409, y: 1.961326}
   aircraftTypes:
   - {fileID: 11400000, guid: 78932e9696c3e4f5db8166115bd9f27c, type: 2}
   - {fileID: 11400000, guid: ba844492ef7b944a6949d6b6fa12b6fd, type: 2}
@@ -119,11 +148,11 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 81585f62e792d4ee79f1220d35cd7695, type: 2}
   aircraftInAir: 2
   spawnPoints:
-  - position: {x: -5.5, y: 3.3}
-    headingDegrees: -10
-  - position: {x: 5.5, y: 3.3}
-    headingDegrees: 200
-  - position: {x: -5.5, y: -3.5}
+  - position: {x: -6.5, y: 3.6}
+    headingDegrees: -15
+  - position: {x: 6.5, y: 3.6}
+    headingDegrees: 195
+  - position: {x: -6.5, y: -2.8}
     headingDegrees: 15
-  - position: {x: 5.5, y: -3.6}
+  - position: {x: 6.5, y: -2.8}
     headingDegrees: 165

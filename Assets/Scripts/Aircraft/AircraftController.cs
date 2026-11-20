@@ -58,6 +58,12 @@ namespace AirTrafficControl
 
         static readonly List<AircraftController> active = new List<AircraftController>();
 
+        /// <summary>Material for painted aircraft images (unlit sprites). Set once by the game flow.</summary>
+        public static Material SpriteMaterial { get; set; }
+
+        SpriteRenderer bodySprite;
+        Color crashedColor;
+
         Camera worldCamera;
         LandingSystem landing;
         Mesh bodyMesh;
@@ -259,10 +265,16 @@ namespace AirTrafficControl
             bodyMesh = AircraftShape.CreateMesh(type.silhouette, type.color, type.accentColor, type.size);
             crashedMesh = AircraftShape.CreateMesh(type.silhouette, colors.crashed, colors.crashed, type.size);
             // The shape lives on a child, so animations can lean or bob it without stretching the status rings.
-            GameObject body = MeshBuilder.CreateObject("Body", bodyMesh, material, PlaneSortingOrder, Vector2.zero, 0f);
+            // With a painted image (art rule of 20 Nov 2026) the image is drawn instead of the code shape.
+            crashedColor = colors.crashed;
+            bool painted = type.sprite != null && SpriteMaterial != null;
+            GameObject body = MeshBuilder.CreateObject("Body", painted ? new Mesh { name = "PaintedBody" } : bodyMesh, material,
+                PlaneSortingOrder, Vector2.zero, 0f);
             body.transform.SetParent(transform, false);
             bodyFilter = body.GetComponent<MeshFilter>();
             bodyRenderer = body.GetComponent<MeshRenderer>();
+            if (painted)
+                bodySprite = CreateSpriteChild(body.transform, type, SpriteMaterial, PlaneSortingOrder);
 
             visuals = gameObject.AddComponent<AircraftVisuals>();
             visuals.Initialise(this, type, body.transform,
@@ -326,6 +338,25 @@ namespace AirTrafficControl
             pathLine.positionCount = 0;
 
             ApplyTransform();
+        }
+
+        /// <summary>
+        /// Draws a kind's painted image under <paramref name="parent"/>: turned so the nose points along local +x and
+        /// scaled so the image's square is the kind's world size.
+        /// </summary>
+        public static SpriteRenderer CreateSpriteChild(Transform parent, AircraftType type, Material material, int sortingOrder)
+        {
+            var go = new GameObject("Image");
+            go.transform.SetParent(parent, false);
+            go.transform.localRotation = Quaternion.Euler(0f, 0f, type.spriteRotation);
+            var renderer = go.AddComponent<SpriteRenderer>();
+            renderer.sprite = type.sprite;
+            renderer.sharedMaterial = material;
+            renderer.sortingOrder = sortingOrder;
+            float imageSize = Mathf.Max(type.sprite.bounds.size.x, type.sprite.bounds.size.y);
+            float scale = imageSize > 0f ? type.spriteWorldSize * type.size / imageSize : 1f;
+            go.transform.localScale = new Vector3(scale, scale, 1f);
+            return renderer;
         }
 
         static Mesh SpeedIcon(Vector2 at, int chevrons)
@@ -520,7 +551,10 @@ namespace AirTrafficControl
             pathLine.positionCount = 0;
             warningRing.SetActive(false);
             crashMark.SetActive(true);
-            bodyFilter.sharedMesh = crashedMesh;
+            if (bodySprite != null)
+                bodySprite.color = crashedColor;
+            else
+                bodyFilter.sharedMesh = crashedMesh;
             visuals.HideLights();
             ShowStatus();
         }

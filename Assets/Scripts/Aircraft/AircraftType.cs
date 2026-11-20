@@ -79,6 +79,25 @@ namespace AirTrafficControl
 
         public LandingZoneKind landsOn = LandingZoneKind.Runway;
 
+        [Header("Painted image (art rule of 20 Nov 2026; without one, the code-drawn shape is used)")]
+        public Sprite sprite;
+
+        [Tooltip("Turns the image so its nose points the way the aircraft flies. Images drawn nose-up need -90.")]
+        public float spriteRotation = -90f;
+
+        [Tooltip("World size of the image's full square at size 1 (the airliner's 512-pixel image is 0.8 units, so " +
+                 "the aircraft in it is about 0.72 units long, the same as the code-drawn shape).")]
+        public float spriteWorldSize = 0.8f;
+
+        [Tooltip("Where the white strobe lights sit on the image, in the aircraft's own units at size 1 (x towards the nose, y to the left).")]
+        public Vector2[] lightPoints = new Vector2[0];
+
+        [Tooltip("Where contrails start (airliner, jumbo) or the afterburner sits (fighter), same units.")]
+        public Vector2[] enginePoints = new Vector2[0];
+
+        [Tooltip("Rotor hubs: helicopter main then tail rotor; drone its four rotors. Same units.")]
+        public Vector2[] rotorPoints = new Vector2[0];
+
         [Tooltip("Can also land on the carrier ship's deck when a level has one (blueprint 13.2: fighter jets only).")]
         public bool landsOnCarrier;
 

@@ -60,6 +60,9 @@ namespace AirTrafficControl
         /// <summary>Raised when the player taps Levels (during play or on an end panel).</summary>
         public event Action LevelsPressed;
 
+        /// <summary>Raised when the owner taps the Zones debug button (outlines the level data on the map).</summary>
+        public event Action ZonesPressed;
+
         /// <summary>Raised when the player taps the Speed button.</summary>
         public event Action SpeedPressed;
 
@@ -106,6 +109,17 @@ namespace AirTrafficControl
             levelsButton.onClick.AddListener(() => LevelsPressed?.Invoke());
             touchBlockers.Add(levels);
             CreateText("Label", levels, 26, Color.white, FontStyle.Bold).text = "Levels";
+
+            // Debug: Zones outlines every zone, gate and route on the painted map.
+            RectTransform zones = CreateBox("ZonesButton", root, PillColor);
+            zones.anchorMin = zones.anchorMax = zones.pivot = new Vector2(0f, 1f);
+            zones.anchoredPosition = new Vector2(176f, -100f);
+            zones.sizeDelta = new Vector2(140f, 56f);
+            var zonesButton = zones.gameObject.AddComponent<Button>();
+            zonesButton.targetGraphic = zones.GetComponent<Image>();
+            zonesButton.onClick.AddListener(() => ZonesPressed?.Invoke());
+            touchBlockers.Add(zones);
+            CreateText("Label", zones, 26, Color.white, FontStyle.Bold).text = "Zones";
 
             // Top right: Speed, Wind, Slow draw.
             speedLabel = CreateTopRightButton("SpeedButton", root, 0, () => SpeedPressed?.Invoke(), out _);

@@ -14,11 +14,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: AirTrafficControl::AirTrafficControl.AircraftType
   displayName: Helicopter
   speedMultiplier: 0.6
+  slowFactor: 0.6
+  fastFactor: 1.4
   size: 1
   collisionRadius: 0.25
   color: {r: 0.95, g: 0.5, b: 0.12, a: 1}
   accentColor: {r: 0.95, g: 0.5, b: 0.12, a: 1}
   silhouette: 3
   landsOn: 1
+  sprite: {fileID: 21300000, guid: da96fa783662e47c3804a08722ed47c2, type: 3}
+  spriteRotation: -90
+  spriteWorldSize: 0.8
+  lightPoints: []
+  enginePoints: []
+  rotorPoints:
+  - {x: 0.134, y: 0}
+  - {x: -0.327, y: 0}
   landsOnCarrier: 0
   keepsUpright: 0

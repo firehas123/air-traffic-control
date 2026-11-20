@@ -31,6 +31,7 @@ namespace AirTrafficControl
         Transform body;
         Transform shadow;
         Renderer shadowRenderer;
+        SpriteRenderer shadowSprite;
         Renderer strobes;
         Transform mainRotor;
         Transform tailRotor;
@@ -60,9 +61,20 @@ namespace AirTrafficControl
             lastHeading = owner.transform.eulerAngles.z;
 
             // Shadow: a world-space copy of the shape, in soft dark, so it can sit below and offset from the aircraft.
-            shadow = MeshBuilder.CreateObject("Shadow", shadowMesh, material, ShadowOrder, owner.transform.position, 0f).transform;
-            shadowRenderer = shadow.GetComponent<Renderer>();
-            Tint.Set(shadowRenderer, new Color(1f, 1f, 1f, Animations.Settings.shadowAlpha));
+            // With a painted image it is the same image, tinted dark.
+            if (kind.sprite != null && AircraftController.SpriteMaterial != null)
+            {
+                shadow = new GameObject("Shadow").transform;
+                shadow.position = owner.transform.position;
+                shadowSprite = AircraftController.CreateSpriteChild(shadow, kind, AircraftController.SpriteMaterial, ShadowOrder);
+                shadowSprite.color = new Color(0f, 0.05f, 0.1f, Animations.Settings.shadowAlpha);
+            }
+            else
+            {
+                shadow = MeshBuilder.CreateObject("Shadow", shadowMesh, material, ShadowOrder, owner.transform.position, 0f).transform;
+                shadowRenderer = shadow.GetComponent<Renderer>();
+                Tint.Set(shadowRenderer, new Color(1f, 1f, 1f, Animations.Settings.shadowAlpha));
+            }
 
             float s = kind.size;
             switch (kind.silhouette)
@@ -70,15 +82,15 @@ namespace AirTrafficControl
                 case AircraftSilhouette.Airliner:
                 case AircraftSilhouette.JumboJet:
                     var lights = new MeshBuilder();
-                    foreach (Vector2 p in AircraftShape.StrobePoints(kind.silhouette, s))
+                    foreach (Vector2 p in Points(kind.lightPoints, AircraftShape.StrobePoints(kind.silhouette, s)))
                         lights.Ellipse(p, new Vector2(0.035f, 0.035f) * Mathf.Max(1f, s), 10, LightColor);
                     strobes = Child("Strobes", lights.Build("Strobes"), Vector2.zero, material).GetComponent<Renderer>();
-                    foreach (Vector2 p in AircraftShape.EnginePoints(kind.silhouette, s))
+                    foreach (Vector2 p in Points(kind.enginePoints, AircraftShape.EnginePoints(kind.silhouette, s)))
                         trails.Add(Trail(p, Animations.Settings.contrailSeconds, 0.035f * s, 0.32f, material));
                     break;
 
                 case AircraftSilhouette.FighterJet:
-                    Vector2 exhaust = AircraftShape.FighterExhaust(s);
+                    Vector2 exhaust = Points(kind.enginePoints, new[] { AircraftShape.FighterExhaust(s) })[0];
                     flame = Child("Afterburner", new MeshBuilder()
                         .Triangle(new Vector2(0f, -0.035f * s), new Vector2(-0.16f * s, 0f), new Vector2(0f, 0.035f * s), FlameColor)
                         .Build("Flame"), exhaust, material).transform;
@@ -86,12 +98,13 @@ namespace AirTrafficControl
                     break;
 
                 case AircraftSilhouette.Helicopter:
-                    mainRotor = Child("Rotor", AircraftShape.HelicopterRotor(kind.color, s), AircraftShape.HelicopterRotorHub(s), material).transform;
-                    tailRotor = Child("TailRotor", AircraftShape.HelicopterTailRotor(kind.color, s), AircraftShape.HelicopterTailHub(s), material).transform;
+                    Vector2[] hubs = Points(kind.rotorPoints, new[] { AircraftShape.HelicopterRotorHub(s), AircraftShape.HelicopterTailHub(s) });
+                    mainRotor = Child("Rotor", AircraftShape.HelicopterRotor(kind.color, s), hubs[0], material).transform;
+                    tailRotor = Child("TailRotor", AircraftShape.HelicopterTailRotor(kind.color, s), hubs.Length > 1 ? hubs[1] : AircraftShape.HelicopterTailHub(s), material).transform;
                     break;
 
                 case AircraftSilhouette.Drone:
-                    foreach (Vector2 hub in AircraftShape.DroneHubs(s))
+                    foreach (Vector2 hub in Points(kind.rotorPoints, AircraftShape.DroneHubs(s)))
                         droneBlades.Add(Child("Blade", AircraftShape.DroneBlade(kind.color, s), hub, material).transform);
                     droneLight = Child("Light", SceneryShapes.LightDot(0.035f, LightColor), Vector2.zero, material).GetComponent<Renderer>();
                     break;
@@ -100,6 +113,17 @@ namespace AirTrafficControl
                     burner = Child("Burner", SceneryShapes.LightDot(0.09f * s, BurnerColor), Vector2.zero, material).GetComponent<Renderer>();
                     break;
             }
+        }
+
+        // Points measured on the painted image (scaled by the kind's size) when there is one; otherwise the code shape's.
+        Vector2[] Points(Vector2[] painted, Vector2[] codeShape)
+        {
+            if (type.sprite == null || painted == null || painted.Length == 0)
+                return codeShape;
+            var result = new Vector2[painted.Length];
+            for (int i = 0; i < painted.Length; i++)
+                result[i] = painted[i] * type.size;
+            return result;
         }
 
         GameObject Child(string name, Mesh mesh, Vector2 localPosition, Material material)

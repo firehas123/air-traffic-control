@@ -45,12 +45,93 @@ public static class PrototypeSceneSetup
         serialized.FindProperty("shapeMaterial").objectReferenceValue = material;
         serialized.FindProperty("catalog").objectReferenceValue = catalog;
         serialized.FindProperty("animationSettings").objectReferenceValue = LoadOrCreateAnimationSettings();
+        serialized.FindProperty("spriteMaterial").objectReferenceValue =
+            AssetDatabase.LoadAssetAtPath<Material>(SpriteUnlitMaterialPath);
         serialized.ApplyModifiedPropertiesWithoutUndo();
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
         AssetDatabase.SaveAssets();
         Debug.Log("PrototypeSceneSetup: SampleScene is ready.");
+    }
+
+    const string SpriteUnlitMaterialPath = "Packages/com.unity.render-pipelines.universal/Runtime/Materials/Sprite-Unlit-Default.mat";
+    const string MapPath = "Assets/Art/Maps/island_day.png";
+    const string AircraftArtFolder = "Assets/Art/Aircraft";
+
+    // Imports the painted images with good settings for the iPad, gives each aircraft kind its image, and the first
+    // time the Island picture is used, fits the level data to it (positions measured from pixels in the picture).
+    static void ApplyPaintedArt(LevelData level)
+    {
+        // Map: full resolution (1449 x 1086, never scaled down), smooth filtering, ASTC 4x4 on iOS (the highest-quality
+        // ASTC block), 108.6 pixels per unit so the picture is 10 units high, the game's world scale.
+        ConfigureTexture(MapPath, 108.6f, mipmaps: false, maxSize: 2048);
+        var map = AssetDatabase.LoadAssetAtPath<Sprite>(MapPath);
+        if (map != null && level.mapArt.sprite == null)
+        {
+            level.mapArt.sprite = map;
+            level.mapArt.pixelsPerUnit = 108.6f;
+            IslandPictureLayout.Apply(level);
+        }
+
+        // Aircraft: 512-pixel images, mipmaps and trilinear filtering so they stay crisp when drawn small.
+        SetAircraftArt("Airliner", "airliner.png", -90f,
+            lights: new[] { new Vector2(-0.108f, 0.325f), new Vector2(-0.108f, -0.323f), new Vector2(-0.355f, 0f) },
+            engines: new[] { new Vector2(0.05f, 0.12f), new Vector2(0.05f, -0.12f) });
+        SetAircraftArt("JumboJet", "jumbo_jet.png", -90f,
+            lights: new[] { new Vector2(-0.095f, 0.359f), new Vector2(-0.095f, -0.359f), new Vector2(-0.352f, 0f) },
+            engines: new[] { new Vector2(0.02f, 0.2f), new Vector2(0.02f, -0.2f) });
+        SetAircraftArt("FighterJet", "fighter_jet.png", -90f,
+            engines: new[] { new Vector2(-0.36f, 0f) });
+        SetAircraftArt("Helicopter", "helicopter.png", -90f,
+            rotors: new[] { new Vector2(0.134f, 0f), new Vector2(-0.327f, 0f) });
+        SetAircraftArt("Drone", "drone.png", -90f,
+            rotors: new[] { new Vector2(0.272f, 0.3f), new Vector2(0.272f, -0.3f), new Vector2(-0.256f, 0.294f), new Vector2(-0.256f, -0.288f) });
+        SetAircraftArt("HotAirBalloon", "hot_air_balloon.png", 0f); // stays upright
+    }
+
+    static void SetAircraftArt(string kindFile, string imageFile, float rotation,
+                               Vector2[] lights = null, Vector2[] engines = null, Vector2[] rotors = null)
+    {
+        string imagePath = $"{AircraftArtFolder}/{imageFile}";
+        ConfigureTexture(imagePath, 640f, mipmaps: true, maxSize: 512);
+        var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(imagePath);
+        var type = AssetDatabase.LoadAssetAtPath<AircraftType>($"{AircraftFolder}/{kindFile}.asset");
+        if (sprite == null || type == null || type.sprite != null)
+            return; // missing, or already set (tuned values are kept)
+        type.sprite = sprite;
+        type.spriteRotation = rotation;
+        type.spriteWorldSize = 0.8f;
+        type.lightPoints = lights ?? new Vector2[0];
+        type.enginePoints = engines ?? new Vector2[0];
+        type.rotorPoints = rotors ?? new Vector2[0];
+        EditorUtility.SetDirty(type);
+        AssetDatabase.SaveAssetIfDirty(type);
+    }
+
+    static void ConfigureTexture(string path, float pixelsPerUnit, bool mipmaps, int maxSize)
+    {
+        var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+        if (importer == null)
+            return;
+        importer.textureType = TextureImporterType.Sprite;
+        importer.spriteImportMode = SpriteImportMode.Single;
+        importer.spritePixelsPerUnit = pixelsPerUnit;
+        importer.mipmapEnabled = mipmaps;
+        importer.filterMode = mipmaps ? FilterMode.Trilinear : FilterMode.Bilinear;
+        importer.wrapMode = TextureWrapMode.Clamp;
+        importer.alphaIsTransparency = true;
+        importer.maxTextureSize = maxSize;
+        importer.textureCompression = TextureImporterCompression.CompressedHQ;
+        importer.SetPlatformTextureSettings(new TextureImporterPlatformSettings
+        {
+            name = "iPhone",
+            overridden = true,
+            maxTextureSize = maxSize,
+            format = TextureImporterFormat.ASTC_4x4,
+            compressionQuality = 100,
+        });
+        importer.SaveAndReimport();
     }
 
     // M3 step 2: every animation value in one asset (blueprint 15.3). An existing asset is kept.
@@ -105,6 +186,9 @@ public static class PrototypeSceneSetup
         AddKind(level, "Helicopter", AircraftSilhouette.Helicopter);
         AddKind(level, "Drone", AircraftSilhouette.Drone);
         AddKind(level, "HotAirBalloon", AircraftSilhouette.HotAirBalloon);
+
+        // Painted art (art rule of 20 Nov 2026): the Island map and the aircraft images.
+        ApplyPaintedArt(level);
 
         // M3: the test level gets two gates and one runway crossing, so the owner can try ground control
         // (blueprint 15.4). Gate A is on the apron north of the runway; gate B is a remote stand to the south,

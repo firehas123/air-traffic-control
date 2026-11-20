@@ -42,6 +42,9 @@ namespace AirTrafficControl
         readonly List<Vector2> main;
         readonly float taxiSpeed;
         readonly float airSpeed;
+        readonly Vector2? normalLineUp;
+        readonly Vector2? reversedLineUp;
+        readonly float fixedLiftOffDistance;
 
         readonly List<Vector2> leg = new List<Vector2>();
         int legNext;
@@ -57,9 +60,16 @@ namespace AirTrafficControl
 
         enum LegKind { Connector, Crossing, AfterCrossing, Main, LineUp }
 
+        /// <param name="normalLineUpPoint">Where it enters the runway for the normal direction (a painted taxiway's end); null = just past the threshold.</param>
+        /// <param name="reversedLineUpPoint">The same for the reversed direction.</param>
+        /// <param name="liftOffDistance">Distance from the line-up point to lift-off; 0 = 70% of the runway that is left.</param>
         public GroundMovement(IReadOnlyList<Vector2> gateConnector, int gateCrossingIndex, IReadOnlyList<Vector2> mainTaxiway,
-                              float taxiSpeed, float airSpeed, float gateHeadingDegrees, bool runwayReversed)
+                              float taxiSpeed, float airSpeed, float gateHeadingDegrees, bool runwayReversed,
+                              Vector2? normalLineUpPoint = null, Vector2? reversedLineUpPoint = null, float liftOffDistance = 0f)
         {
+            normalLineUp = normalLineUpPoint;
+            reversedLineUp = reversedLineUpPoint;
+            fixedLiftOffDistance = Mathf.Max(0f, liftOffDistance);
             connector = new List<Vector2>(gateConnector);
             crossingIndex = gateCrossingIndex >= 0 && gateCrossingIndex < connector.Count - 1 ? gateCrossingIndex : -1;
             main = new List<Vector2>(mainTaxiway);
@@ -126,8 +136,14 @@ namespace AirTrafficControl
             if (Phase != GroundPhase.HoldingShort)
                 return false;
             takeOffRunway = runway;
-            lineUpPoint = runway.Threshold + runway.Direction * LineUpInset;
-            liftOffDistance = Mathf.Max(0.3f, (runway.Length - LineUpInset) * LiftOffFraction);
+            Vector2? chosen = towardReversedEnd ? reversedLineUp : normalLineUp;
+            lineUpPoint = chosen ?? runway.Threshold + runway.Direction * LineUpInset;
+            // How much runway is left ahead of the line-up point, in the take-off direction.
+            float fromThreshold = Vector2.Dot(lineUpPoint - runway.Threshold, runway.Direction);
+            float remaining = Mathf.Max(0.5f, runway.Length - fromThreshold);
+            liftOffDistance = fixedLiftOffDistance > 0f
+                ? Mathf.Min(fixedLiftOffDistance, remaining * 0.9f)
+                : Mathf.Max(0.3f, remaining * LiftOffFraction);
             // A rolling take-off from taxi speed, reaching flying speed exactly at the lift-off point.
             float startSpeed = Mathf.Min(taxiSpeed, airSpeed * 0.9f);
             acceleration = (airSpeed * airSpeed - startSpeed * startSpeed) / (2f * liftOffDistance);

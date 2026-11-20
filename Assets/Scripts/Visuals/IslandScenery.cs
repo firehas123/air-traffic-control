@@ -8,6 +8,9 @@ namespace AirTrafficControl
     /// the terminal with its control tower, the apron with parked planes, taxiways and hold lines, a windsock that
     /// shows the wind, boats, drifting clouds with soft shadows, and a few birds. Decoration only: it never affects
     /// play. Each animated group moves as one transform, so it costs little per frame (60 FPS on the iPad).
+    ///
+    /// With a painted map (art rule of 20 Nov 2026) the picture already shows the sea, island, beach, rocks, palms,
+    /// terminal, tower, apron and taxiways, so only the overlays are drawn: windsock, boats, clouds with shadows, birds.
     /// </summary>
     public sealed class IslandScenery : MonoBehaviour
     {
@@ -35,12 +38,19 @@ namespace AirTrafficControl
         float screenHalfWidth;
         float time;
 
-        public void Initialise(LevelData level, Camera camera, LandingSystem landingSystem, Material material)
+        public void Initialise(LevelData level, Camera camera, LandingSystem landingSystem, Material material, bool paintedMap = false)
         {
             worldCamera = camera;
             landing = landingSystem;
             screenHalfWidth = camera.orthographicSize * camera.aspect;
             SceneryLayout layout = level.scenery;
+
+            if (paintedMap)
+            {
+                BuildOverlays(layout, material);
+                Place(0f);
+                return;
+            }
 
             // Sea: two layers of wave marks drifting at different speeds give a gentle shimmer.
             seaTile = new Vector2(screenHalfWidth * 2f + 2f, camera.orthographicSize * 2f + 1f);
@@ -72,12 +82,20 @@ namespace AirTrafficControl
                 palmFronds.Add(fronds.transform);
             }
 
+            BuildOverlays(layout, material);
+            Place(0f);
+        }
+
+        // Windsock, boats, clouds and birds: drawn over a painted map too.
+        void BuildOverlays(SceneryLayout layout, Material material)
+        {
             // Windsock: a pole and a cone that points the way the wind blows.
             Create("WindsockPole", SceneryShapes.WindsockPole(), material, SceneryShapes.WindsockOrder + 1, layout.windsockPosition);
             windsock = Create("Windsock", SceneryShapes.WindsockCone(), material, SceneryShapes.WindsockOrder, layout.windsockPosition).transform;
             windsockAngle = WindBlowsTowards();
             windsock.rotation = Quaternion.Euler(0f, 0f, windsockAngle);
 
+            Rect view = CameraFraming.CurrentView(worldCamera);
             var random = new System.Random(7);
             for (int i = 0; i < layout.boatLanes.Count; i++)
             {
@@ -93,18 +111,16 @@ namespace AirTrafficControl
                 GameObject shadow = Create("CloudShadow", SceneryShapes.CloudMesh(200 + i, true), material, SceneryShapes.CloudShadowOrder, Vector2.zero);
                 GameObject cloud = Create("Cloud", SceneryShapes.CloudMesh(200 + i, false), material, SceneryShapes.CloudOrder, Vector2.zero);
                 clouds.Add(new Mover { transform = cloud.transform, shadow = shadow.transform,
-                                       y = -3f + 6.5f * (i + 0.5f) / Mathf.Max(1, layout.clouds),
+                                       y = view.yMin + 1f + (view.height - 2f) * (i + 0.5f) / Mathf.Max(1, layout.clouds),
                                        speed = 0.7f + 0.6f * (float)random.NextDouble(), phase = (float)random.NextDouble() * 20f });
             }
 
             for (int i = 0; i < layout.birds; i++)
             {
                 GameObject bird = Create("Bird", SceneryShapes.BirdMesh(), material, SceneryShapes.BirdOrder, Vector2.zero);
-                birds.Add(new Mover { transform = bird.transform, y = 2.6f - i * 0.35f, speed = 0.9f + 0.2f * i,
+                birds.Add(new Mover { transform = bird.transform, y = view.yMax - 2.4f - i * 0.35f, speed = 0.9f + 0.2f * i,
                                       phase = i * 0.7f });
             }
-
-            Place(0f);
         }
 
         void BuildTaxiways(LevelData level, Material material)
@@ -176,11 +192,17 @@ namespace AirTrafficControl
         {
             AnimationSettings a = Animations.Settings;
 
-            seaFar.position = new Vector2(AnimationMath.Wrap(t * a.waveDriftSpeed * 0.6f, 0f, seaTile.x), 0f);
-            seaNear.position = new Vector2(AnimationMath.Wrap(-t * a.waveDriftSpeed, 0f, seaTile.x) + 0.3f, 0.2f);
+            if (seaFar != null)
+            {
+                seaFar.position = new Vector2(AnimationMath.Wrap(t * a.waveDriftSpeed * 0.6f, 0f, seaTile.x), 0f);
+                seaNear.position = new Vector2(AnimationMath.Wrap(-t * a.waveDriftSpeed, 0f, seaTile.x) + 0.3f, 0.2f);
+            }
 
-            float foamScale = 1f + AnimationMath.Sway(t, a.foamPulse, a.foamPulseSeconds);
-            foam.localScale = new Vector3(foamScale, foamScale, 1f);
+            if (foam != null)
+            {
+                float foamScale = 1f + AnimationMath.Sway(t, a.foamPulse, a.foamPulseSeconds);
+                foam.localScale = new Vector3(foamScale, foamScale, 1f);
+            }
 
             for (int i = 0; i < palmFronds.Count; i++)
                 palmFronds[i].rotation = Quaternion.Euler(0f, 0f, AnimationMath.Sway(t, a.palmSwayDegrees, a.palmSwaySeconds, i * 0.17f));

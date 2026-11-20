@@ -98,7 +98,11 @@ namespace AirTrafficControl
             float width = height * worldCamera.aspect;
             float cameraX = worldCamera.transform.position.x;
 
-            CurrentPass = new CarrierPass(cameraX - width / 2f, cameraX + width / 2f, settings.laneY, schedule.NextFromLeft,
+            // On wider screens the bottom of the map is cropped: move the lane up to stay on screen, never above the shore.
+            float viewBottom = worldCamera.transform.position.y - height / 2f;
+            float laneY = Mathf.Min(Mathf.Max(settings.laneY, viewBottom + settings.shipWidth / 2f + 0.15f), settings.highestLaneY);
+
+            CurrentPass = new CarrierPass(cameraX - width / 2f, cameraX + width / 2f, laneY, schedule.NextFromLeft,
                                           settings.secondsToCross, settings.shipLength, settings.shipWidth,
                                           settings.deckLength, settings.deckWidth,
                                           settings.touchdownZoneStart, settings.touchdownZoneLength);

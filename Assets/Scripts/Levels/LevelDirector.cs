@@ -35,6 +35,7 @@ namespace AirTrafficControl
         const float ClearedPauseSeconds = 0.3f;
         const float RespawnDelay = 1f;      // seconds after a landing
         const float BusyRetryDelay = 0.5f;  // seconds to wait when every spawn point is busy
+        const float SpawnInset = 0.35f;     // aircraft appear this far inside the screen edge
 
         LevelSession session = new LevelSession();
         readonly GameClock clock = new GameClock();
@@ -239,8 +240,12 @@ namespace AirTrafficControl
 
             AircraftType kind = departureKinds.Count > 0 ? departureKinds[kindPicker.Next(departureKinds.Count)] : PickKind();
             float airSpeed = aircraftSettings.speed * kind.speedMultiplier;
-            var ground = new GroundMovement(gate.connector, gate.crossingIndex, level.ground.mainTaxiway,
-                                            level.ground.taxiSpeed, airSpeed, gate.headingDegrees, landing.IsReversed);
+            GroundLayout layout = level.ground;
+            var ground = new GroundMovement(gate.connector, gate.crossingIndex, layout.mainTaxiway,
+                                            layout.taxiSpeed, airSpeed, gate.headingDegrees, landing.IsReversed,
+                                            layout.useLineUpPoints ? layout.normalLineUp : (Vector2?)null,
+                                            layout.useLineUpPoints ? layout.reversedLineUp : (Vector2?)null,
+                                            layout.liftOffDistance);
             var motion = new AircraftMotion(gate.position, gate.headingDegrees, airSpeed, aircraftSettings.turnRate);
             AircraftController aircraft = AircraftController.SpawnAtGate(kind, motion, ground, worldCamera, landing, material,
                                                                          aircraftSettings.colors, aircraftSettings.edgeMargin);
@@ -613,6 +618,12 @@ namespace AirTrafficControl
             foreach (AircraftController other in AircraftController.Active)
                 aircraftPositions.Add(other.transform.position);
 
+            // Spawn points stay just inside the current screen edges, whatever the screen shape.
+            Rect view = CameraFraming.CurrentView(worldCamera);
+            spawnPositions.Clear();
+            foreach (SpawnPoint spawn in level.spawnPoints)
+                spawnPositions.Add(SpawnRules.ClampToView(spawn.position, view, SpawnInset));
+
             int index = SpawnRules.ChooseClearPoint(spawnPositions, aircraftPositions, nextSpawnIndex);
             if (index < 0)
                 return false;
@@ -621,7 +632,7 @@ namespace AirTrafficControl
             SpawnPoint point = level.spawnPoints[index];
             AircraftType type = PickKind();
             float speed = aircraftSettings.speed * type.speedMultiplier;
-            var motion = new AircraftMotion(point.position, point.headingDegrees, speed, aircraftSettings.turnRate);
+            var motion = new AircraftMotion(spawnPositions[index], point.headingDegrees, speed, aircraftSettings.turnRate);
             AircraftController aircraft = AircraftController.Spawn(type, motion, worldCamera, landing, material,
                                                                    aircraftSettings.colors, aircraftSettings.edgeMargin);
             aircraft.Landed += OnAircraftLanded;

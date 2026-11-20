@@ -29,8 +29,12 @@ namespace AirTrafficControl
         /// <summary>True when every runway lands the opposite way to its level data.</summary>
         public bool IsReversed { get; private set; }
 
+        /// <param name="paintedMap">
+        /// True when the level has a painted map: the picture shows the runway, helipad and balloon field, so only the
+        /// overlays are drawn (touchdown-zone highlight and arrows, glows, lights).
+        /// </param>
         public void Initialise(IEnumerable<RunwayDefinition> runwayDefinitions, IEnumerable<LandingPadDefinition> padDefinitions,
-                               Material material, SceneryLayout scenery = null)
+                               Material material, SceneryLayout scenery = null, bool paintedMap = false)
         {
             foreach (RunwayDefinition definition in runwayDefinitions)
             {
@@ -40,7 +44,8 @@ namespace AirTrafficControl
 
                 // The mesh is drawn with the landing direction along local +x, so turning the view
                 // through 180 degrees moves the arrows, the zone and its glow to the other end.
-                GameObject view = MeshBuilder.CreateObject("Runway", MapShapes.CreateRunwayMesh(runway), material,
+                Mesh runwayMesh = paintedMap ? MapShapes.CreateRunwayOverlayMesh(runway) : MapShapes.CreateRunwayMesh(runway);
+                GameObject view = MeshBuilder.CreateObject("Runway", runwayMesh, material,
                     MapShapes.RunwaySortingOrder, runway.Centre, runway.LandingHeadingDegrees);
                 view.transform.SetParent(transform, true);
                 runwayViews.Add(view.transform);
@@ -66,8 +71,9 @@ namespace AirTrafficControl
                         continue; // runways are set up separately
                     pads.Add(pad);
 
-                    Mesh mesh = pad.Kind == LandingZoneKind.Helipad
-                        ? MapShapes.CreateHelipadMesh(pad.Radius)
+                    // On a painted map the pad itself is in the picture; only its glow is drawn.
+                    Mesh mesh = paintedMap ? new Mesh { name = "PaintedPad" }
+                        : pad.Kind == LandingZoneKind.Helipad ? MapShapes.CreateHelipadMesh(pad.Radius)
                         : MapShapes.CreateBalloonFieldMesh(pad.Radius);
                     GameObject view = MeshBuilder.CreateObject(pad.Kind.ToString(), mesh, material,
                         MapShapes.RunwaySortingOrder, pad.Centre, 0f);

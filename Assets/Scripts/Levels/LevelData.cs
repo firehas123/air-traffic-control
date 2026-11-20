@@ -24,7 +24,10 @@ namespace AirTrafficControl
         [Header("Result screen (C10)")]
         public ResultSettings result = new ResultSettings();
 
-        [Header("Island (drawn under the runway)")]
+        [Header("Painted map (art rule of 20 Nov 2026: maps are painted images under Assets/Art)")]
+        public MapArtSettings mapArt = new MapArtSettings();
+
+        [Header("Island (drawn in code only when the level has no painted map)")]
         public Vector2 islandCentre = new Vector2(1f, -0.8f);
         public Vector2 islandRadii = new Vector2(3.8f, 2.1f);
 
@@ -72,6 +75,38 @@ namespace AirTrafficControl
             new SpawnPoint(new Vector2(-5.5f, -3.5f), 15f),  // bottom left, heading right and up
             new SpawnPoint(new Vector2(5.5f, -3.6f), 165f),  // bottom right, heading left and up
         };
+    }
+
+    /// <summary>
+    /// A painted map image as the level's background (art rule changed by the owner on 20 Nov 2026). The sprite is
+    /// imported with <see cref="pixelsPerUnit"/> so the picture keeps the game's world scale, centred on the origin.
+    /// Every zone, gate and taxi route in the level data is measured from pixel positions in this picture.
+    /// </summary>
+    [Serializable]
+    public sealed class MapArtSettings
+    {
+        public Sprite sprite;
+
+        [Tooltip("Picture pixels per world unit. 108.6 makes the 1086-pixel-high Island picture 10 units high.")]
+        public float pixelsPerUnit = 108.6f;
+
+        [Tooltip("World area that must always be on screen (the airport). On wider screens the camera crops sea at " +
+                 "the edges of the picture, never this area.")]
+        public Rect keepVisible = new Rect(-6.165f, -1.4f, 12.385f, 5.848f);
+
+        public bool HasPicture => sprite != null;
+
+        /// <summary>The picture's area in world units.</summary>
+        public Rect WorldRect
+        {
+            get
+            {
+                if (sprite == null)
+                    return new Rect();
+                Vector2 size = sprite.rect.size / Mathf.Max(1f, pixelsPerUnit);
+                return new Rect(-size / 2f, size);
+            }
+        }
     }
 
     /// <summary>
@@ -136,6 +171,15 @@ namespace AirTrafficControl
         public List<Vector2> mainTaxiway = new List<Vector2> { new Vector2(-0.6f, -0.15f), new Vector2(2.6f, -0.15f) };
 
         public List<GateDefinition> gates = new List<GateDefinition>();
+
+        [Tooltip("Where a departure enters the runway for the normal landing direction (take-off the same way). " +
+                 "Used when 'Use Line Up Points' is on; otherwise it lines up just past the threshold.")]
+        public bool useLineUpPoints;
+        public Vector2 normalLineUp;
+        public Vector2 reversedLineUp;
+
+        [Tooltip("Distance along the runway from the line-up point to lift-off. 0 = 70% of the runway that is left.")]
+        [Min(0f)] public float liftOffDistance;
 
         [Tooltip("Taxi speed in world units per second at 1x.")]
         [Min(0.05f)] public float taxiSpeed = 0.35f;
@@ -219,6 +263,10 @@ namespace AirTrafficControl
 
         [Tooltip("Height of the sea lane the ship sails along, below the island.")]
         public float laneY = -4.1f;
+
+        [Tooltip("On screens wider than 4:3 the bottom of the map is cropped; the lane moves up to stay on screen, " +
+                 "but never above this height (the island's shore).")]
+        public float highestLaneY = 10f;
 
         public float shipLength = 2.6f;
         public float shipWidth = 0.7f;

@@ -17,6 +17,13 @@ namespace AirTrafficControl
         [SerializeField] AircraftSettings aircraft = new AircraftSettings();
         [SerializeField] AnimationSettings animationSettings;
 
+        [Tooltip("Unlit sprite material for painted images (map and aircraft).")]
+        [SerializeField] Material spriteMaterial;
+
+        Vector3 defaultCameraPosition;
+        float defaultCameraSize;
+        bool cameraDefaultsKnown;
+
         ProgressionSave save;
         Progression progression;
         LevelSelectView levelSelect;
@@ -42,6 +49,7 @@ namespace AirTrafficControl
             }
 
             Animations.Use(animationSettings);
+            AircraftController.SpriteMaterial = spriteMaterial;
             save = ProgressionSave.Load(ProgressionSave.DefaultPath);
             progression = new Progression(save.Data, catalog.Ids);
 
@@ -73,16 +81,37 @@ namespace AirTrafficControl
         {
             Camera worldCamera = Camera.main;
             levelRoot = new GameObject("Level");
+            bool painted = level.mapArt.HasPicture && spriteMaterial != null;
 
-            GameObject island = MeshBuilder.CreateObject("Island", MapShapes.CreateIslandMesh(level.islandRadii), shapeMaterial,
-                MapShapes.IslandSortingOrder, level.islandCentre, 0f);
-            island.transform.SetParent(levelRoot.transform, true);
+            FrameCamera(worldCamera, level, painted);
+
+            if (painted)
+            {
+                // The painted map (art rule of 20 Nov 2026), below everything else.
+                var map = new GameObject("Map");
+                map.transform.SetParent(levelRoot.transform, false);
+                var renderer = map.AddComponent<SpriteRenderer>();
+                renderer.sprite = level.mapArt.sprite;
+                renderer.sharedMaterial = spriteMaterial;
+                renderer.sortingOrder = MapSortingOrder;
+                float scale = level.mapArt.WorldRect.height / Mathf.Max(0.001f, level.mapArt.sprite.bounds.size.y);
+                map.transform.localScale = new Vector3(scale, scale, 1f);
+            }
+            else
+            {
+                GameObject island = MeshBuilder.CreateObject("Island", MapShapes.CreateIslandMesh(level.islandRadii), shapeMaterial,
+                    MapShapes.IslandSortingOrder, level.islandCentre, 0f);
+                island.transform.SetParent(levelRoot.transform, true);
+            }
 
             var landing = Add<LandingSystem>("LandingSystem");
-            landing.Initialise(level.runways, level.landingPads, shapeMaterial, level.scenery);
+            landing.Initialise(level.runways, level.landingPads, shapeMaterial, level.scenery, painted);
 
             var scenery = Add<IslandScenery>("IslandScenery");
-            scenery.Initialise(level, worldCamera, landing, shapeMaterial);
+            scenery.Initialise(level, worldCamera, landing, shapeMaterial, painted);
+
+            var zones = Add<ZoneDebugView>("ZoneDebugView");
+            zones.Initialise(level, landing, worldCamera, shapeMaterial);
 
             var effects = Add<EffectsSystem>("EffectsSystem");
             effects.Initialise(worldCamera, shapeMaterial);
@@ -103,6 +132,7 @@ namespace AirTrafficControl
             hud.Initialise();
             hud.NextLevelPressed += OnNextLevel;
             hud.LevelsPressed += ShowLevels;
+            hud.ZonesPressed += zones.Toggle;
 
             var feedback = Add<FeedbackSystem>("FeedbackSystem");
             feedback.Initialise();
@@ -120,6 +150,27 @@ namespace AirTrafficControl
             director.Cleared += OnCleared;
             director.Failed += OnFailed;
             director.StartLevel();
+        }
+
+        const int MapSortingOrder = -40;
+
+        // Painted map: on the iPad (4:3) the whole island fills the screen; on wider screens the picture is cropped at
+        // its top and bottom (sea), never the airport. Levels without a picture keep the default camera.
+        void FrameCamera(Camera camera, LevelData level, bool painted)
+        {
+            if (!cameraDefaultsKnown)
+            {
+                defaultCameraPosition = camera.transform.position;
+                defaultCameraSize = camera.orthographicSize;
+                cameraDefaultsKnown = true;
+            }
+            if (!painted)
+            {
+                camera.transform.position = defaultCameraPosition;
+                camera.orthographicSize = defaultCameraSize;
+                return;
+            }
+            CameraFraming.Apply(camera, CameraFraming.View(level.mapArt.WorldRect, level.mapArt.keepVisible, camera.aspect));
         }
 
         T Add<T>(string name) where T : Component

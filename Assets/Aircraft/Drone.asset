@@ -14,11 +14,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: AirTrafficControl::AirTrafficControl.AircraftType
   displayName: Drone
   speedMultiplier: 0.8
+  slowFactor: 0.6
+  fastFactor: 1.4
   size: 0.6
   collisionRadius: 0.18
   color: {r: 0.6, g: 0.36, b: 0.86, a: 1}
   accentColor: {r: 0.6, g: 0.36, b: 0.86, a: 1}
   silhouette: 4
   landsOn: 1
+  sprite: {fileID: 21300000, guid: b349e8e3054764dea8d365d40933985e, type: 3}
+  spriteRotation: -90
+  spriteWorldSize: 0.8
+  lightPoints: []
+  enginePoints: []
+  rotorPoints:
+  - {x: 0.272, y: 0.3}
+  - {x: 0.272, y: -0.3}
+  - {x: -0.256, y: 0.294}
+  - {x: -0.256, y: -0.288}
   landsOnCarrier: 0
   keepsUpright: 0
