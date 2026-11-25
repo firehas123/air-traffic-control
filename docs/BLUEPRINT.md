@@ -15,7 +15,7 @@ Project goal: Create an original, enjoyable top-down 2D aircraft-routing game, s
 
 AGREED: Draw paths to guide aircraft safely to compatible landing zones while avoiding collisions. Include airplanes and potentially helicopters.
 
-AGREED: Three original 2D maps and 30 progressive levels: Island Airport (1–10), City Airport (11–20), Desert Airport (21–30).
+AGREED: Three original 2D maps and 30 progressive levels: Island Airport (1–10), City Airport (11–20), Desert Airport (21–30). CHANGED 25 Nov 2026 by owner: seven maps, each in two game modes (Draw and Tower); see section 16.
 
 AGREED IN PRINCIPLE: Stars, earned coins, achievements, cosmetics, personal bests and progressive level/map unlocks.
 
@@ -246,6 +246,8 @@ Wind and slow-time on/off switches — OPEN: a player setting in the release, or
 20 Nov 2026 — AGREED: Hybrid controls in M3, built for real: drawing stays the way to fly; tapping an aircraft opens buttons for Slow and Fast in the air and Taxi, Cross and Take off on the ground, with departures from gates and a busy-runway rule; details delegated to Claude (section 15.4). Blimp, rocket and space theme are PROPOSED (section 15.5).
 
 20 Nov 2026 — AGREED: Art comes from ChatGPT's image generator, not from shapes drawn in code: a painted top-down Island map first, then aircraft images. Claude Code fits the runway, pads, gates and taxi routes to the picture and zooms the camera so the airport fills the screen.
+
+25 Nov 2026 — AGREED: The game splits into two modes, built in parallel: Draw mode (draw lines, sky view) and Tower mode (tap buttons incl. Go around, airport close-up). Seven maps, each with a painted image per mode. Map themes 4 to 7, levels, XP and unlocks are PROPOSED (section 16).
 
 ## 11. ENGAGEMENT, GAMIFICATION AND BUSINESS MODEL
 
@@ -502,3 +504,49 @@ Kept as before: the status rings, the exact-line rule, collision sizes per kind,
 ### 15.5 MORE AIRCRAFT AND THEMES (PROPOSED by Claude, 20 Nov 2026, from the owner's ideas)
 
 Blimp: a new kind for City Airport, huge and very slow (about 0.3x), lands on a mooring mast. Rocket: a Desert Airport event like the carrier: a launch pad counts down and a no-fly column appears for a few seconds during launch. Spaceships and a space map: a fourth theme would change the agreed three maps and 30 levels, so Claude proposes it as a free update after release (a reason for players to return, C16). Owner decision: PENDING.
+
+## 16. TWO GAME MODES AND SEVEN MAPS (OWNER, 25 NOVEMBER 2026)
+
+Status: the two modes, building them in parallel, and seven maps are AGREED by the owner (25 Nov 2026). Map themes 4 to 7, map rules, level counts, XP values and unlock rules are PROPOSED by Claude and wait for the owner. This replaces the hybrid single map of 15.4 and the agreed "three maps and 30 levels" in section 1.
+
+Why: drawing needs a lot of open sky with a small airport, while tower commands need a big airport filling the screen; one map cannot do both well.
+
+### 16.1 THE TWO MODES
+
+Draw mode (Planes Control style): zoomed-out sky view; the player draws lines to runways, the helipad, the balloon field and the carrier. Everything built in M1 and M2 belongs here.
+
+Tower mode (Airport Madness Challenge style): zoomed-in airport close-up; aircraft follow fixed approach and taxi routes and the player taps them for buttons: Land on runway A/B/C, Go around, Hold, Slow/Fast, Taxi, Cross, Take off. The ground code from M3 step 3 moves here. Several runways that cross are the main challenge.
+
+Shared: aircraft kinds and images, collision sizes, status rings, saves, coins, stars, XP, sounds and the result screen. Each map is one airport shown at two zoom levels: one painted image per mode, same layout.
+
+### 16.2 THE SEVEN MAPS (1 to 3 as agreed in C1; 4 to 7 PROPOSED)
+
+1. Island: one main runway and one crossing runway, sea with the carrier. Rule: the wind changes and switches the active runway end.
+
+2. City: two parallel runways and a diagonal one, the terminal between them. Rule: runways close for short periods.
+
+3. Desert: three runways crossing in a triangle. Rule: sandstorms and low-fuel aircraft that must land first.
+
+4. Mountain Valley (PROPOSED): one long runway along a valley, a short crossing one. Rule: mountain areas no line may pass through; in Tower mode, approaches only along the valley.
+
+5. Arctic (PROPOSED): two crossing runways on snow. Rule: icy runways, so aircraft must land on Slow or their landing roll blocks the runway longer.
+
+6. Military Base (PROPOSED): parallel runways, a fighter apron and the carrier offshore. Rule: fighter scrambles, priority departures that must leave within a time limit.
+
+7. Spaceport (PROPOSED, replaces the space theme of 15.5): runways around a rocket launch pad. Rule: rocket launches close a no-fly column for a few seconds with a countdown.
+
+### 16.3 LEVELS, XP AND UNLOCKS (PROPOSED by Claude)
+
+Levels: 5 per map in each mode, so 10 per map and 70 in all, plus endless Tower Shift (C6) for each map in each mode. Levels stay data, 60 to 120 s each (C3).
+
+XP: 10 per safe landing, 10 per departure, 25 per star the first time it is earned, 50 for a level with no danger warning, 100 for a Daily Flight. XP drives the controller rank (C8). Stars never pay twice, so replaying is never required (C9).
+
+Unlocks: in each map, a level unlocks when the one before it is cleared in the same mode. Both modes of Island are open from the start. The next map opens when the player has cleared level 5 of the current map in either mode AND reached its XP: City 1,000, Desert 2,500, Mountain Valley 4,000, Arctic 5,500, Military Base 7,000, Spaceport 8,500. First-time play of one map gives about 1,500 XP, so these are reached without grinding.
+
+### 16.4 WHAT IS LEFT
+
+M2: done (passed 19 Nov 2026). Still recommended: one test with a player who has never seen the game.
+
+M3, now in parallel: shared core (mode choice on the home screen, level data that says mode and map image, XP and unlocks); Track A Draw mode (calm sky-view maps, fewer animations, 35 levels); Track B Tower mode (multiple crossing runways, approach routes, the tap buttons, 35 levels); home screen, Tower Shift, Daily Flight, cosmetics. Art: 14 map images and a carrier image from ChatGPT.
+
+Then M4 (Android release) and M5 (iOS release) as planned.
