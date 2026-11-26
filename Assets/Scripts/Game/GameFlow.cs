@@ -1,18 +1,20 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace AirTrafficControl
 {
     /// <summary>
-    /// The game's flow (M3 step 1): loads the save, shows level select, builds the chosen level, records the result
-    /// (stars, best time, coins, unlocks) and saves it on the device. Replaces the M1/M2 PrototypeSetup.
+    /// The game's flow (M3 step 1, blueprint 16): loads the save, shows the home screen (seven maps, Draw and Tower),
+    /// then the chosen map and mode's level select, builds the chosen level, records the result (stars, best time,
+    /// coins, XP, unlocks) and saves it on the device. Replaces the M1/M2 PrototypeSetup.
     ///
     /// Each level is built under one "Level" object (map, landing zones, carrier, input, path planner, safety, HUD,
     /// sound and the <see cref="LevelDirector"/>), and the whole object is removed when the level is left.
     /// </summary>
     public sealed class GameFlow : MonoBehaviour
     {
-        [SerializeField] LevelCatalog catalog;
+        [SerializeField] MapCatalog maps;
         [SerializeField] Material shapeMaterial;
         [SerializeField] AircraftSettings aircraft = new AircraftSettings();
         [SerializeField] AnimationSettings animationSettings;
@@ -26,10 +28,13 @@ namespace AirTrafficControl
 
         ProgressionSave save;
         Progression progression;
+        HomeView home;
         LevelSelectView levelSelect;
         GameObject levelRoot;
         LevelDirector director;
         HudView hud;
+        int currentMap = -1;
+        GameMode currentMode = GameMode.Draw;
         int currentIndex = -1;
 
         public Progression Progression => progression;
@@ -42,39 +47,85 @@ namespace AirTrafficControl
 
         void Start()
         {
-            if (catalog == null || catalog.levels.Count == 0)
+            if (maps == null || maps.maps.Count == 0)
             {
-                Debug.LogError("GameFlow: no level catalog. Run Tools > Air Traffic Control > Set Up Prototype Scene.");
+                Debug.LogError("GameFlow: no map catalog. Run Tools > Air Traffic Control > Set Up Prototype Scene.");
                 return;
             }
 
             Animations.Use(animationSettings);
             AircraftController.SpriteMaterial = spriteMaterial;
             save = ProgressionSave.Load(ProgressionSave.DefaultPath);
-            progression = new Progression(save.Data, catalog.Ids);
+            progression = new Progression(save.Data, maps.ToInfo(), maps.xp);
+
+            home = new GameObject("HomeView").AddComponent<HomeView>();
+            home.transform.SetParent(transform, false);
+            home.Initialise();
+            home.ModeChosen += ChooseMode;
 
             levelSelect = new GameObject("LevelSelectView").AddComponent<LevelSelectView>();
             levelSelect.transform.SetParent(transform, false);
-            levelSelect.Initialise(catalog.mapName);
+            levelSelect.Initialise();
             levelSelect.LevelChosen += Play;
+            levelSelect.HomePressed += ShowHome;
 
+            ShowHome();
+        }
+
+        public void ShowHome()
+        {
+            LeaveLevel();
+            levelSelect.Hide();
+            home.Show(progression, maps.maps);
+        }
+
+        /// <summary>Opens a map and mode: its level select, or a "coming in the next update" note when it has no levels yet.</summary>
+        public void ChooseMode(int mapIndex, GameMode mode)
+        {
+            if (!progression.IsMapUnlocked(mapIndex))
+                return;
+            MapEntry map = maps.maps[mapIndex];
+            if (!HasPlayableLevels(map, mode))
+            {
+                // Until the Draw and Tower tracks are built (phases 2 and 3), only Island Draw has levels.
+                home.ShowNotice($"{map.displayName} {mode} mode is coming in the next update");
+                return;
+            }
+            currentMap = mapIndex;
+            currentMode = mode;
             ShowLevels();
+        }
+
+        static bool HasPlayableLevels(MapEntry map, GameMode mode)
+        {
+            List<LevelEntry> levels = map.Levels(mode);
+            return levels.Count > 0 && levels.TrueForAll(l => l.data != null);
         }
 
         public void ShowLevels()
         {
             LeaveLevel();
-            levelSelect.Show(progression, catalog.levels);
+            if (currentMap < 0)
+            {
+                ShowHome();
+                return;
+            }
+            home.Hide();
+            MapEntry map = maps.maps[currentMap];
+            levelSelect.Show(progression, currentMap, map.displayName, currentMode, map.Levels(currentMode));
         }
+
+        List<LevelEntry> CurrentLevels => maps.maps[currentMap].Levels(currentMode);
 
         public void Play(int index)
         {
-            if (index < 0 || index >= catalog.levels.Count || !progression.IsUnlocked(index))
+            if (currentMap < 0 || index < 0 || index >= CurrentLevels.Count || !progression.IsLevelUnlocked(currentMap, currentMode, index))
                 return;
             LeaveLevel();
+            home.Hide();
             levelSelect.Hide();
             currentIndex = index;
-            BuildLevel(catalog.levels[index].data);
+            BuildLevel(CurrentLevels[index].data);
         }
 
         void BuildLevel(LevelData level)
@@ -205,11 +256,11 @@ namespace AirTrafficControl
 
         void OnCleared(LevelOutcome outcome)
         {
-            LevelEntry entry = catalog.levels[currentIndex];
+            LevelEntry entry = CurrentLevels[currentIndex];
             LevelRewards rewards = progression.RecordClear(entry.id, outcome.Stars, outcome.Seconds,
-                                                           outcome.Landed, outcome.Departed, entry.data.result);
+                                                           outcome.Landed, outcome.Departed, outcome.Warnings, entry.data.result);
             Persist();
-            bool hasNext = currentIndex + 1 < catalog.levels.Count && progression.IsUnlocked(currentIndex + 1);
+            bool hasNext = currentIndex + 1 < CurrentLevels.Count && progression.IsLevelUnlocked(currentMap, currentMode, currentIndex + 1);
             hud.ShowCleared(outcome, rewards, progression.Coins, hasNext);
         }
 

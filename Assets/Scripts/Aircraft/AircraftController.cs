@@ -555,7 +555,6 @@ namespace AirTrafficControl
                 bodySprite.color = crashedColor;
             else
                 bodyFilter.sharedMesh = crashedMesh;
-            visuals.HideLights();
             ShowStatus();
         }
 

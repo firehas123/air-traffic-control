@@ -14,6 +14,12 @@ namespace AirTrafficControl
     {
         public string mapId = "island";
 
+        [Tooltip("Draw (lines) or Tower (tap commands), blueprint 16.1.")]
+        public GameMode mode = GameMode.Draw;
+
+        [Tooltip("The measured layout of the map picture this level is played on (Assets/Maps/Layouts).")]
+        public PictureLayout layout;
+
         [Header("Objective (C2: land a set number of aircraft)")]
         [Tooltip("Landings needed to clear the level. 0 means no target: the level only ends on a collision.")]
         [Min(0)] public int landingsToClear = 8;
@@ -34,7 +40,7 @@ namespace AirTrafficControl
         [Header("Departures (blueprint 15.4): aircraft that start at a gate")]
         public DepartureSettings departures = new DepartureSettings();
 
-        [Header("Scenery (blueprint 15.3; decoration only, it never affects play)")]
+        [Header("Scenery (decoration only, it never affects play)")]
         public SceneryLayout scenery = new SceneryLayout();
 
         [Header("Ground: taxiways and gates (drawn in M3 step 2, driven by ground control in step 3)")]
@@ -120,7 +126,10 @@ namespace AirTrafficControl
         [Min(1f)] public float secondsBetweenDepartures = 15f;
     }
 
-    /// <summary>Where the Island's decoration goes. Positions are in world units.</summary>
+    /// <summary>
+    /// Where the Island's code-drawn decoration goes, in world units. Used only by levels without a painted map;
+    /// with a picture only the windsock is drawn (code-drawn scenery is never drawn over a picture, 25 Nov 2026).
+    /// </summary>
     [Serializable]
     public sealed class SceneryLayout
     {
@@ -147,16 +156,6 @@ namespace AirTrafficControl
         public List<Vector2> parkedPlanes = new List<Vector2> { new Vector2(1.3f, 0.45f), new Vector2(1.9f, 0.45f) };
 
         public Vector2 windsockPosition = new Vector2(-1.05f, -1.5f);
-
-        [Tooltip("Boats sail along these heights, looping across the screen.")]
-        public List<float> boatLanes = new List<float> { 4.3f, 2.3f };
-
-        [Min(0)] public int clouds = 3;
-        [Min(0)] public int birds = 3;
-
-        [Tooltip("Approach lights before each runway end, pulsing towards the touchdown zone.")]
-        [Min(0)] public int approachLights = 6;
-        public float approachLightSpacing = 0.22f;
     }
 
     /// <summary>
@@ -228,6 +227,9 @@ namespace AirTrafficControl
         public LandingZoneKind kind = LandingZoneKind.Helipad;
         public Vector2 centre;
         [Min(0.1f)] public float radius = 0.45f;
+
+        [Tooltip("Draw a white H on top: the painted pad is a plain ring (08_mountain_draw).")]
+        public bool drawH;
 
         public LandingPadDefinition() { }
 

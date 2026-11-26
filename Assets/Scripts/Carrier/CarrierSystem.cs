@@ -87,8 +87,6 @@ namespace AirTrafficControl
                 Tint.SetAlpha(deckLights, countdown
                     ? (Animations.On && !AnimationMath.Flash(Time.unscaledTime, a.deckLightBlinkSeconds * 2f, a.deckLightBlinkSeconds) ? 0.3f : 1f)
                     : 0.3f);
-                if (wake != null)
-                    wake.localScale = Animations.On ? new Vector3(1f, 1f + AnimationMath.Sway(Time.time, 0.06f, 1.5f), 1f) : Vector3.one;
             }
         }
 

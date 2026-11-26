@@ -7,7 +7,7 @@ using UnityEngine.TestTools;
 namespace AirTrafficControl.Tests
 {
     /// <summary>
-    /// Smoke test of the real scene: the game starts on level select, level 1 builds and runs for a while, and
+    /// Smoke test of the real scene: the game starts on the home screen, Island Draw level 1 builds and runs for a while, and
     /// leaving it works, all without an error in the log (Unity fails the test on any logged error). This catches
     /// runtime problems that the EditMode unit tests cannot, before the build goes to the iPad.
     /// </summary>
@@ -29,8 +29,14 @@ namespace AirTrafficControl.Tests
 
             GameFlow flow = Object.FindAnyObjectByType<GameFlow>();
             Assert.IsNotNull(flow, "The scene has the game flow");
-            Assert.IsNotNull(Object.FindAnyObjectByType<LevelSelectView>(), "Starts on level select");
+            Assert.IsNotNull(Object.FindAnyObjectByType<HomeView>(), "Starts on the home screen");
+            Assert.IsTrue(Object.FindAnyObjectByType<HomeView>().IsShown);
 
+            flow.ChooseMode(0, GameMode.Tower); // no Tower levels yet: a note, no level
+            yield return null;
+            Assert.IsNull(Object.FindAnyObjectByType<LevelDirector>());
+
+            flow.ChooseMode(0, GameMode.Draw); // Island Draw
             flow.Play(0);
             yield return WaitRealSeconds(1f);
             Assert.Greater(AircraftController.Active.Count, 0, "Aircraft are in the air");
@@ -60,6 +66,7 @@ namespace AirTrafficControl.Tests
             yield return null;
             yield return null;
             GameFlow flow = Object.FindAnyObjectByType<GameFlow>();
+            flow.ChooseMode(0, GameMode.Draw);
             flow.Play(0);
             yield return null;
             LevelDirector director = Object.FindAnyObjectByType<LevelDirector>();

@@ -5,8 +5,9 @@ namespace AirTrafficControl
 {
     /// <summary>
     /// Debug overlay for the "Zones" button (owner request, 20 Nov 2026): outlines every landing zone, gate, taxi route,
-    /// hold and line-up point, crossing point, spawn point, the carrier lane and the area the camera keeps visible, on
-    /// top of the painted map, so the owner can check the level data lines up with the picture. Magenta, which is not a
+    /// hold and line-up point, crossing point, spawn point, the carrier lane and the area the camera keeps visible, and
+    /// everything in the picture's measured layout (stands, taxi routes, hold lines, crossings, runway intersections,
+    /// map-rule areas), on top of the painted map, so the owner can check the level data lines up with the picture. Magenta, which is not a
     /// status colour. Off by default; it never affects play.
     /// </summary>
     public sealed class ZoneDebugView : MonoBehaviour
@@ -99,7 +100,38 @@ namespace AirTrafficControl
             if (level.mapArt.HasPicture)
                 Outline(b, keep.center, Vector2.right, keep.width, keep.height, Faint);
 
+            if (level.layout != null)
+                AddLayout(b, level.layout);
+
             b.Fill(mesh);
+        }
+
+        // Everything measured on the picture (blueprint 16): all taxi routes, stands, hold lines, crossing points,
+        // runway intersections and map-rule areas, including the ones the current gameplay does not use yet.
+        static void AddLayout(MeshBuilder b, PictureLayout layout)
+        {
+            foreach (PicturePath route in layout.taxiRoutes)
+                Polyline(b, route.points.ConvertAll(layout.World), Faint);
+            foreach (PictureStand stand in layout.stands)
+            {
+                Vector2 at = layout.World(stand.position);
+                Circle(b, at, 0.14f, Faint);
+                float r = stand.headingDegrees * Mathf.Deg2Rad;
+                b.Bar(at, at + new Vector2(Mathf.Cos(r), Mathf.Sin(r)) * 0.22f, Thickness, Faint);
+            }
+            foreach (PictureHoldLine hold in layout.holdLines)
+                Square(b, layout.World(hold.point), 0.06f);
+            foreach (PictureCrossing crossing in layout.crossings)
+                Cross(b, layout.World(crossing.point), 0.1f);
+            foreach (PictureIntersection intersection in layout.intersections)
+                Diamond(b, layout.World(intersection.point), 0.1f);
+            foreach (PictureArea area in layout.ruleAreas)
+            {
+                List<Vector2> points = area.points.ConvertAll(layout.World);
+                if (points.Count > 1)
+                    points.Add(points[0]);
+                Polyline(b, points, Faint);
+            }
         }
 
         static void ZoneOutline(MeshBuilder b, Runway runway, Color color, bool dashed)

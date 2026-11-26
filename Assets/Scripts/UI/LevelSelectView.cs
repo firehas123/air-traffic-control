@@ -8,9 +8,9 @@ using UnityEngine.UI;
 namespace AirTrafficControl
 {
     /// <summary>
-    /// Level select for one map (M3 step 1): ten tiles with the level number and its stars; locked levels show a
-    /// padlock and cannot be chosen. Placeholder UI built in code, following the screen mockups. No game logic:
-    /// it shows what the game flow tells it.
+    /// Level select for one map and mode (M3 step 1, blueprint 16.3): five tiles with the level number and its stars;
+    /// locked levels show a padlock and cannot be chosen. A Home button goes back to the map list. Placeholder UI built
+    /// in code, following the screen mockups. No game logic: it shows what the game flow tells it.
     /// </summary>
     public sealed class LevelSelectView : MonoBehaviour
     {
@@ -24,12 +24,16 @@ namespace AirTrafficControl
         Font font;
         GameObject canvasObject;
         Text coinsText;
+        Text titleText;
         readonly List<GameObject> tiles = new List<GameObject>();
 
         /// <summary>Raised with the level index when the player taps an unlocked level.</summary>
         public event Action<int> LevelChosen;
 
-        public void Initialise(string mapName)
+        /// <summary>Raised when the player taps Home.</summary>
+        public event Action HomePressed;
+
+        public void Initialise()
         {
             font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             if (FindAnyObjectByType<EventSystem>() == null)
@@ -50,9 +54,19 @@ namespace AirTrafficControl
             root.anchorMax = Vector2.one;
             root.offsetMin = root.offsetMax = Vector2.zero;
 
-            Text title = Label("Title", root, 64, Color.white, FontStyle.Bold);
-            title.text = mapName;
-            Anchor(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -110f), new Vector2(1000f, 90f));
+            titleText = Label("Title", root, 64, Color.white, FontStyle.Bold);
+            Anchor(titleText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -110f), new Vector2(1000f, 90f));
+
+            RectTransform home = Box("HomeButton", root, new Color(0.08f, 0.14f, 0.2f, 0.85f));
+            Anchor(home, new Vector2(0f, 1f), new Vector2(40f, -40f), new Vector2(160f, 64f));
+            var homeButton = home.gameObject.AddComponent<Button>();
+            homeButton.targetGraphic = home.GetComponent<Image>();
+            homeButton.onClick.AddListener(() => HomePressed?.Invoke());
+            Text homeLabel = Label("Label", home, 30, Color.white, FontStyle.Bold);
+            homeLabel.text = "Home";
+            homeLabel.rectTransform.anchorMin = Vector2.zero;
+            homeLabel.rectTransform.anchorMax = Vector2.one;
+            homeLabel.rectTransform.offsetMin = homeLabel.rectTransform.offsetMax = Vector2.zero;
 
             coinsText = Label("Coins", root, 34, Color.white, FontStyle.Bold);
             Anchor(coinsText.rectTransform, new Vector2(1f, 1f), new Vector2(-170f, -60f), new Vector2(300f, 60f));
@@ -64,10 +78,11 @@ namespace AirTrafficControl
 
         public bool IsShown => canvasObject != null && canvasObject.activeSelf;
 
-        /// <summary>Shows the map's levels with their stars and locks, and the coin total.</summary>
-        public void Show(Progression progression, IReadOnlyList<LevelEntry> levels)
+        /// <summary>Shows one map's levels in one mode with their stars and locks, and the coin total.</summary>
+        public void Show(Progression progression, int mapIndex, string mapName, GameMode mode, IReadOnlyList<LevelEntry> levels)
         {
             canvasObject.SetActive(true);
+            titleText.text = $"{mapName} · {mode}";
             coinsText.text = $"Coins {progression.Coins}";
 
             foreach (GameObject tile in tiles)
@@ -84,7 +99,7 @@ namespace AirTrafficControl
                 int column = i % perRow;
                 float x = (column - (perRow - 1) / 2f) * (size + gap);
                 float y = 90f - row * (size + gap + 20f);
-                tiles.Add(CreateTile(root, i, progression.IsUnlocked(levels[i].id), progression.StarsFor(levels[i].id), new Vector2(x, y), size));
+                tiles.Add(CreateTile(root, i, progression.IsLevelUnlocked(mapIndex, mode, i), progression.StarsFor(levels[i].id), new Vector2(x, y), size));
             }
         }
 

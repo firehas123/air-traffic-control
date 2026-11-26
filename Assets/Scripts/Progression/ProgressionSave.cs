@@ -93,14 +93,75 @@ namespace AirTrafficControl
         public static string ToJson(SaveData data) => JsonUtility.ToJson(data, true);
 
         /// <summary>
-        /// Brings an older save up to the current version, one version at a time. Version 0 means a file written
-        /// before saves had a version number (only test builds); it has the same fields, so it only needs the number.
+        /// Brings an older save up to the current version, one version at a time.
+        /// - Version 0 means a file written before saves had a version number (only test builds); it has the same
+        ///   fields as version 1, so it only needs the number.
+        /// - Version 1 to 2 (25 Nov 2026, two modes and seven maps): the old Island levels island-01 to island-10 were
+        ///   all the Draw test level, so they become the five Island Draw levels: island-01 to island-04 become
+        ///   island-draw-01 to -04, and island-05 to island-10 are merged into island-draw-05 (best stars, best time,
+        ///   clears added up). Coins are kept. XP did not exist, so the save starts with 25 XP per star kept, as if each
+        ///   star had just been earned for the first time; stars still never pay twice.
         /// </summary>
         public static void Migrate(SaveData data)
         {
             if (data.version < 1)
                 data.version = 1;
-            // When CurrentVersion becomes 2, add: if (data.version < 2) { ...convert...; data.version = 2; }
+            if (data.version < 2)
+            {
+                UpgradeToTwo(data);
+                data.version = 2;
+            }
+        }
+
+        /// <summary>The new id for an old Island level id (island-07 becomes island-draw-05), or the id unchanged.</summary>
+        public static string VersionTwoId(string oldId)
+        {
+            const string prefix = "island-";
+            if (oldId == null || !oldId.StartsWith(prefix) || oldId.Length != prefix.Length + 2)
+                return oldId;
+            if (!int.TryParse(oldId.Substring(prefix.Length), out int number) || number < 1)
+                return oldId;
+            return MapInfo.LevelId("island", GameMode.Draw, Mathf.Min(number, Progression.LevelThatOpensNextMap));
+        }
+
+        static void UpgradeToTwo(SaveData data)
+        {
+            var merged = new System.Collections.Generic.List<LevelProgress>();
+            if (data.levels != null)
+            {
+                foreach (LevelProgress old in data.levels)
+                {
+                    if (old == null || string.IsNullOrEmpty(old.id))
+                        continue;
+                    string id = VersionTwoId(old.id);
+                    LevelProgress target = merged.Find(l => l.id == id);
+                    if (target == null)
+                    {
+                        merged.Add(new LevelProgress { id = id, stars = old.stars, bestSeconds = old.bestSeconds, timesCleared = old.timesCleared });
+                        continue;
+                    }
+                    target.stars = Mathf.Max(target.stars, old.stars);
+                    target.timesCleared += old.timesCleared;
+                    if (old.bestSeconds >= 0f && (target.bestSeconds < 0f || old.bestSeconds < target.bestSeconds))
+                        target.bestSeconds = old.bestSeconds;
+                }
+            }
+            data.levels = merged;
+
+            var unlocked = new System.Collections.Generic.List<string>();
+            if (data.unlocked != null)
+                foreach (string id in data.unlocked)
+                {
+                    string upgraded = VersionTwoId(id);
+                    if (!string.IsNullOrEmpty(upgraded) && !unlocked.Contains(upgraded))
+                        unlocked.Add(upgraded);
+                }
+            data.unlocked = unlocked;
+
+            int stars = 0;
+            foreach (LevelProgress level in merged)
+                stars += Mathf.Clamp(level.stars, 0, 3);
+            data.xp = Mathf.Max(data.xp, stars * new XpRules().perNewStar);
         }
 
         // Missing lists (from hand-edited or partial files) become empty instead of null.
@@ -110,6 +171,7 @@ namespace AirTrafficControl
             if (data.levels == null) data.levels = new System.Collections.Generic.List<LevelProgress>();
             data.levels.RemoveAll(level => level == null || string.IsNullOrEmpty(level.id));
             if (data.coins < 0) data.coins = 0;
+            if (data.xp < 0) data.xp = 0;
         }
 
         /// <summary>Writes the save. Returns false (and writes nothing) for a save from a newer version.</summary>

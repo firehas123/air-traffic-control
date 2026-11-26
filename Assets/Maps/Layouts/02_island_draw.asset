@@ -1,0 +1,151 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f2e128495f54d25a39bdac735bcbb61, type: 3}
+  m_Name: 02_island_draw
+  m_EditorClassIdentifier: AirTrafficControl::AirTrafficControl.PictureLayout
+  pictureFile: 02_island_draw.png
+  picture: {fileID: 21300000, guid: 842c1cf27b45aab92951ece2b436e171, type: 3}
+  mode: 0
+  pictureSize: {x: 1536, y: 1024}
+  pixelsPerUnit: 102.4
+  runways:
+  - name: Main
+    endA: {x: 430.5, y: 462}
+    endB: {x: 1098.5, y: 462}
+    width: 44
+    zoneA: {x: 5, y: 44}
+    zoneB: {x: 6, y: 43.5}
+  - name: Cross
+    endA: {x: 493.75, y: 261.25}
+    endB: {x: 738, y: 635}
+    width: 38
+    zoneA: {x: 5.5, y: 39}
+    zoneB: {x: 5.5, y: 39.5}
+  intersections:
+  - runwayA: Main
+    runwayB: Cross
+    point: {x: 624.94, y: 462}
+  pads:
+  - kind: 1
+    centre: {x: 471.7, y: 547.2}
+    radius: 24.3
+    drawH: 0
+  - kind: 2
+    centre: {x: 1063.8, y: 316.8}
+    radius: 43.3
+    drawH: 0
+  stands:
+  - name: Stand 1
+    position: {x: 765, y: 336}
+    headingDegrees: 90
+  - name: Stand 2
+    position: {x: 816, y: 336}
+    headingDegrees: 90
+  - name: Stand 3
+    position: {x: 867.5, y: 336}
+    headingDegrees: 90
+  - name: Stand 4
+    position: {x: 918, y: 336}
+    headingDegrees: 90
+  - name: Remote stand
+    position: {x: 909, y: 556}
+    headingDegrees: 90
+  taxiRoutes:
+  - name: Main
+    points:
+    - {x: 461, y: 432}
+    - {x: 461, y: 410}
+    - {x: 480, y: 396}
+    - {x: 1047.5, y: 396}
+    - {x: 1067.5, y: 412.5}
+    - {x: 1067.5, y: 432}
+  - name: Stand 1
+    points:
+    - {x: 765, y: 352}
+    - {x: 765, y: 396}
+  - name: Stand 2
+    points:
+    - {x: 816, y: 352}
+    - {x: 816, y: 396}
+  - name: Stand 3
+    points:
+    - {x: 867.5, y: 352}
+    - {x: 867.5, y: 396}
+  - name: Stand 4
+    points:
+    - {x: 918, y: 352}
+    - {x: 918, y: 396}
+  - name: South
+    points:
+    - {x: 909, y: 396}
+    - {x: 909, y: 556}
+  holdLines:
+  - point: {x: 461, y: 432}
+    runway: Main
+    kind: End A
+  - point: {x: 1067.5, y: 432}
+    runway: Main
+    kind: End B
+  - point: {x: 909, y: 432}
+    runway: Main
+    kind: Crossing
+  - point: {x: 909, y: 492}
+    runway: Main
+    kind: Crossing
+  - point: {x: 551, y: 396}
+    runway: Cross
+    kind: Crossing
+  - point: {x: 612.5, y: 396}
+    runway: Cross
+    kind: Crossing
+  crossings:
+  - point: {x: 909, y: 462}
+    runway: Main
+    route: South
+  - point: {x: 581.8, y: 396}
+    runway: Cross
+    route: Main
+  ruleAreas:
+  - name: Carrier lane
+    kind: CarrierLane
+    points:
+    - {x: 0, y: 790}
+    - {x: 1536, y: 790}
+    - {x: 1536, y: 1000}
+    - {x: 0, y: 1000}
+  hasWindsock: 1
+  windsock: {x: 990, y: 262}
+  keepVisiblePixels:
+    serializedVersion: 2
+    x: 400
+    y: 215
+    width: 740
+    height: 450
+  mainTaxiRoute: Main
+  gates:
+  - stand: 0
+    connector:
+    - {x: 765, y: 336}
+    - {x: 765, y: 396}
+    crossingIndex: -1
+  - stand: 3
+    connector:
+    - {x: 918, y: 336}
+    - {x: 918, y: 396}
+    crossingIndex: -1
+  - stand: 4
+    connector:
+    - {x: 909, y: 556}
+    - {x: 909, y: 492}
+    - {x: 909, y: 432}
+    - {x: 909, y: 396}
+    crossingIndex: 1

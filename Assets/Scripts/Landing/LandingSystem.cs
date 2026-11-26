@@ -58,7 +58,7 @@ namespace AirTrafficControl
 
                 var lights = new GameObject("Lights").AddComponent<RunwayLights>();
                 lights.transform.SetParent(view.transform, false);
-                lights.Initialise(runway, scenery != null ? scenery.approachLights : 6, scenery != null ? scenery.approachLightSpacing : 0.22f, material);
+                lights.Initialise(runway, material);
                 runwayLights.Add(lights);
             }
 
@@ -72,7 +72,7 @@ namespace AirTrafficControl
                     pads.Add(pad);
 
                     // On a painted map the pad itself is in the picture; only its glow is drawn.
-                    Mesh mesh = paintedMap ? new Mesh { name = "PaintedPad" }
+                    Mesh mesh = paintedMap ? (definition.drawH ? MapShapes.CreateHelipadLetterMesh(pad.Radius) : new Mesh { name = "PaintedPad" })
                         : pad.Kind == LandingZoneKind.Helipad ? MapShapes.CreateHelipadMesh(pad.Radius)
                         : MapShapes.CreateBalloonFieldMesh(pad.Radius);
                     GameObject view = MeshBuilder.CreateObject(pad.Kind.ToString(), mesh, material,

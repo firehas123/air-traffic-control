@@ -65,8 +65,9 @@ namespace AirTrafficControl
     public readonly struct LevelOutcome
     {
         public LevelOutcome(bool cleared, int stars, float seconds, int landed, int landingTarget,
-                            int departed, int departureTarget, float closestGap)
+                            int departed, int departureTarget, float closestGap, int warnings = 0)
         {
+            Warnings = warnings;
             Cleared = cleared;
             Stars = stars;
             Seconds = seconds;
@@ -85,5 +86,8 @@ namespace AirTrafficControl
         public int Departed { get; }
         public int DepartureTarget { get; }
         public float ClosestGap { get; }
+
+        /// <summary>Danger warnings during the attempt (XP: a bonus for a level with none).</summary>
+        public int Warnings { get; }
     }
 }

@@ -34,7 +34,6 @@ namespace AirTrafficControl
         Text windLabel;
         GameObject windButton;
         Text slowDrawLabel;
-        Text animsLabel;
         GameObject windWarning;
         Text windWarningText;
         GameObject carrierCountdown;
@@ -72,8 +71,6 @@ namespace AirTrafficControl
         /// <summary>Raised when the player taps the Slow draw button.</summary>
         public event Action SlowDrawPressed;
 
-        /// <summary>Raised when the player taps the Anims button (blueprint 15.3: animations can be turned off for comparison).</summary>
-        public event Action AnimsPressed;
 
         /// <summary>Raised when the player taps "?" to see the first-time help again.</summary>
         public event Action HelpPressed;
@@ -125,12 +122,11 @@ namespace AirTrafficControl
             speedLabel = CreateTopRightButton("SpeedButton", root, 0, () => SpeedPressed?.Invoke(), out _);
             windLabel = CreateTopRightButton("WindButton", root, 1, () => WindPressed?.Invoke(), out windButton);
             slowDrawLabel = CreateTopRightButton("SlowDrawButton", root, 2, () => SlowDrawPressed?.Invoke(), out _);
-            animsLabel = CreateTopRightButton("AnimsButton", root, 3, () => AnimsPressed?.Invoke(), out _);
 
             // "?" replays the first-time help, top right after the other buttons.
             RectTransform helpButton = CreateBox("HelpButton", root, PillColor);
             helpButton.anchorMin = helpButton.anchorMax = helpButton.pivot = new Vector2(1f, 1f);
-            helpButton.anchoredPosition = new Vector2(-24f - 4 * TopRightSlot, -24f); // slot 3 is kept for the Anims switch
+            helpButton.anchoredPosition = new Vector2(-24f - 3 * TopRightSlot, -24f);
             helpButton.sizeDelta = new Vector2(64f, 64f);
             var help = helpButton.gameObject.AddComponent<Button>();
             help.targetGraphic = helpButton.GetComponent<Image>();
@@ -189,6 +185,9 @@ namespace AirTrafficControl
 
             endDetail = CreateText("Detail", panel, 27, Ink, FontStyle.Normal);
             endDetail.lineSpacing = 1.15f;
+            endDetail.resizeTextForBestFit = true; // three lines (goal, coins, XP) always fit
+            endDetail.resizeTextMinSize = 18;
+            endDetail.resizeTextMaxSize = 27;
             Place(endDetail.rectTransform, new Vector2(0f, 25f), new Vector2(720f, 110f));
 
             // One large button onward (C10), and two smaller ones: Play again and Levels.
@@ -233,8 +232,6 @@ namespace AirTrafficControl
         public void SetSpeedLabel(string label) => speedLabel.text = label;
 
         public void SetSlowDrawLabel(string label) => slowDrawLabel.text = label;
-
-        public void SetAnimsLabel(bool on) => animsLabel.text = on ? "Anims on" : "Anims off";
 
         /// <summary>Shows the Wind button, labelled on or off. Hidden on levels without the wind rule.</summary>
         public void SetWind(bool levelHasWind, bool on)
@@ -291,7 +288,8 @@ namespace AirTrafficControl
             string stars = rewards.NewStars > 0 ? $" ({rewards.NewStars} new star{(rewards.NewStars == 1 ? "" : "s")})" : "";
             ShowEnd("Level cleared", SuccessGreen,
                     $"{Capitalise(GoalText(outcome))} in {LevelSession.FormatTime(outcome.Seconds)}{best}\n" +
-                    $"{LevelResult.ClosestPassText(outcome.ClosestGap)}   ·   +{rewards.CoinsEarned} coins{stars}   ·   {totalCoins} total",
+                    $"{LevelResult.ClosestPassText(outcome.ClosestGap)}   ·   +{rewards.CoinsEarned} coins{stars}   ·   {totalCoins} total\n" +
+                    $"+{rewards.XpEarned} XP{(outcome.Warnings == 0 ? " (with the no-warning bonus)" : "")}",
                     hasNextLevel ? "Next level" : "Play again", hasNextLevel, hasNextLevel);
             for (int i = 0; i < endStars.Length; i++)
             {

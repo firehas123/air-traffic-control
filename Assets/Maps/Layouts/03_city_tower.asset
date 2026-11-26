@@ -1,0 +1,219 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f2e128495f54d25a39bdac735bcbb61, type: 3}
+  m_Name: 03_city_tower
+  m_EditorClassIdentifier: AirTrafficControl::AirTrafficControl.PictureLayout
+  pictureFile: 03_city_tower.png
+  picture: {fileID: 21300000, guid: 2603ce634e5da2ff69f2411a40404f54, type: 3}
+  mode: 1
+  pictureSize: {x: 1536, y: 1024}
+  pixelsPerUnit: 102.4
+  runways:
+  - name: North
+    endA: {x: 117.5, y: 307}
+    endB: {x: 1415, y: 307}
+    width: 81
+    zoneA: {x: 12, y: 94}
+    zoneB: {x: 10, y: 92}
+  - name: South
+    endA: {x: 117.9, y: 645.5}
+    endB: {x: 1417.1, y: 645.5}
+    width: 81
+    zoneA: {x: 12, y: 94}
+    zoneB: {x: 12, y: 92.5}
+  - name: Diagonal
+    endA: {x: 347.9, y: 97.1}
+    endB: {x: 911, y: 923.4}
+    width: 73
+    zoneA: {x: 7, y: 83}
+    zoneB: {x: 7, y: 81}
+  intersections:
+  - runwayA: North
+    runwayB: Diagonal
+    point: {x: 490.94, y: 307}
+  - runwayA: South
+    runwayB: Diagonal
+    point: {x: 721.62, y: 645.5}
+  pads:
+  - kind: 1
+    centre: {x: 160.6, y: 847.9}
+    radius: 35.3
+    drawH: 0
+  - kind: 2
+    centre: {x: 1376.8, y: 854.9}
+    radius: 66.4
+    drawH: 0
+  stands:
+  - name: Stand 1
+    position: {x: 1010, y: 525}
+    headingDegrees: 90
+  - name: Stand 2
+    position: {x: 1097, y: 525}
+    headingDegrees: 90
+  - name: Stand 3
+    position: {x: 1183, y: 525}
+    headingDegrees: 90
+  - name: Stand 4
+    position: {x: 1270, y: 525}
+    headingDegrees: 90
+  taxiRoutes:
+  - name: North loop west
+    points:
+    - {x: 191, y: 262}
+    - {x: 191, y: 230}
+    - {x: 212, y: 210}
+    - {x: 360, y: 210}
+  - name: North loop east
+    points:
+    - {x: 545, y: 257}
+    - {x: 545, y: 230}
+    - {x: 565, y: 210}
+    - {x: 1295, y: 210}
+    - {x: 1315, y: 230}
+    - {x: 1315, y: 262}
+  - name: North spur 2
+    points:
+    - {x: 840, y: 212}
+    - {x: 840, y: 257}
+  - name: North crossing
+    points:
+    - {x: 840, y: 257}
+    - {x: 840, y: 357}
+  - name: West
+    points:
+    - {x: 180, y: 352}
+    - {x: 180, y: 410}
+    - {x: 395, y: 410}
+    - {x: 395, y: 595}
+  - name: West to diagonal
+    points:
+    - {x: 398, y: 410}
+    - {x: 425, y: 382}
+    - {x: 485, y: 382}
+  - name: Centre
+    points:
+    - {x: 840, y: 357}
+    - {x: 840, y: 595}
+  - name: Terminal link
+    points:
+    - {x: 635, y: 425}
+    - {x: 950, y: 425}
+  - name: Apron link
+    points:
+    - {x: 840, y: 545}
+    - {x: 940, y: 545}
+  - name: South centre
+    points:
+    - {x: 750, y: 595}
+    - {x: 750, y: 570}
+    - {x: 840, y: 570}
+  - name: South crossing west
+    points:
+    - {x: 395, y: 595}
+    - {x: 395, y: 692}
+  - name: South crossing centre
+    points:
+    - {x: 840, y: 595}
+    - {x: 840, y: 692}
+  - name: South loop
+    points:
+    - {x: 200, y: 692}
+    - {x: 200, y: 750}
+    - {x: 1320, y: 750}
+    - {x: 1320, y: 692}
+  - name: South spur 1
+    points:
+    - {x: 395, y: 692}
+    - {x: 395, y: 750}
+  - name: South spur 2
+    points:
+    - {x: 840, y: 692}
+    - {x: 840, y: 750}
+  holdLines:
+  - point: {x: 191, y: 262}
+    runway: North
+    kind: End A
+  - point: {x: 1315, y: 262}
+    runway: North
+    kind: End B
+  - point: {x: 180, y: 352}
+    runway: North
+    kind: End A
+  - point: {x: 200, y: 692}
+    runway: South
+    kind: End A
+  - point: {x: 1320, y: 692}
+    runway: South
+    kind: End B
+  - point: {x: 545, y: 257}
+    runway: North
+    kind: Crossing
+  - point: {x: 840, y: 257}
+    runway: North
+    kind: Crossing
+  - point: {x: 840, y: 357}
+    runway: North
+    kind: Crossing
+  - point: {x: 840, y: 595}
+    runway: South
+    kind: Crossing
+  - point: {x: 395, y: 595}
+    runway: South
+    kind: Crossing
+  - point: {x: 750, y: 595}
+    runway: South
+    kind: Crossing
+  - point: {x: 395, y: 692}
+    runway: South
+    kind: Crossing
+  - point: {x: 840, y: 692}
+    runway: South
+    kind: Crossing
+  - point: {x: 360, y: 210}
+    runway: Diagonal
+    kind: Crossing
+  - point: {x: 485, y: 382}
+    runway: Diagonal
+    kind: Crossing
+  - point: {x: 635, y: 425}
+    runway: Diagonal
+    kind: Crossing
+  - point: {x: 730, y: 750}
+    runway: Diagonal
+    kind: Crossing
+  - point: {x: 852, y: 750}
+    runway: Diagonal
+    kind: Crossing
+  crossings:
+  - point: {x: 792.9, y: 750}
+    runway: Diagonal
+    route: South loop
+  - point: {x: 840, y: 307}
+    runway: North
+    route: North crossing
+  - point: {x: 395, y: 645.5}
+    runway: South
+    route: South crossing west
+  - point: {x: 840, y: 645.5}
+    runway: South
+    route: South crossing centre
+  ruleAreas: []
+  hasWindsock: 0
+  windsock: {x: 0, y: 0}
+  keepVisiblePixels:
+    serializedVersion: 2
+    x: 110
+    y: 80
+    width: 1336
+    height: 870
+  mainTaxiRoute: 
+  gates: []

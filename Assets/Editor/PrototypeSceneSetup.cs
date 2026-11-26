@@ -16,7 +16,6 @@ public static class PrototypeSceneSetup
     const string MaterialPath = "Assets/Materials/UnlitVertexColor.mat";
     const string LevelPath = "Assets/Levels/IslandPrototype.asset";
     const string AircraftFolder = "Assets/Aircraft";
-    const string CatalogPath = "Assets/Levels/IslandCatalog.asset";
     const string RootName = "Game";
     const string OldRootName = "Prototype"; // the M1/M2 scene object
 
@@ -37,13 +36,13 @@ public static class PrototypeSceneSetup
 
         LevelData level = LoadOrCreateLevel();
 
-        LevelCatalog catalog = LoadOrCreateCatalog(level);
+        MapCatalog maps = LoadOrCreateMapCatalog(level);
 
         var root = new GameObject(RootName);
         var flow = root.AddComponent<GameFlow>();
         var serialized = new SerializedObject(flow);
         serialized.FindProperty("shapeMaterial").objectReferenceValue = material;
-        serialized.FindProperty("catalog").objectReferenceValue = catalog;
+        serialized.FindProperty("maps").objectReferenceValue = maps;
         serialized.FindProperty("animationSettings").objectReferenceValue = LoadOrCreateAnimationSettings();
         serialized.FindProperty("spriteMaterial").objectReferenceValue =
             AssetDatabase.LoadAssetAtPath<Material>(SpriteUnlitMaterialPath);
@@ -56,22 +55,57 @@ public static class PrototypeSceneSetup
     }
 
     const string SpriteUnlitMaterialPath = "Packages/com.unity.render-pipelines.universal/Runtime/Materials/Sprite-Unlit-Default.mat";
-    const string MapPath = "Assets/Art/Maps/island_day.png";
+    const string MapsFolder = "Assets/Art/Maps";
+    const string LayoutsFolder = "Assets/Maps/Layouts";
+    const string MapCatalogPath = "Assets/Maps/MapCatalog.asset";
     const string AircraftArtFolder = "Assets/Art/Aircraft";
+    const float MapPixelsPerUnit = 102.4f; // 1024-pixel-high pictures are 10 world units high
 
-    // Imports the painted images with good settings for the iPad, gives each aircraft kind its image, and the first
-    // time the Island picture is used, fits the level data to it (positions measured from pixels in the picture).
+    // The seven maps in unlock order (blueprint 16.2): id, name, picture number of the Draw picture (the Tower picture
+    // is the one before it), XP to open (16.3, PROPOSED), gameplay built, and the map rule in one line.
+    static readonly (string id, string name, int draw, int xp, bool ready, string rule)[] Maps =
+    {
+        ("island", "Island", 2, 0, true, "Wind changes switch the active runway end"),
+        ("city", "City", 4, 1000, true, "Runways close for short periods"),
+        ("desert", "Desert", 6, 2500, true, "Sandstorms and low-fuel aircraft"),
+        ("mountain", "Mountain Valley", 8, 4000, true, "No line may pass through the mountains"),
+        ("arctic", "Arctic", 10, 5500, true, "Icy runways: land on Slow"),
+        ("military", "Military Base", 12, 7000, false, "Fighter scrambles with a time limit"),
+        ("spaceport", "Spaceport", 14, 8500, false, "Rocket launches close a no-fly column"),
+    };
+
+    // Imports the painted images with good settings for the iPad, links each map picture to its measured layout, gives
+    // each aircraft kind its image, and puts the Island test level on the Island Draw picture (02_island_draw.png).
     static void ApplyPaintedArt(LevelData level)
     {
-        // Map: full resolution (1449 x 1086, never scaled down), smooth filtering, ASTC 4x4 on iOS (the highest-quality
-        // ASTC block), 108.6 pixels per unit so the picture is 10 units high, the game's world scale.
-        ConfigureTexture(MapPath, 108.6f, mipmaps: false, maxSize: 2048);
-        var map = AssetDatabase.LoadAssetAtPath<Sprite>(MapPath);
-        if (map != null && level.mapArt.sprite == null)
+        // Maps: full resolution (1536 x 1024, never scaled down), smooth filtering, ASTC 4x4 on iOS (the highest-quality
+        // ASTC block), 102.4 pixels per unit so a picture is 10 units high, the game's world scale.
+        foreach (string guid in AssetDatabase.FindAssets("t:Texture2D", new[] { MapsFolder }))
         {
-            level.mapArt.sprite = map;
-            level.mapArt.pixelsPerUnit = 108.6f;
-            IslandPictureLayout.Apply(level);
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            string file = System.IO.Path.GetFileName(path);
+            if (path.Contains("/Variants/") || file.Length < 3 || !char.IsDigit(file[0]) || !char.IsDigit(file[1]))
+                continue; // only the numbered pictures (01_ to 15_); Variants is not used
+            ConfigureTexture(path, MapPixelsPerUnit, mipmaps: false, maxSize: 2048);
+        }
+        foreach (string guid in AssetDatabase.FindAssets("t:PictureLayout", new[] { LayoutsFolder }))
+        {
+            var layout = AssetDatabase.LoadAssetAtPath<PictureLayout>(AssetDatabase.GUIDToAssetPath(guid));
+            var picture = AssetDatabase.LoadAssetAtPath<Sprite>($"{MapsFolder}/{layout.pictureFile}");
+            if (picture != null && layout.picture != picture)
+            {
+                layout.picture = picture;
+                EditorUtility.SetDirty(layout);
+                AssetDatabase.SaveAssetIfDirty(layout);
+            }
+        }
+
+        // The test level moves to the Island Draw picture once; later runs keep values tuned in the Inspector.
+        var islandDraw = AssetDatabase.LoadAssetAtPath<PictureLayout>($"{LayoutsFolder}/02_island_draw.asset");
+        if (islandDraw != null && level.layout != islandDraw)
+        {
+            level.mapId = "island";
+            islandDraw.ApplyTo(level);
         }
 
         // Aircraft: 512-pixel images, mipmaps and trilinear filtering so they stay crisp when drawn small.
@@ -148,21 +182,51 @@ public static class PrototypeSceneSetup
         return settings;
     }
 
-    // M3 step 1: the Island levels 1 to 10. Until step 4 every entry reuses the test level's data.
-    // An existing catalog is kept, so ids and edits survive re-running this setup.
-    static LevelCatalog LoadOrCreateCatalog(LevelData level)
+    // Blueprint 16: the seven maps with both pictures and layouts, and five level ids per mode. Until phases 2 and 3
+    // only Island Draw has level data (all five reuse the test level); the other entries have ids but no data yet,
+    // so their buttons say "coming in the next update". An existing catalog keeps its levels and values; pictures
+    // and layouts are filled in when missing.
+    static MapCatalog LoadOrCreateMapCatalog(LevelData islandTest)
     {
-        var catalog = AssetDatabase.LoadAssetAtPath<LevelCatalog>(CatalogPath);
-        if (catalog != null)
-            return catalog;
+        var catalog = AssetDatabase.LoadAssetAtPath<MapCatalog>(MapCatalogPath);
+        if (catalog == null)
+        {
+            if (!AssetDatabase.IsValidFolder("Assets/Maps"))
+                AssetDatabase.CreateFolder("Assets", "Maps");
+            catalog = ScriptableObject.CreateInstance<MapCatalog>();
+            AssetDatabase.CreateAsset(catalog, MapCatalogPath);
+        }
 
-        catalog = ScriptableObject.CreateInstance<LevelCatalog>();
-        catalog.mapName = "Island Airport";
-        for (int i = 1; i <= 10; i++)
-            catalog.levels.Add(new LevelEntry { id = $"island-{i:00}", title = $"Island {i}", data = level });
-        AssetDatabase.CreateAsset(catalog, CatalogPath);
+        foreach (var m in Maps)
+        {
+            MapEntry entry = catalog.Find(m.id);
+            if (entry == null)
+            {
+                entry = new MapEntry { id = m.id, displayName = m.name, xpToUnlock = m.xp, gameplayReady = m.ready, ruleText = m.rule };
+                foreach (GameMode mode in GameModes.All)
+                    for (int n = 1; n <= Progression.LevelThatOpensNextMap; n++)
+                        entry.Levels(mode).Add(new LevelEntry
+                        {
+                            id = MapInfo.LevelId(m.id, mode, n),
+                            title = $"{m.name} {mode} {n}",
+                            data = m.id == "island" && mode == GameMode.Draw ? islandTest : null,
+                        });
+                catalog.maps.Add(entry);
+            }
+            string drawFile = $"{m.draw:00}_{FileKey(m.id)}_draw";
+            string towerFile = $"{m.draw - 1:00}_{FileKey(m.id)}_tower";
+            if (entry.drawPicture == null) entry.drawPicture = AssetDatabase.LoadAssetAtPath<Sprite>($"{MapsFolder}/{drawFile}.png");
+            if (entry.towerPicture == null) entry.towerPicture = AssetDatabase.LoadAssetAtPath<Sprite>($"{MapsFolder}/{towerFile}.png");
+            if (entry.drawLayout == null) entry.drawLayout = AssetDatabase.LoadAssetAtPath<PictureLayout>($"{LayoutsFolder}/{drawFile}.asset");
+            if (entry.towerLayout == null) entry.towerLayout = AssetDatabase.LoadAssetAtPath<PictureLayout>($"{LayoutsFolder}/{towerFile}.asset");
+        }
+        EditorUtility.SetDirty(catalog);
+        AssetDatabase.SaveAssetIfDirty(catalog);
         return catalog;
     }
+
+    // Picture file names use short words: 07_mountain_tower.png for Mountain Valley.
+    static string FileKey(string mapId) => mapId;
 
     // Creates the Island prototype level with LevelData's default values, if it does not exist yet.
     // An existing asset is kept, so edits made in the Inspector survive re-running this setup. It is

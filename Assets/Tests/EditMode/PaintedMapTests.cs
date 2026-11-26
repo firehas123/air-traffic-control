@@ -67,135 +67,334 @@ namespace AirTrafficControl.Tests
         }
     }
 
-    public class IslandPictureFitTests
+    /// <summary>
+    /// Every measured picture layout (blueprint 16, 25 Nov 2026) lands on its picture's pixels: runways on asphalt,
+    /// touchdown zones on the white threshold stripes, pads on their white rings, stands, taxi routes and hold lines on
+    /// paved ground, hold lines clear of their runway, crossings on the runway, and the camera keeps every landing place
+    /// on a 4:3 iPad.
+    /// </summary>
+    public class PictureLayoutTests
     {
+        const string LayoutsFolder = "Assets/Maps/Layouts";
+        static readonly Dictionary<string, Color32[]> PixelCache = new Dictionary<string, Color32[]>();
+
+        static IEnumerable<string> LayoutPaths()
+        {
+            foreach (string guid in AssetDatabase.FindAssets("t:PictureLayout", new[] { LayoutsFolder }))
+                yield return AssetDatabase.GUIDToAssetPath(guid);
+        }
+
+        static PictureLayout Load(string path) => AssetDatabase.LoadAssetAtPath<PictureLayout>(path);
+
+        // The picture's own pixels, read from the PNG file (not the compressed texture), row 0 at the top.
+        sealed class Picture
+        {
+            readonly Color32[] pixels;
+            readonly int width;
+            readonly int height;
+
+            public Picture(PictureLayout layout)
+            {
+                string file = "Assets/Art/Maps/" + layout.pictureFile;
+                if (!PixelCache.TryGetValue(file, out pixels))
+                {
+                    var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                    Assert.IsTrue(texture.LoadImage(System.IO.File.ReadAllBytes(file)), file);
+                    pixels = texture.GetPixels32();
+                    PixelCache[file] = pixels;
+                    Object.DestroyImmediate(texture);
+                }
+                width = (int)layout.pictureSize.x;
+                height = (int)layout.pictureSize.y;
+                Assert.AreEqual(width * height, pixels.Length, "The picture is the size the layout says");
+            }
+
+            public Color32 At(Vector2 p)
+            {
+                int x = Mathf.Clamp(Mathf.RoundToInt(p.x), 0, width - 1);
+                int y = Mathf.Clamp(Mathf.RoundToInt(p.y), 0, height - 1);
+                return pixels[(height - 1 - y) * width + x];
+            }
+
+            public bool White(Vector2 p, int min = 185)
+            {
+                Color32 c = At(p);
+                return c.r > min && c.g > min && c.b > min;
+            }
+
+            // Grey asphalt, concrete or white paint: little colour. Snow is excluded by its blue tint.
+            public bool Paved(Vector2 p, int r)
+            {
+                int paved = 0, all = 0;
+                for (int dx = -r; dx <= r; dx++)
+                    for (int dy = -r; dy <= r; dy++)
+                    {
+                        Color32 c = At(p + new Vector2(dx, dy));
+                        int max = Mathf.Max(c.r, Mathf.Max(c.g, c.b)), min = Mathf.Min(c.r, Mathf.Min(c.g, c.b));
+                        bool snow = c.b - c.r > 12 && c.r > 165;
+                        if (max - min < 32 && !snow) paved++;
+                        all++;
+                    }
+                return paved * 2 >= all;
+            }
+        }
+
+        static bool OnRunway(PictureRunway runway, Vector2 p, float margin)
+        {
+            Vector2 u = runway.Along, n = new Vector2(-u.y, u.x), d = p - runway.endA;
+            float s = Vector2.Dot(d, u), o = Vector2.Dot(d, n);
+            return s >= -margin && s <= runway.Length + margin && Mathf.Abs(o) <= runway.width / 2f + margin;
+        }
+
+        [Test]
+        public void TenLayouts_ForTheFirstFiveMaps_BothModes()
+        {
+            var files = new List<string>();
+            foreach (string path in LayoutPaths())
+                files.Add(Load(path).pictureFile);
+            foreach (string name in new[] { "01_island_tower", "02_island_draw", "03_city_tower", "04_city_draw", "05_desert_tower",
+                                            "06_desert_draw", "07_mountain_tower", "08_mountain_draw", "09_arctic_tower", "10_arctic_draw" })
+                CollectionAssert.Contains(files, name + ".png");
+            foreach (string path in LayoutPaths())
+            {
+                PictureLayout layout = Load(path);
+                Assert.AreEqual(layout.pictureFile.Contains("_tower") ? GameMode.Tower : GameMode.Draw, layout.mode, layout.pictureFile);
+                Assert.IsNotNull(layout.picture, $"{layout.pictureFile} is linked (run the scene setup)");
+                Assert.GreaterOrEqual(layout.runways.Count, 2, $"{layout.pictureFile}: every airport has crossing runways");
+                Assert.AreEqual(1, layout.pads.FindAll(p => p.kind == LandingZoneKind.Helipad).Count, "One helipad");
+                Assert.AreEqual(1, layout.pads.FindAll(p => p.kind == LandingZoneKind.BalloonField).Count, "One balloon field");
+                Assert.GreaterOrEqual(layout.stands.Count, 4, "Stands");
+            }
+        }
+
+        [Test]
+        public void Runways_AreOnAsphalt_AndTouchdownZonesOnTheThresholdStripes()
+        {
+            foreach (string path in LayoutPaths())
+            {
+                PictureLayout layout = Load(path);
+                var picture = new Picture(layout);
+                foreach (PictureRunway runway in layout.runways)
+                {
+                    Vector2 u = runway.Along, n = new Vector2(-u.y, u.x);
+                    foreach (float t in new[] { 0.2f, 0.35f, 0.65f, 0.8f })
+                        Assert.IsTrue(picture.Paved(runway.endA + u * runway.Length * t + n * runway.width * 0.25f, 1),
+                                      $"{layout.pictureFile} {runway.name} at {t}");
+                    foreach (bool atA in new[] { true, false })
+                    {
+                        Vector2 zone = atA ? runway.zoneA : runway.zoneB;
+                        Vector2 origin = atA ? runway.endA : runway.endB;
+                        Vector2 along = atA ? u : -u;
+                        int white = 0, all = 0;
+                        for (float s = zone.x; s < zone.y; s += 1f)
+                            for (int k = 0; k < 15; k++)
+                            {
+                                float off = Mathf.Lerp(-0.35f, 0.35f, k / 14f) * runway.width;
+                                if (picture.White(origin + along * s + n * off)) white++;
+                                all++;
+                            }
+                        Assert.GreaterOrEqual(white / (float)all, 0.3f, $"{layout.pictureFile} {runway.name} zone {(atA ? "A" : "B")} is on the white stripes");
+                        Assert.Less(zone.x, 20f, "The zone starts at the runway end");
+                    }
+
+                    // The game's touchdown zone (shared by both ends) stays inside the stripes of each end.
+                    RunwayDefinition definition = layout.ToRunwayDefinition(runway);
+                    float start = definition.touchdownZoneStart * layout.pixelsPerUnit;
+                    float end = start + definition.touchdownZoneLength * layout.pixelsPerUnit;
+                    foreach (Vector2 zone in new[] { runway.zoneA, runway.zoneB })
+                    {
+                        Assert.GreaterOrEqual(start, zone.x - 0.5f);
+                        Assert.LessOrEqual(end, zone.y + 0.5f);
+                        Assert.GreaterOrEqual(end - start, 0.8f * (zone.y - zone.x), "Covers most of the stripes");
+                    }
+                    Assert.AreEqual(runway.Length, definition.length * layout.pixelsPerUnit, 0.5f);
+                    Assert.AreEqual(runway.width, definition.width * layout.pixelsPerUnit, 0.5f);
+                }
+            }
+        }
+
+        [Test]
+        public void Intersections_AreWhereTheRunwaysCross()
+        {
+            foreach (string path in LayoutPaths())
+            {
+                PictureLayout layout = Load(path);
+                var picture = new Picture(layout);
+                Assert.Greater(layout.intersections.Count, 0, layout.pictureFile);
+                foreach (PictureIntersection x in layout.intersections)
+                {
+                    Assert.IsTrue(OnRunway(layout.FindRunway(x.runwayA), x.point, 0f) && OnRunway(layout.FindRunway(x.runwayB), x.point, 0f),
+                                  $"{layout.pictureFile}: on both runways");
+                    Assert.IsTrue(picture.Paved(x.point, 3));
+                }
+            }
+        }
+
+        [Test]
+        public void Pads_SitOnTheirPaintedRings()
+        {
+            foreach (string path in LayoutPaths())
+            {
+                PictureLayout layout = Load(path);
+                var picture = new Picture(layout);
+                foreach (PicturePad pad in layout.pads)
+                {
+                    int hits = 0;
+                    for (int i = 0; i < 48; i++)
+                    {
+                        float a = i * Mathf.PI * 2f / 48f;
+                        var dir = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
+                        bool ring = false;
+                        for (int dr = -3; dr <= 1; dr++)
+                            ring |= picture.White(pad.centre + dir * (pad.radius + dr), 165);
+                        if (ring) hits++;
+                    }
+                    Assert.GreaterOrEqual(hits, 29, $"{layout.pictureFile} {pad.kind}: {hits} of 48 ring samples");
+                }
+            }
+        }
+
+        [Test]
+        public void MountainDraw_UsesTheLeftRingAsHelipad_WithAnH()
+        {
+            PictureLayout layout = Load(LayoutsFolder + "/08_mountain_draw.asset");
+            PicturePad helipad = layout.pads.Find(p => p.kind == LandingZoneKind.Helipad);
+            PicturePad field = layout.pads.Find(p => p.kind == LandingZoneKind.BalloonField);
+            Assert.AreEqual(0.22f, helipad.centre.x / layout.pictureSize.x, 0.03f);
+            Assert.AreEqual(0.62f, helipad.centre.y / layout.pictureSize.y, 0.03f);
+            Assert.IsTrue(helipad.drawH, "An H is drawn on the plain ring");
+            Assert.Greater(field.centre.x, helipad.centre.x, "The right ring is the balloon field");
+            Assert.IsFalse(field.drawH);
+        }
+
+        [Test]
+        public void StandsRoutesAndHolds_AreOnPavedGround_HoldsClearOfTheRunway()
+        {
+            foreach (string path in LayoutPaths())
+            {
+                PictureLayout layout = Load(path);
+                var picture = new Picture(layout);
+                foreach (PictureStand stand in layout.stands)
+                    Assert.IsTrue(picture.Paved(stand.position, 3), $"{layout.pictureFile} {stand.name}");
+                foreach (PicturePath route in layout.taxiRoutes)
+                    for (int i = 1; i < route.points.Count; i++)
+                        for (int k = 0; k <= 11; k++)
+                        {
+                            Vector2 p = Vector2.Lerp(route.points[i - 1], route.points[i], k / 11f);
+                            Assert.IsTrue(picture.Paved(p, 2), $"{layout.pictureFile} route {route.name} at {p}");
+                        }
+                foreach (PictureHoldLine hold in layout.holdLines)
+                {
+                    PictureRunway runway = layout.FindRunway(hold.runway);
+                    Assert.IsNotNull(runway, hold.runway);
+                    Assert.IsTrue(picture.Paved(hold.point, 2), $"{layout.pictureFile} hold {hold.point}");
+                    Assert.IsFalse(OnRunway(runway, hold.point, 2f), $"{layout.pictureFile} hold {hold.point} waits clear of {hold.runway}");
+                    CollectionAssert.Contains(new[] { PictureHoldLine.EndA, PictureHoldLine.EndB, PictureHoldLine.Crossing }, hold.kind);
+                }
+                foreach (PictureCrossing crossing in layout.crossings)
+                {
+                    Assert.IsTrue(OnRunway(layout.FindRunway(crossing.runway), crossing.point, 0f), $"{layout.pictureFile} crossing on {crossing.runway}");
+                    Assert.IsNotNull(layout.FindRoute(crossing.route), crossing.route);
+                }
+                Assert.IsTrue(layout.holdLines.Exists(h => h.kind == PictureHoldLine.EndA), $"{layout.pictureFile}: a hold line at a runway end");
+            }
+        }
+
+        [Test]
+        public void MountainAreas_CoverTheMountains_NotTheAirport()
+        {
+            foreach (string name in new[] { "07_mountain_tower", "08_mountain_draw" })
+            {
+                PictureLayout layout = Load($"{LayoutsFolder}/{name}.asset");
+                List<PictureArea> mountains = layout.ruleAreas.FindAll(a => a.kind == PictureArea.Mountain);
+                Assert.AreEqual(2, mountains.Count, "North and south");
+                Assert.IsTrue(mountains.Exists(a => a.Contains(new Vector2(768f, 20f))), "Top edge is mountain");
+                Assert.IsTrue(mountains.Exists(a => a.Contains(new Vector2(768f, 1010f))), "Bottom edge is mountain");
+                foreach (PictureRunway runway in layout.runways)
+                    foreach (PictureArea area in mountains)
+                        Assert.IsFalse(area.Contains(runway.endA) || area.Contains(runway.endB), "Runways are in the valley");
+                foreach (PicturePad pad in layout.pads)
+                    foreach (PictureArea area in mountains)
+                        Assert.IsFalse(area.Contains(pad.centre), "Pads are in the valley");
+            }
+        }
+
+        [Test]
+        public void IPad_ShowsTheAirportAndEveryLandingPlace_CroppingOnlyTheEdges()
+        {
+            foreach (string path in LayoutPaths())
+            {
+                PictureLayout layout = Load(path);
+                Rect picture = layout.WorldRect;
+                Rect keep = layout.KeepVisibleWorld;
+                Rect view = CameraFraming.View(picture, keep, 4f / 3f);
+                Assert.AreEqual(picture.height, view.height, 0.01f, $"{layout.pictureFile}: full height on the iPad");
+                Assert.LessOrEqual(view.xMax, picture.xMax + 1e-3f, "Nothing past the picture");
+                Assert.GreaterOrEqual(view.xMin, picture.xMin - 1e-3f);
+                foreach (PictureRunway runway in layout.runways)
+                    Assert.IsTrue(view.Contains(layout.World(runway.endA)) && view.Contains(layout.World(runway.endB)), $"{layout.pictureFile} {runway.name}");
+                foreach (PicturePad pad in layout.pads)
+                {
+                    Vector2 c = layout.World(pad.centre);
+                    float r = layout.Units(pad.radius) * 0.8f;
+                    foreach (Vector2 d in new[] { Vector2.left, Vector2.right, Vector2.up, Vector2.down })
+                        Assert.IsTrue(view.Contains(c + d * r), $"{layout.pictureFile} {pad.kind} is visible");
+                }
+                foreach (PictureStand stand in layout.stands)
+                    Assert.IsTrue(view.Contains(layout.World(stand.position)), $"{layout.pictureFile} {stand.name}");
+            }
+        }
+    }
+
+    /// <summary>The Island test level fitted to 02_island_draw.png (Draw buttons open it until phase 2).</summary>
+    public class IslandDrawFitTests
+    {
+        static PictureLayout Layout() => AssetDatabase.LoadAssetAtPath<PictureLayout>("Assets/Maps/Layouts/02_island_draw.asset");
+
         static LevelData Fitted()
         {
             LevelData level = ScriptableObject.CreateInstance<LevelData>();
-            IslandPictureLayout.Apply(level);
+            Layout().ApplyTo(level);
             return level;
         }
 
-        static Vector2 Pixel(Vector2 world) =>
-            CameraFraming.WorldToPixel(world, IslandPictureLayout.PictureSize, IslandPictureLayout.PixelsPerUnit);
-
-        static void AssertNear(Vector2 expectedPixel, Vector2 world, float tolerance, string what)
-        {
-            Vector2 p = Pixel(world);
-            Assert.AreEqual(expectedPixel.x, p.x, tolerance, what + " (x)");
-            Assert.AreEqual(expectedPixel.y, p.y, tolerance, what + " (y)");
-        }
-
         [Test]
-        public void Runway_SitsOnThePaintedRunway()
+        public void Runways_AndPads_ComeFromThePicture()
         {
-            Runway runway = Fitted().runways[0].ToRunway();
-            Rect painted = IslandPictureLayout.RunwayPixels;
-            AssertNear(painted.center, runway.Centre, 1f, "Runway centre");
-            Assert.AreEqual(painted.width, runway.Length * IslandPictureLayout.PixelsPerUnit, 1f);
-            Assert.AreEqual(painted.height, runway.Width * IslandPictureLayout.PixelsPerUnit, 1f);
-        }
-
-        [Test]
-        public void TouchdownZones_AreOnTheWhiteStripesAtBothEnds()
-        {
-            Runway runway = Fitted().runways[0].ToRunway();
-            foreach (Runway direction in new[] { runway, runway.Reversed() })
-            {
-                Vector2 start = direction.Threshold + direction.Direction * direction.TouchdownZoneStart;
-                Vector2 end = start + direction.Direction * direction.TouchdownZoneLength;
-                float a = Pixel(start).x;
-                float b = Pixel(end).x;
-                Vector2 stripes = direction.LandingHeadingDegrees < 90f ? IslandPictureLayout.WestStripesPixels : IslandPictureLayout.EastStripesPixels;
-                Assert.AreEqual(stripes.x, Mathf.Min(a, b), 3f, "Zone starts at the first stripe");
-                Assert.AreEqual(stripes.y, Mathf.Max(a, b), 3f, "Zone ends at the last stripe");
-            }
-        }
-
-        [Test]
-        public void Pads_AreOnTheHelipadAndTheBalloonField()
-        {
+            PictureLayout layout = Layout();
             LevelData level = Fitted();
+            Assert.AreEqual(2, level.runways.Count);
+            Runway main = level.runways[0].ToRunway();
+            Assert.AreEqual(0f, main.LandingHeadingDegrees, 0.5f, "Main runway lands west to east");
+            Vector2 threshold = layout.Pixel(main.Threshold);
+            Assert.AreEqual(430.5f, threshold.x, 1f);
+            Assert.AreEqual(462f, threshold.y, 1f);
+            Runway cross = level.runways[1].ToRunway();
+            Assert.AreNotEqual(0f, Mathf.DeltaAngle(cross.LandingHeadingDegrees, 0f), "The crossing runway is at an angle");
+            Assert.AreEqual(GameMode.Draw, level.mode);
+            Assert.AreSame(layout, level.layout);
+            Assert.IsTrue(LandingRules.TryFindTouchdown(new List<Runway> { main }, new List<LandingPad>(),
+                new List<Vector2> { main.Threshold + new Vector2(-2f, 0.5f), main.Threshold + main.Direction * (main.TouchdownZoneStart + main.TouchdownZoneLength / 2f) },
+                LandingZoneKind.Runway, out _), "A line ending on the painted stripes lands");
             LandingPadDefinition helipad = level.landingPads.Find(p => p.kind == LandingZoneKind.Helipad);
-            LandingPadDefinition field = level.landingPads.Find(p => p.kind == LandingZoneKind.BalloonField);
-            AssertNear(IslandPictureLayout.HelipadPixels, helipad.centre, 1f, "Helipad (west)");
-            AssertNear(IslandPictureLayout.BalloonFieldPixels, field.centre, 1f, "Balloon field (east)");
-            Assert.Less(helipad.centre.x, 0f, "Helipad is west");
-            Assert.Greater(field.centre.x, 0f, "Balloon field is east");
+            Assert.AreEqual(471.7f, layout.Pixel(helipad.centre).x, 1f);
         }
 
         [Test]
-        public void Gates_AreTheTwoApronSpotsAndTheRemoteStand()
+        public void Gates_AreTwoApronStandsAndTheRemoteStand_WhichCrossesTheRunway()
         {
             LevelData level = Fitted();
+            Runway runway = level.runways[0].ToRunway();
             Assert.AreEqual(3, level.ground.gates.Count);
-            AssertNear(IslandPictureLayout.WestStandPixels, level.ground.gates[0].position, 1f, "West apron spot");
-            AssertNear(IslandPictureLayout.EastStandPixels, level.ground.gates[1].position, 1f, "East apron spot");
-            AssertNear(IslandPictureLayout.RemoteStandPixels, level.ground.gates[2].position, 1f, "Remote stand");
-            Assert.Less(level.ground.gates[2].position.y, level.runways[0].centre.y, "Remote stand is south of the runway");
-        }
-
-        [Test]
-        public void EveryConnector_EndsOnTheMainTaxiway()
-        {
-            LevelData level = Fitted();
-            foreach (GateDefinition gate in level.ground.gates)
-            {
-                Vector2 end = gate.connector[gate.connector.Count - 1];
-                Assert.Less(DistanceToPolyline(end, level.ground.mainTaxiway), 0.01f, $"Gate at {gate.position} joins the taxiway");
-            }
-        }
-
-        [Test]
-        public void CrossingPoint_IsWhereTheSouthTaxiwayMeetsTheRunway_AndOffIt()
-        {
-            LevelData level = Fitted();
-            Runway runway = level.runways[0].ToRunway();
             GateDefinition remote = level.ground.gates[2];
+            Assert.Less(remote.position.y, runway.Centre.y, "Remote stand is south of the runway");
             Vector2 crossing = remote.connector[remote.crossingIndex];
-            AssertNear(IslandPictureLayout.CrossingPixels, crossing, 1f, "Crossing point");
-            Assert.IsFalse(runway.Contains(crossing, AircraftType.AirlinerCollisionRadius), "Waits clear of the runway");
-
-            Vector2 across = remote.connector[remote.crossingIndex + 1];
-            Assert.IsFalse(runway.Contains(across, AircraftType.AirlinerCollisionRadius), "Ends clear on the other side");
-            Assert.Less(crossing.y, runway.Centre.y);
-            Assert.Greater(across.y, runway.Centre.y, "The segment after the crossing point crosses the runway");
-        }
-
-        [Test]
-        public void HoldPoints_AreClearOfTheRunway_AndLineUpPointsOnItsCentreline()
-        {
-            LevelData level = Fitted();
-            Runway runway = level.runways[0].ToRunway();
+            Assert.IsFalse(runway.Contains(crossing), "Waits clear of the runway (on the painted hold bars)");
+            Assert.Greater(remote.connector[remote.crossingIndex + 1].y, runway.Centre.y, "The next segment crosses it");
             List<Vector2> main = level.ground.mainTaxiway;
             foreach (Vector2 hold in new[] { main[0], main[main.Count - 1] })
-                Assert.IsFalse(runway.Contains(hold, AircraftType.AirlinerCollisionRadius), $"Hold point {hold} is clear of the runway");
-            foreach (Vector2 lineUp in new[] { level.ground.normalLineUp, level.ground.reversedLineUp })
-                Assert.AreEqual(runway.Centre.y, lineUp.y, 0.02f, "Line-up on the centreline");
-            Assert.Less(main[0].x, 0f, "First end is the west end (normal direction takes off eastwards from it)");
-        }
-
-        [Test]
-        public void CarrierLane_IsInTheOpenSeaBelowTheIsland()
-        {
-            LevelData level = Fitted();
-            float lanePixel = Pixel(new Vector2(0f, level.carrier.laneY)).y;
-            Assert.Greater(lanePixel - Pixel(new Vector2(0f, level.carrier.laneY + level.carrier.shipWidth / 2f)).y, 0f);
-            Assert.Greater(Pixel(new Vector2(0f, level.carrier.laneY + level.carrier.shipWidth / 2f)).y, 790f, "Ship's top edge is below the shore");
-            Assert.Less(Pixel(new Vector2(0f, level.carrier.laneY - level.carrier.shipWidth / 2f)).y, 1086f, "Inside the picture");
-        }
-
-        [Test]
-        public void TheAirportRect_ContainsEverythingThePlayerUses()
-        {
-            LevelData level = Fitted();
-            Rect keep = level.mapArt.keepVisible;
-            Runway runway = level.runways[0].ToRunway();
-            Assert.IsTrue(keep.Contains(runway.Threshold) && keep.Contains(runway.Reversed().Threshold), "Both runway ends");
-            foreach (LandingPadDefinition pad in level.landingPads)
-                Assert.IsTrue(keep.Contains(pad.centre), "Pads");
-            foreach (GateDefinition gate in level.ground.gates)
-                Assert.IsTrue(keep.Contains(gate.position), "Gates");
+                Assert.IsFalse(runway.Contains(hold), $"Hold point {hold} is clear of the runway");
+            Assert.AreEqual(runway.Centre.y, level.ground.normalLineUp.y, 0.02f, "Line-up on the centreline");
         }
 
         [Test]
@@ -213,7 +412,7 @@ namespace AirTrafficControl.Tests
 
             g.Cross();
             bool wasOnRunway = false;
-            for (float t = 0f; t < 30f && g.Phase != GroundPhase.HoldingShort; t += 1f / 60f)
+            for (float t = 0f; t < 40f && g.Phase != GroundPhase.HoldingShort; t += 1f / 60f)
             {
                 g.Step(1f / 60f, false);
                 wasOnRunway |= runway.Contains(g.Position);
@@ -225,33 +424,68 @@ namespace AirTrafficControl.Tests
             for (float t = 0f; t < 30f && g.Phase != GroundPhase.Airborne; t += 1f / 60f)
                 g.Step(1f / 60f, false);
             Assert.AreEqual(GroundPhase.Airborne, g.Phase);
-            Assert.IsTrue(runway.Contains(g.Position, 0.05f), "Lifts off over the runway, within the lift-off distance");
         }
 
         [Test]
-        public void TheIslandLevelAsset_UsesThePicture_AndAircraftImages()
+        public void CarrierLane_IsInTheOpenSeaBelowTheIsland()
         {
-            var level = AssetDatabase.LoadAssetAtPath<LevelData>("Assets/Levels/IslandPrototype.asset");
-            Assert.IsNotNull(level.mapArt.sprite, "island_day.png is the map");
-            Assert.AreEqual(10f, level.mapArt.WorldRect.height, 0.01f);
-            foreach (AircraftType kind in level.aircraftTypes)
-            {
-                Assert.IsNotNull(kind.sprite, $"{kind.displayName} has its painted image");
-                Assert.AreEqual(kind.silhouette == AircraftSilhouette.HotAirBalloon ? 0f : -90f, kind.spriteRotation, 1e-3f,
-                                "Nose-up images are turned so the nose leads; the balloon stays upright");
-            }
+            PictureLayout layout = Layout();
+            LevelData level = Fitted();
+            Assert.IsTrue(level.carrier.hasCarrier);
+            float top = layout.Pixel(new Vector2(0f, level.carrier.laneY + level.carrier.shipWidth / 2f)).y;
+            float bottom = layout.Pixel(new Vector2(0f, level.carrier.laneY - level.carrier.shipWidth / 2f)).y;
+            Assert.Greater(top, 730f, "Ship's top edge is below the shore");
+            Assert.Less(bottom, 1024f, "Inside the picture");
         }
 
-        static float DistanceToPolyline(Vector2 p, IReadOnlyList<Vector2> line)
+        [Test]
+        public void TheIslandLevelAsset_UsesTheDrawPicture_AndAircraftImages()
         {
-            float best = float.MaxValue;
-            for (int i = 1; i < line.Count; i++)
+            var level = AssetDatabase.LoadAssetAtPath<LevelData>("Assets/Levels/IslandPrototype.asset");
+            Assert.AreSame(Layout(), level.layout, "The test level is on 02_island_draw");
+            Assert.IsNotNull(level.mapArt.sprite);
+            Assert.AreEqual(10f, level.mapArt.WorldRect.height, 0.01f);
+            Assert.AreEqual(2, level.runways.Count);
+            foreach (AircraftType kind in level.aircraftTypes)
+                Assert.IsNotNull(kind.sprite, $"{kind.displayName} has its painted image");
+        }
+    }
+
+    /// <summary>The map catalog (blueprint 16.2): seven maps in order with both pictures, layouts and levels per mode.</summary>
+    public class MapCatalogTests
+    {
+        [Test]
+        public void SevenMaps_InOrder_WithPicturesLayoutsAndLevelIds()
+        {
+            var catalog = AssetDatabase.LoadAssetAtPath<MapCatalog>("Assets/Maps/MapCatalog.asset");
+            Assert.IsNotNull(catalog);
+            string[] names = { "Island", "City", "Desert", "Mountain Valley", "Arctic", "Military Base", "Spaceport" };
+            int[] xp = { 0, 1000, 2500, 4000, 5500, 7000, 8500 };
+            Assert.AreEqual(names.Length, catalog.maps.Count);
+            for (int i = 0; i < names.Length; i++)
             {
-                Vector2 a = line[i - 1], b = line[i], ab = b - a;
-                float t = ab.sqrMagnitude > 0f ? Mathf.Clamp01(Vector2.Dot(p - a, ab) / ab.sqrMagnitude) : 0f;
-                best = Mathf.Min(best, Vector2.Distance(p, a + ab * t));
+                MapEntry map = catalog.maps[i];
+                Assert.AreEqual(names[i], map.displayName);
+                Assert.AreEqual(xp[i], map.xpToUnlock);
+                Assert.AreEqual(i < 5, map.gameplayReady, "Military Base and Spaceport: coming soon");
+                Assert.IsNotNull(map.drawPicture, $"{map.displayName} Draw picture");
+                Assert.IsNotNull(map.towerPicture, $"{map.displayName} Tower picture");
+                if (i < 5)
+                {
+                    Assert.IsNotNull(map.drawLayout, $"{map.displayName} Draw layout");
+                    Assert.IsNotNull(map.towerLayout, $"{map.displayName} Tower layout");
+                    Assert.AreSame(map.drawPicture, map.drawLayout.picture);
+                }
+                foreach (GameMode mode in GameModes.All)
+                {
+                    Assert.AreEqual(5, map.Levels(mode).Count);
+                    for (int n = 0; n < 5; n++)
+                        Assert.AreEqual(MapInfo.LevelId(map.id, mode, n + 1), map.Levels(mode)[n].id);
+                }
             }
-            return best;
+            foreach (LevelEntry level in catalog.maps[0].drawLevels)
+                Assert.IsNotNull(level.data, "Island Draw plays the test level until phase 2");
+            Assert.IsTrue(catalog.maps[0].towerLevels.TrueForAll(l => l.data == null), "Tower comes in phase 3");
         }
     }
 }

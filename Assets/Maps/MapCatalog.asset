@@ -1,0 +1,307 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f7eb0f07a620435d948af5333e8cd778, type: 3}
+  m_Name: MapCatalog
+  m_EditorClassIdentifier: AirTrafficControl::AirTrafficControl.MapCatalog
+  maps:
+  - id: island
+    displayName: Island
+    xpToUnlock: 0
+    gameplayReady: 1
+    ruleText: Wind changes switch the active runway end
+    drawPicture: {fileID: 21300000, guid: 842c1cf27b45aab92951ece2b436e171, type: 3}
+    towerPicture: {fileID: 21300000, guid: 7ea3545cb441d7c539b1d0ddada4fb3c, type: 3}
+    drawLayout: {fileID: 11400000, guid: 2d088c9323dd4580bd30b7438e75747b, type: 2}
+    towerLayout: {fileID: 11400000, guid: 0b12c91ede9e4280ac910a5873dda05b, type: 2}
+    drawLevels:
+    - id: island-draw-01
+      title: Island Draw 1
+      data: {fileID: 11400000, guid: b14a35fc4d0754ae8a8e7a57c87a40ad, type: 2}
+    - id: island-draw-02
+      title: Island Draw 2
+      data: {fileID: 11400000, guid: b14a35fc4d0754ae8a8e7a57c87a40ad, type: 2}
+    - id: island-draw-03
+      title: Island Draw 3
+      data: {fileID: 11400000, guid: b14a35fc4d0754ae8a8e7a57c87a40ad, type: 2}
+    - id: island-draw-04
+      title: Island Draw 4
+      data: {fileID: 11400000, guid: b14a35fc4d0754ae8a8e7a57c87a40ad, type: 2}
+    - id: island-draw-05
+      title: Island Draw 5
+      data: {fileID: 11400000, guid: b14a35fc4d0754ae8a8e7a57c87a40ad, type: 2}
+    towerLevels:
+    - id: island-tower-01
+      title: Island Tower 1
+      data: {fileID: 0}
+    - id: island-tower-02
+      title: Island Tower 2
+      data: {fileID: 0}
+    - id: island-tower-03
+      title: Island Tower 3
+      data: {fileID: 0}
+    - id: island-tower-04
+      title: Island Tower 4
+      data: {fileID: 0}
+    - id: island-tower-05
+      title: Island Tower 5
+      data: {fileID: 0}
+  - id: city
+    displayName: City
+    xpToUnlock: 1000
+    gameplayReady: 1
+    ruleText: Runways close for short periods
+    drawPicture: {fileID: 21300000, guid: 8f34cc210b130ebb587de8bb4503fbe5, type: 3}
+    towerPicture: {fileID: 21300000, guid: 2603ce634e5da2ff69f2411a40404f54, type: 3}
+    drawLayout: {fileID: 11400000, guid: e44a852d73bf48ee915f49497c69f0bb, type: 2}
+    towerLayout: {fileID: 11400000, guid: 704f2247e18841bba4f4199dade0a096, type: 2}
+    drawLevels:
+    - id: city-draw-01
+      title: City Draw 1
+      data: {fileID: 0}
+    - id: city-draw-02
+      title: City Draw 2
+      data: {fileID: 0}
+    - id: city-draw-03
+      title: City Draw 3
+      data: {fileID: 0}
+    - id: city-draw-04
+      title: City Draw 4
+      data: {fileID: 0}
+    - id: city-draw-05
+      title: City Draw 5
+      data: {fileID: 0}
+    towerLevels:
+    - id: city-tower-01
+      title: City Tower 1
+      data: {fileID: 0}
+    - id: city-tower-02
+      title: City Tower 2
+      data: {fileID: 0}
+    - id: city-tower-03
+      title: City Tower 3
+      data: {fileID: 0}
+    - id: city-tower-04
+      title: City Tower 4
+      data: {fileID: 0}
+    - id: city-tower-05
+      title: City Tower 5
+      data: {fileID: 0}
+  - id: desert
+    displayName: Desert
+    xpToUnlock: 2500
+    gameplayReady: 1
+    ruleText: Sandstorms and low-fuel aircraft
+    drawPicture: {fileID: 21300000, guid: d383423310607baffa2c710210608688, type: 3}
+    towerPicture: {fileID: 21300000, guid: 8fb6c1e2a32bbc4999960395bbfcaaef, type: 3}
+    drawLayout: {fileID: 11400000, guid: 2d9b6a4614b3422a9ad2e5f9ce7be0ed, type: 2}
+    towerLayout: {fileID: 11400000, guid: 59bfa23cb1eb44efb8d0f686b92fecb5, type: 2}
+    drawLevels:
+    - id: desert-draw-01
+      title: Desert Draw 1
+      data: {fileID: 0}
+    - id: desert-draw-02
+      title: Desert Draw 2
+      data: {fileID: 0}
+    - id: desert-draw-03
+      title: Desert Draw 3
+      data: {fileID: 0}
+    - id: desert-draw-04
+      title: Desert Draw 4
+      data: {fileID: 0}
+    - id: desert-draw-05
+      title: Desert Draw 5
+      data: {fileID: 0}
+    towerLevels:
+    - id: desert-tower-01
+      title: Desert Tower 1
+      data: {fileID: 0}
+    - id: desert-tower-02
+      title: Desert Tower 2
+      data: {fileID: 0}
+    - id: desert-tower-03
+      title: Desert Tower 3
+      data: {fileID: 0}
+    - id: desert-tower-04
+      title: Desert Tower 4
+      data: {fileID: 0}
+    - id: desert-tower-05
+      title: Desert Tower 5
+      data: {fileID: 0}
+  - id: mountain
+    displayName: Mountain Valley
+    xpToUnlock: 4000
+    gameplayReady: 1
+    ruleText: No line may pass through the mountains
+    drawPicture: {fileID: 21300000, guid: 576fdbdef242f20ea80224693daa30aa, type: 3}
+    towerPicture: {fileID: 21300000, guid: 1e22f9a9db8ba58d3ab16c64475465e8, type: 3}
+    drawLayout: {fileID: 11400000, guid: 43ab6708af9c425298fca545d820b63b, type: 2}
+    towerLayout: {fileID: 11400000, guid: 49c5f2a7885f49088f634afd3a135787, type: 2}
+    drawLevels:
+    - id: mountain-draw-01
+      title: Mountain Valley Draw 1
+      data: {fileID: 0}
+    - id: mountain-draw-02
+      title: Mountain Valley Draw 2
+      data: {fileID: 0}
+    - id: mountain-draw-03
+      title: Mountain Valley Draw 3
+      data: {fileID: 0}
+    - id: mountain-draw-04
+      title: Mountain Valley Draw 4
+      data: {fileID: 0}
+    - id: mountain-draw-05
+      title: Mountain Valley Draw 5
+      data: {fileID: 0}
+    towerLevels:
+    - id: mountain-tower-01
+      title: Mountain Valley Tower 1
+      data: {fileID: 0}
+    - id: mountain-tower-02
+      title: Mountain Valley Tower 2
+      data: {fileID: 0}
+    - id: mountain-tower-03
+      title: Mountain Valley Tower 3
+      data: {fileID: 0}
+    - id: mountain-tower-04
+      title: Mountain Valley Tower 4
+      data: {fileID: 0}
+    - id: mountain-tower-05
+      title: Mountain Valley Tower 5
+      data: {fileID: 0}
+  - id: arctic
+    displayName: Arctic
+    xpToUnlock: 5500
+    gameplayReady: 1
+    ruleText: 'Icy runways: land on Slow'
+    drawPicture: {fileID: 21300000, guid: 984be16d87884322db597d85f2dcbf68, type: 3}
+    towerPicture: {fileID: 21300000, guid: 8bfef08aac8a89133889956b929ebb10, type: 3}
+    drawLayout: {fileID: 11400000, guid: f8c85c645cde428d8a007eea2e5f0585, type: 2}
+    towerLayout: {fileID: 11400000, guid: cb3c7c1e75314196925bda0ab83ed75f, type: 2}
+    drawLevels:
+    - id: arctic-draw-01
+      title: Arctic Draw 1
+      data: {fileID: 0}
+    - id: arctic-draw-02
+      title: Arctic Draw 2
+      data: {fileID: 0}
+    - id: arctic-draw-03
+      title: Arctic Draw 3
+      data: {fileID: 0}
+    - id: arctic-draw-04
+      title: Arctic Draw 4
+      data: {fileID: 0}
+    - id: arctic-draw-05
+      title: Arctic Draw 5
+      data: {fileID: 0}
+    towerLevels:
+    - id: arctic-tower-01
+      title: Arctic Tower 1
+      data: {fileID: 0}
+    - id: arctic-tower-02
+      title: Arctic Tower 2
+      data: {fileID: 0}
+    - id: arctic-tower-03
+      title: Arctic Tower 3
+      data: {fileID: 0}
+    - id: arctic-tower-04
+      title: Arctic Tower 4
+      data: {fileID: 0}
+    - id: arctic-tower-05
+      title: Arctic Tower 5
+      data: {fileID: 0}
+  - id: military
+    displayName: Military Base
+    xpToUnlock: 7000
+    gameplayReady: 0
+    ruleText: Fighter scrambles with a time limit
+    drawPicture: {fileID: 21300000, guid: e1298ce26acf5609aa59f5a3d7f3d599, type: 3}
+    towerPicture: {fileID: 21300000, guid: 58b9265a910b3932ba3bd07c0dc87cf9, type: 3}
+    drawLayout: {fileID: 0}
+    towerLayout: {fileID: 0}
+    drawLevels:
+    - id: military-draw-01
+      title: Military Base Draw 1
+      data: {fileID: 0}
+    - id: military-draw-02
+      title: Military Base Draw 2
+      data: {fileID: 0}
+    - id: military-draw-03
+      title: Military Base Draw 3
+      data: {fileID: 0}
+    - id: military-draw-04
+      title: Military Base Draw 4
+      data: {fileID: 0}
+    - id: military-draw-05
+      title: Military Base Draw 5
+      data: {fileID: 0}
+    towerLevels:
+    - id: military-tower-01
+      title: Military Base Tower 1
+      data: {fileID: 0}
+    - id: military-tower-02
+      title: Military Base Tower 2
+      data: {fileID: 0}
+    - id: military-tower-03
+      title: Military Base Tower 3
+      data: {fileID: 0}
+    - id: military-tower-04
+      title: Military Base Tower 4
+      data: {fileID: 0}
+    - id: military-tower-05
+      title: Military Base Tower 5
+      data: {fileID: 0}
+  - id: spaceport
+    displayName: Spaceport
+    xpToUnlock: 8500
+    gameplayReady: 0
+    ruleText: Rocket launches close a no-fly column
+    drawPicture: {fileID: 21300000, guid: 45f95e1796cca5fb2b141460cfa584c7, type: 3}
+    towerPicture: {fileID: 21300000, guid: a261f63fd24405c4888766a8e6810baf, type: 3}
+    drawLayout: {fileID: 0}
+    towerLayout: {fileID: 0}
+    drawLevels:
+    - id: spaceport-draw-01
+      title: Spaceport Draw 1
+      data: {fileID: 0}
+    - id: spaceport-draw-02
+      title: Spaceport Draw 2
+      data: {fileID: 0}
+    - id: spaceport-draw-03
+      title: Spaceport Draw 3
+      data: {fileID: 0}
+    - id: spaceport-draw-04
+      title: Spaceport Draw 4
+      data: {fileID: 0}
+    - id: spaceport-draw-05
+      title: Spaceport Draw 5
+      data: {fileID: 0}
+    towerLevels:
+    - id: spaceport-tower-01
+      title: Spaceport Tower 1
+      data: {fileID: 0}
+    - id: spaceport-tower-02
+      title: Spaceport Tower 2
+      data: {fileID: 0}
+    - id: spaceport-tower-03
+      title: Spaceport Tower 3
+      data: {fileID: 0}
+    - id: spaceport-tower-04
+      title: Spaceport Tower 4
+      data: {fileID: 0}
+    - id: spaceport-tower-05
+      title: Spaceport Tower 5
+      data: {fileID: 0}
+  xp:
+    perLanding: 10
+    perDeparture: 10
+    perNewStar: 25
+    noWarningBonus: 50

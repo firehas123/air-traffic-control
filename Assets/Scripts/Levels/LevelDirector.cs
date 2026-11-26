@@ -132,8 +132,6 @@ namespace AirTrafficControl
             hud.WindPressed += OnWindPressed;
             hud.SlowDrawPressed += OnSlowDrawPressed;
             hud.HelpPressed += OnHelpPressed;
-            hud.AnimsPressed += OnAnimsPressed;
-            hud.SetAnimsLabel(Animations.On);
             input.SetScreenBlocker(hud.IsOverInteractive);
             hud.SetSpeedLabel(clock.SpeedLabel);
             hud.SetSlowDrawLabel(clock.SlowDrawLabel);
@@ -160,7 +158,6 @@ namespace AirTrafficControl
                 hud.WindPressed -= OnWindPressed;
                 hud.SlowDrawPressed -= OnSlowDrawPressed;
                 hud.HelpPressed -= OnHelpPressed;
-                hud.AnimsPressed -= OnAnimsPressed;
             }
             Time.timeScale = 1f;
         }
@@ -293,12 +290,6 @@ namespace AirTrafficControl
             help.Reset();
         }
 
-        void OnAnimsPressed()
-        {
-            Animations.RuntimeOn = !Animations.On;
-            hud.SetAnimsLabel(Animations.On);
-        }
-
         // Shows the current hint, and the ghost-line demo while the drawing hint is up.
         void UpdateHelp()
         {
@@ -370,7 +361,6 @@ namespace AirTrafficControl
             if (session.IsPlaying)
             {
                 feedback?.TouchedDown();
-                effects?.Landing(aircraft.transform.position);
             }
         }
 
@@ -531,7 +521,7 @@ namespace AirTrafficControl
             cleared,
             LevelResult.Stars(cleared, session.ElapsedSeconds, session.WarningCount, level.result),
             session.ElapsedSeconds, session.LandedCount, session.LandingsToClear,
-            session.DepartureCount, session.DeparturesToClear, session.ClosestGap);
+            session.DepartureCount, session.DeparturesToClear, session.ClosestGap, session.WarningCount);
 
         void EndAttempt()
         {

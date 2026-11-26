@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: IslandPrototype
   m_EditorClassIdentifier: AirTrafficControl::AirTrafficControl.LevelData
   mapId: island
+  mode: 0
+  layout: {fileID: 11400000, guid: 2d088c9323dd4580bd30b7438e75747b, type: 2}
   landingsToClear: 6
   departuresToClear: 3
   result:
@@ -22,14 +24,14 @@ MonoBehaviour:
     coinsPerDeparture: 5
     coinsPerStar: 10
   mapArt:
-    sprite: {fileID: 21300000, guid: 67b4b831969eb46e28747180e7f0269c, type: 3}
-    pixelsPerUnit: 108.6
+    sprite: {fileID: 21300000, guid: 842c1cf27b45aab92951ece2b436e171, type: 3}
+    pixelsPerUnit: 102.4
     keepVisible:
       serializedVersion: 2
-      x: -6.164825
-      y: -1.3996317
-      width: 12.384899
-      height: 5.847146
+      x: -3.59375
+      y: -1.4941406
+      width: 7.2265625
+      height: 4.3945312
   islandCentre: {x: 1, y: -0.8}
   islandRadii: {x: 3.8, y: 2.1}
   departures:
@@ -56,75 +58,72 @@ MonoBehaviour:
     parkedPlanes:
     - {x: 1.3, y: 0.45}
     - {x: 1.9, y: 0.45}
-    windsockPosition: {x: 2.2421732, y: 3.6187847}
-    boatLanes:
-    - -2.4585636
-    - -4.6685085
-    clouds: 3
-    birds: 3
-    approachLights: 3
-    approachLightSpacing: 0.2
+    windsockPosition: {x: 2.1679688, y: 2.4414062}
   ground:
     mainTaxiway:
-    - {x: -3.9548802, y: 1.3627993}
-    - {x: -3.9548802, y: 1.5009208}
-    - {x: -3.918048, y: 1.7311234}
-    - {x: -3.8167589, y: 1.8968693}
-    - {x: -3.5128913, y: 1.9797422}
-    - {x: 3.3655617, y: 1.9797422}
-    - {x: 3.6233885, y: 1.8876612}
-    - {x: 3.7523022, y: 1.7311234}
-    - {x: 3.7983427, y: 1.5009208}
-    - {x: 3.7983427, y: 1.3627993}
+    - {x: -2.9980469, y: 0.78125}
+    - {x: -2.9980469, y: 0.99609375}
+    - {x: -2.8125, y: 1.1328125}
+    - {x: 2.7294922, y: 1.1328125}
+    - {x: 2.9248047, y: 0.9716797}
+    - {x: 2.9248047, y: 0.78125}
     gates:
-    - position: {x: -1.0451198, y: 2.3941069}
+    - position: {x: -0.029296875, y: 1.71875}
       headingDegrees: 90
       connector:
-      - {x: -1.0451198, y: 2.3941069}
-      - {x: -1.0451198, y: 1.9797422}
+      - {x: -0.029296875, y: 1.71875}
+      - {x: -0.029296875, y: 1.1328125}
       crossingIndex: -1
-    - position: {x: 0.69521177, y: 2.3941069}
+    - position: {x: 1.4648438, y: 1.71875}
       headingDegrees: 90
       connector:
-      - {x: 0.69521177, y: 2.3941069}
-      - {x: 0.69521177, y: 1.9797422}
+      - {x: 1.4648438, y: 1.71875}
+      - {x: 1.4648438, y: 1.1328125}
       crossingIndex: -1
-    - position: {x: -0.17955801, y: -0.89318603}
+    - position: {x: 1.3769531, y: -0.4296875}
       headingDegrees: 90
       connector:
-      - {x: -0.17955801, y: -0.89318603}
-      - {x: -0.17955801, y: -0.018416207}
-      - {x: -0.17955801, y: 1.3627993}
-      - {x: -0.17955801, y: 1.9797422}
+      - {x: 1.3769531, y: -0.4296875}
+      - {x: 1.3769531, y: 0.1953125}
+      - {x: 1.3769531, y: 0.78125}
+      - {x: 1.3769531, y: 1.1328125}
       crossingIndex: 1
     useLineUpPoints: 1
-    normalLineUp: {x: -3.9548802, y: 0.69981587}
-    reversedLineUp: {x: 3.7983427, y: 0.69981587}
-    liftOffDistance: 3
+    normalLineUp: {x: -2.9980469, y: 0.48828125}
+    reversedLineUp: {x: 2.9248047, y: 0.48828125}
+    liftOffDistance: 2.9355469
     taxiSpeed: 0.35
     queueSpacing: 0.75
   runways:
-  - centre: {x: -0.036832415, y: 0.69981587}
+  - centre: {x: -0.034179688, y: 0.48828125}
     landingHeadingDegrees: 0
-    length: 11.906077
-    width: 0.7918969
-    touchdownZoneStart: 0.12891345
-    touchdownZoneLength: 0.47882137
+    length: 6.5234375
+    width: 0.4296875
+    touchdownZoneStart: 0.05859375
+    touchdownZoneLength: 0.36621094
+  - centre: {x: -1.4855957, y: 0.6237793}
+    landingHeadingDegrees: -56.83491
+    length: 4.360186
+    width: 0.37109375
+    touchdownZoneStart: 0.053710938
+    touchdownZoneLength: 0.32714844
   landingPads:
   - kind: 1
-    centre: {x: -3.9732966, y: 2.854512}
-    radius: 0.46040517
+    centre: {x: -2.8935544, y: -0.34375012}
+    radius: 0.23730467
+    drawH: 0
   - kind: 2
-    centre: {x: 4.0561695, y: 2.9097607}
-    radius: 0.8563536
+    centre: {x: 2.8886724, y: 1.9062501}
+    radius: 0.42285156
+    drawH: 0
   carrier:
     hasCarrier: 1
     firstShipAfterSeconds: 10
     minSecondsBetweenShips: 40
     maxSecondsBetweenShips: 60
     secondsToCross: 20
-    laneY: -3.8397791
-    highestLaneY: -2.3664825
+    laneY: -3.7402344
+    highestLaneY: -3.0648437
     shipLength: 2.6
     shipWidth: 0.7
     deckLength: 2.1
@@ -152,7 +151,7 @@ MonoBehaviour:
     headingDegrees: -15
   - position: {x: 6.5, y: 3.6}
     headingDegrees: 195
-  - position: {x: -6.5, y: -2.8}
+  - position: {x: -6.5, y: -3.4}
     headingDegrees: 15
-  - position: {x: 6.5, y: -2.8}
+  - position: {x: 6.5, y: -3.4}
     headingDegrees: 165

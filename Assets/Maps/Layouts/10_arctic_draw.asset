@@ -1,0 +1,136 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f2e128495f54d25a39bdac735bcbb61, type: 3}
+  m_Name: 10_arctic_draw
+  m_EditorClassIdentifier: AirTrafficControl::AirTrafficControl.PictureLayout
+  pictureFile: 10_arctic_draw.png
+  picture: {fileID: 21300000, guid: 984be16d87884322db597d85f2dcbf68, type: 3}
+  mode: 0
+  pictureSize: {x: 1536, y: 1024}
+  pixelsPerUnit: 102.4
+  runways:
+  - name: Main
+    endA: {x: 458.75, y: 557}
+    endB: {x: 1061.5, y: 557}
+    width: 37.5
+    zoneA: {x: 3, y: 38.5}
+    zoneB: {x: 3, y: 40}
+  - name: Diagonal
+    endA: {x: 568.75, y: 320.9}
+    endB: {x: 931, y: 699.5}
+    width: 35
+    zoneA: {x: 3, y: 38}
+    zoneB: {x: 3, y: 37.5}
+  intersections:
+  - runwayA: Main
+    runwayB: Diagonal
+    point: {x: 794.65, y: 557}
+  pads:
+  - kind: 1
+    centre: {x: 298.6, y: 306.5}
+    radius: 26.2
+    drawH: 0
+  - kind: 2
+    centre: {x: 1224.2, y: 734.3}
+    radius: 43.1
+    drawH: 0
+  stands:
+  - name: Stand 1
+    position: {x: 830, y: 415}
+    headingDegrees: 90
+  - name: Stand 2
+    position: {x: 869, y: 415}
+    headingDegrees: 90
+  - name: Stand 3
+    position: {x: 908.5, y: 415}
+    headingDegrees: 90
+  - name: Stand 4
+    position: {x: 947.5, y: 415}
+    headingDegrees: 90
+  taxiRoutes:
+  - name: North
+    points:
+    - {x: 477.5, y: 535}
+    - {x: 477.5, y: 505}
+    - {x: 495, y: 487.5}
+    - {x: 1025, y: 487.5}
+    - {x: 1042.5, y: 505}
+    - {x: 1042.5, y: 535}
+  - name: Spur 1
+    points:
+    - {x: 582.5, y: 487.5}
+    - {x: 582.5, y: 530}
+  - name: Spur 2
+    points:
+    - {x: 809, y: 487.5}
+    - {x: 809, y: 530}
+  - name: Spur 3
+    points:
+    - {x: 942.5, y: 487.5}
+    - {x: 942.5, y: 530}
+  - name: Apron
+    points:
+    - {x: 887.5, y: 440}
+    - {x: 887.5, y: 487.5}
+  - name: Upper
+    points:
+    - {x: 795, y: 380}
+    - {x: 705, y: 375}
+    - {x: 681, y: 399}
+  - name: Lower
+    points:
+    - {x: 915, y: 580}
+    - {x: 915, y: 607.5}
+    - {x: 895, y: 625}
+  holdLines:
+  - point: {x: 477.5, y: 535}
+    runway: Main
+    kind: End A
+  - point: {x: 1042.5, y: 535}
+    runway: Main
+    kind: End B
+  - point: {x: 582.5, y: 530}
+    runway: Main
+    kind: Crossing
+  - point: {x: 809, y: 530}
+    runway: Main
+    kind: Crossing
+  - point: {x: 942.5, y: 530}
+    runway: Main
+    kind: Crossing
+  - point: {x: 681, y: 399}
+    runway: Diagonal
+    kind: Crossing
+  - point: {x: 895, y: 625}
+    runway: Diagonal
+    kind: Crossing
+  - point: {x: 696, y: 487.5}
+    runway: Diagonal
+    kind: Crossing
+  - point: {x: 760, y: 487.5}
+    runway: Diagonal
+    kind: Crossing
+  crossings:
+  - point: {x: 728.2, y: 487.5}
+    runway: Diagonal
+    route: North
+  ruleAreas: []
+  hasWindsock: 0
+  windsock: {x: 0, y: 0}
+  keepVisiblePixels:
+    serializedVersion: 2
+    x: 252
+    y: 260
+    width: 1035
+    height: 537
+  mainTaxiRoute: 
+  gates: []

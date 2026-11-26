@@ -52,6 +52,21 @@ namespace AirTrafficControl
                 .Build("Helipad");
         }
 
+        /// <summary>
+        /// Just the white H of a helipad, for a painted pad that shows only a plain ring (08_mountain_draw): the H tells
+        /// the helipad from the balloon field. Line width scales with the pad.
+        /// </summary>
+        public static Mesh CreateHelipadLetterMesh(float radius)
+        {
+            float h = radius * 0.42f;
+            float w = Mathf.Max(0.02f, radius * 0.14f);
+            return new MeshBuilder()
+                .Bar(new Vector2(-h * 0.6f, -h), new Vector2(-h * 0.6f, h), w, Marking)
+                .Bar(new Vector2(h * 0.6f, -h), new Vector2(h * 0.6f, h), w, Marking)
+                .Bar(new Vector2(-h * 0.6f, 0f), new Vector2(h * 0.6f, 0f), w, Marking)
+                .Build("HelipadLetter");
+        }
+
         /// <summary>Balloon field: a light grass circle with a white border and a small cross at its centre.</summary>
         public static Mesh CreateBalloonFieldMesh(float radius)
         {

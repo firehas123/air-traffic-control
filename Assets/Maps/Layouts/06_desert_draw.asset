@@ -1,0 +1,144 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f2e128495f54d25a39bdac735bcbb61, type: 3}
+  m_Name: 06_desert_draw
+  m_EditorClassIdentifier: AirTrafficControl::AirTrafficControl.PictureLayout
+  pictureFile: 06_desert_draw.png
+  picture: {fileID: 21300000, guid: d383423310607baffa2c710210608688, type: 3}
+  mode: 0
+  pictureSize: {x: 1536, y: 1024}
+  pixelsPerUnit: 102.4
+  runways:
+  - name: South
+    endA: {x: 462, y: 631.8}
+    endB: {x: 1072, y: 631.8}
+    width: 30
+    zoneA: {x: 3.5, y: 38.5}
+    zoneB: {x: 3.5, y: 38.5}
+  - name: Northwest
+    endA: {x: 510.75, y: 325.9}
+    endB: {x: 872.25, y: 688.1}
+    width: 23
+    zoneA: {x: 3, y: 36}
+    zoneB: {x: 3, y: 37}
+  - name: Northeast
+    endA: {x: 1021.9, y: 325.4}
+    endB: {x: 663.2, y: 691.2}
+    width: 23
+    zoneA: {x: 3, y: 37}
+    zoneB: {x: 3, y: 38}
+  intersections:
+  - runwayA: South
+    runwayB: Northwest
+    point: {x: 816.06, y: 631.8}
+  - runwayA: South
+    runwayB: Northeast
+    point: {x: 721.45, y: 631.8}
+  - runwayA: Northwest
+    runwayB: Northeast
+    point: {x: 768.34, y: 583.98}
+  pads:
+  - kind: 1
+    centre: {x: 465.3, y: 497.5}
+    radius: 25.3
+    drawH: 0
+  - kind: 2
+    centre: {x: 1066.9, y: 498.5}
+    radius: 29.7
+    drawH: 0
+  stands:
+  - name: Stand 1
+    position: {x: 692.5, y: 380}
+    headingDegrees: 90
+  - name: Stand 2
+    position: {x: 740, y: 380}
+    headingDegrees: 90
+  - name: Stand 3
+    position: {x: 786, y: 380}
+    headingDegrees: 90
+  - name: Stand 4
+    position: {x: 835, y: 380}
+    headingDegrees: 90
+  taxiRoutes:
+  - name: West
+    points:
+    - {x: 500, y: 366}
+    - {x: 500, y: 410}
+    - {x: 522.5, y: 425}
+    - {x: 522.5, y: 545}
+    - {x: 510, y: 562}
+    - {x: 480, y: 562}
+    - {x: 465.5, y: 575}
+    - {x: 465.5, y: 604}
+  - name: East
+    points:
+    - {x: 1032.5, y: 366}
+    - {x: 1032.5, y: 410}
+    - {x: 1010, y: 425}
+    - {x: 1010, y: 555}
+    - {x: 1050, y: 570}
+    - {x: 1071.5, y: 580}
+    - {x: 1071.5, y: 604}
+  - name: Centre
+    points:
+    - {x: 690, y: 415}
+    - {x: 690, y: 440}
+    - {x: 700, y: 450}
+    - {x: 755, y: 450}
+    - {x: 764, y: 460}
+    - {x: 764, y: 550}
+  - name: South loop west
+    points:
+    - {x: 485, y: 664}
+    - {x: 485, y: 682}
+    - {x: 495, y: 690}
+    - {x: 645, y: 690}
+  - name: South loop east
+    points:
+    - {x: 890, y: 690}
+    - {x: 1035, y: 690}
+    - {x: 1047.5, y: 680}
+    - {x: 1047.5, y: 664}
+  holdLines:
+  - point: {x: 500, y: 366}
+    runway: Northwest
+    kind: End A
+  - point: {x: 1032.5, y: 366}
+    runway: Northeast
+    kind: End A
+  - point: {x: 465.5, y: 604}
+    runway: South
+    kind: End A
+  - point: {x: 1071.5, y: 604}
+    runway: South
+    kind: End B
+  - point: {x: 485, y: 664}
+    runway: South
+    kind: End A
+  - point: {x: 1047.5, y: 664}
+    runway: South
+    kind: End B
+  - point: {x: 764, y: 550}
+    runway: Northwest
+    kind: Crossing
+  crossings: []
+  ruleAreas: []
+  hasWindsock: 0
+  windsock: {x: 0, y: 0}
+  keepVisiblePixels:
+    serializedVersion: 2
+    x: 420
+    y: 280
+    width: 695
+    height: 450
+  mainTaxiRoute: 
+  gates: []
