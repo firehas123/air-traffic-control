@@ -147,187 +147,6 @@ namespace AirTrafficControl.Tests
         }
     }
 
-    public class GroundMovementTests
-    {
-        // The test level layout: runway centre (1, -0.8), length 3.2, width 0.6; main taxiway along y = -0.15.
-        static readonly Runway Normal = new Runway(new Vector2(1f, -0.8f), 0f, 3.2f, 0.6f, 0.1f, 0.7f);
-        static readonly List<Vector2> Main = new List<Vector2> { new Vector2(-0.6f, -0.15f), new Vector2(2.6f, -0.15f) };
-        static readonly List<Vector2> GateA = new List<Vector2> { new Vector2(0.4f, 0.45f), new Vector2(0.4f, -0.15f) };
-        static readonly List<Vector2> GateB = new List<Vector2> { new Vector2(1.6f, -1.75f), new Vector2(1.6f, -1.32f), new Vector2(1.6f, -0.15f) };
-        const float Taxi = 0.35f;
-        const float Air = 0.6f;
-        const float Dt = 1f / 60f;
-
-        static GroundMovement FromGateA(bool reversed = false) => new GroundMovement(GateA, -1, Main, Taxi, Air, 270f, reversed);
-        static GroundMovement FromGateB(bool reversed = false) => new GroundMovement(GateB, 1, Main, Taxi, Air, 90f, reversed);
-
-        static void Run(GroundMovement g, float seconds, bool blocked = false)
-        {
-            for (float t = 0f; t < seconds; t += Dt)
-                g.Step(Dt, blocked);
-        }
-
-        [Test]
-        public void WaitsAtTheGate_UntilTaxi()
-        {
-            GroundMovement g = FromGateA();
-            Run(g, 5f);
-            Assert.AreEqual(GroundPhase.AtGate, g.Phase);
-            Assert.IsTrue(g.IsWaitingForCommand);
-            Assert.IsFalse(g.Cross());
-            Assert.IsFalse(g.TakeOff(Normal), "Commands that do not apply are refused");
-        }
-
-        [Test]
-        public void Taxi_GoesToTheHoldLineOfTheActiveEnd()
-        {
-            GroundMovement g = FromGateA();
-            Assert.IsTrue(g.Taxi());
-            Run(g, 20f);
-            Assert.AreEqual(GroundPhase.HoldingShort, g.Phase);
-            Assert.AreEqual(Main[0].x, g.Position.x, 1e-3f, "Normal landing direction: the first end of the main taxiway");
-            Assert.AreEqual(Main[0].y, g.Position.y, 1e-3f);
-        }
-
-        [Test]
-        public void Taxi_FollowsTheFixedRoute()
-        {
-            GroundMovement g = FromGateA();
-            g.Taxi();
-            for (float t = 0f; t < 20f; t += Dt)
-            {
-                g.Step(Dt, false);
-                Vector2 p = g.Position;
-                bool onConnector = Mathf.Abs(p.x - 0.4f) < 1e-3f && p.y <= 0.45f + 1e-3f && p.y >= -0.15f - 1e-3f;
-                bool onMain = Mathf.Abs(p.y + 0.15f) < 1e-3f;
-                Assert.IsTrue(onConnector || onMain, $"Off the taxi route at {p}");
-            }
-        }
-
-        [Test]
-        public void ReversedWind_TaxisToTheOtherEnd()
-        {
-            GroundMovement g = FromGateA(reversed: true);
-            g.Taxi();
-            Run(g, 20f);
-            Assert.AreEqual(GroundPhase.HoldingShort, g.Phase);
-            Assert.AreEqual(Main[1].x, g.Position.x, 1e-3f);
-        }
-
-        [Test]
-        public void WindReversesWhileWaitingAtTheHoldLine_ItReRoutesByItself()
-        {
-            GroundMovement g = FromGateA();
-            g.Taxi();
-            Run(g, 20f);
-            Assert.AreEqual(Main[0].x, g.Position.x, 1e-3f);
-
-            g.SetActiveEnd(true);
-            Assert.AreEqual(GroundPhase.Taxiing, g.Phase, "Sets off for the other end");
-            Run(g, 20f);
-            Assert.AreEqual(GroundPhase.HoldingShort, g.Phase);
-            Assert.AreEqual(Main[1].x, g.Position.x, 1e-3f);
-        }
-
-        [Test]
-        public void WindReversesWhileTaxiingOnTheMainTaxiway_ItTurnsRound()
-        {
-            GroundMovement g = FromGateA();
-            g.Taxi();
-            Run(g, 2.5f); // down the connector and onto the main taxiway, heading west
-            Assert.AreEqual(GroundPhase.Taxiing, g.Phase);
-            float x = g.Position.x;
-            g.SetActiveEnd(true);
-            Run(g, 1f);
-            Assert.Greater(g.Position.x, x, "Now heading east");
-        }
-
-        [Test]
-        public void RouteThatCrossesTheRunway_StopsAtTheCrossingPoint_UntilCross()
-        {
-            GroundMovement g = FromGateB();
-            g.Taxi();
-            Run(g, 10f);
-            Assert.AreEqual(GroundPhase.HoldingAtCrossing, g.Phase);
-            Assert.AreEqual(GateB[1].y, g.Position.y, 1e-3f);
-            Assert.IsFalse(Normal.Contains(g.Position), "Waits off the runway");
-
-            Assert.IsTrue(g.Cross());
-            g.Step(Dt, false);
-            Assert.AreEqual(GroundPhase.Crossing, g.Phase);
-            Assert.IsTrue(g.UsesRunway);
-
-            Run(g, 4f, blocked: true); // crossing is committed: it does not stop for queues on the runway
-            Assert.AreNotEqual(GroundPhase.Crossing, g.Phase, "Off the runway again");
-            Run(g, 20f);
-            Assert.AreEqual(GroundPhase.HoldingShort, g.Phase);
-        }
-
-        [Test]
-        public void TakeOff_LinesUpRollsAndLiftsOffInTheRunwayDirection()
-        {
-            GroundMovement g = FromGateA();
-            g.Taxi();
-            Run(g, 20f);
-            Assert.IsTrue(g.TakeOff(Normal));
-            Assert.AreEqual(GroundPhase.LiningUp, g.Phase);
-            Assert.IsTrue(g.UsesRunway);
-
-            float seconds = 0f;
-            float lastSpeed = 0f;
-            while (g.Phase != GroundPhase.Airborne && seconds < 30f)
-            {
-                g.Step(Dt, false);
-                if (g.Phase == GroundPhase.TakeOffRoll)
-                {
-                    Assert.AreEqual(0f, g.HeadingDegrees, 1e-3f, "Rolls along the runway direction");
-                    Assert.GreaterOrEqual(g.CurrentSpeed, lastSpeed, "Accelerates");
-                    Assert.IsTrue(Normal.Contains(g.Position, 0.01f), "Stays on the runway");
-                    lastSpeed = g.CurrentSpeed;
-                }
-                seconds += Dt;
-            }
-            Assert.AreEqual(GroundPhase.Airborne, g.Phase);
-            Assert.AreEqual(Air, g.CurrentSpeed, 1e-4f, "Flying speed at lift-off");
-            Assert.Greater(lastSpeed, 0.5f, "Speeding up towards flying speed on the roll");
-            Assert.Greater(g.Position.x, Normal.Centre.x, "Lifted off well down the runway");
-        }
-
-        [Test]
-        public void Queue_StopsBehindTheAircraftInFront()
-        {
-            var me = new Vector2(0f, 0f);
-            var east = new Vector2(1f, 0f);
-            Assert.IsTrue(TaxiQueue.IsBlocked(me, east, new List<Vector2> { new Vector2(0.6f, 0.05f) }, 0.75f));
-            Assert.IsFalse(TaxiQueue.IsBlocked(me, east, new List<Vector2> { new Vector2(-0.6f, 0f) }, 0.75f), "Behind does not block");
-            Assert.IsFalse(TaxiQueue.IsBlocked(me, east, new List<Vector2> { new Vector2(0.9f, 0f) }, 0.75f), "Far enough");
-            Assert.IsFalse(TaxiQueue.IsBlocked(me, east, new List<Vector2> { new Vector2(0f, 0.5f) }, 0.75f), "Beside does not block");
-        }
-
-        [Test]
-        public void TwoDepartures_QueueAtTheHoldLine_WithoutTouching()
-        {
-            GroundMovement first = FromGateA();
-            GroundMovement second = FromGateA();
-            first.Taxi();
-            Run(first, 2.6f); // the first is a safe distance ahead before the second leaves
-            second.Taxi();
-
-            float closest = float.MaxValue;
-            for (float t = 0f; t < 30f; t += Dt)
-            {
-                first.Step(Dt, TaxiQueue.IsBlocked(first.Position, first.HeadingVector, new List<Vector2> { second.Position }, 0.75f));
-                second.Step(Dt, TaxiQueue.IsBlocked(second.Position, second.HeadingVector, new List<Vector2> { first.Position }, 0.75f));
-                closest = Mathf.Min(closest, Vector2.Distance(first.Position, second.Position));
-            }
-
-            Assert.AreEqual(GroundPhase.HoldingShort, first.Phase);
-            Assert.AreEqual(GroundPhase.Taxiing, second.Phase, "Waits behind, still taxiing");
-            Assert.AreEqual(0f, second.CurrentSpeed, "Stopped in the queue");
-            Assert.GreaterOrEqual(closest, 0.5f, "Taxiing aircraft never touch (two airliners touch at 0.5)");
-        }
-    }
-
     public class BusyRunwayTests
     {
         const float R = 0.25f;
@@ -387,12 +206,17 @@ namespace AirTrafficControl.Tests
         static bool LandingNearARollingTakeOff(float rollPastX, float landingAhead)
         {
             var runway = new Runway(new Vector2(1f, -0.8f), 0f, 3.2f, 0.6f, 0.1f, 0.7f);
-            var main = new List<Vector2> { new Vector2(-0.6f, -0.15f), new Vector2(2.6f, -0.15f) };
-            var gate = new List<Vector2> { new Vector2(-0.6f, 0.3f), new Vector2(-0.6f, -0.15f) };
-            var departure = new GroundMovement(gate, -1, main, 0.35f, 0.6f, 270f, false);
-            departure.Taxi();
+            // A departure waiting at the hold line beside the runway's start, then Take off.
+            var departure = GroundMovement.AtStand(new Vector2(-0.6f, 0.3f), 270f, 0, 0, 0.35f, 0.6f);
+            var route = new TaxiRoute();
+            route.points.Add(new Vector2(-0.6f, 0.3f));
+            route.points.Add(new Vector2(-0.45f, -0.15f));
+            route.nodes.Add(0);
+            route.nodes.Add(1);
+            departure.FollowRoute(route, GroundPhase.HoldingShort);
             for (float t = 0f; t < 5f; t += 1f / 60f) departure.Step(1f / 60f, false);
-            departure.TakeOff(runway);
+            Vector2 lineUp = GroundMovement.LineUpPoint(runway, departure.Position);
+            departure.TakeOff(runway, 0, lineUp, GroundMovement.LiftOffDistance(runway, lineUp));
             while (departure.Phase != GroundPhase.TakeOffRoll || departure.Position.x < rollPastX)
                 departure.Step(1f / 60f, false);
 
@@ -482,12 +306,13 @@ namespace AirTrafficControl.Tests
         [Test]
         public void Commands_DependOnWhereTheAircraftIs()
         {
-            CollectionAssert.AreEqual(new[] { AircraftCommand.Slow, AircraftCommand.Fast }, AircraftCommands.For(true, null));
-            CollectionAssert.AreEqual(new[] { AircraftCommand.Taxi }, AircraftCommands.For(false, GroundPhase.AtGate));
-            CollectionAssert.AreEqual(new[] { AircraftCommand.Cross }, AircraftCommands.For(false, GroundPhase.HoldingAtCrossing));
-            CollectionAssert.AreEqual(new[] { AircraftCommand.TakeOff }, AircraftCommands.For(false, GroundPhase.HoldingShort));
-            Assert.IsEmpty(AircraftCommands.For(false, GroundPhase.Taxiing), "No buttons while moving");
-            Assert.IsEmpty(AircraftCommands.For(false, null), "No buttons while landing or departing");
+            CollectionAssert.AreEqual(new[] { AircraftCommand.Slow, AircraftCommand.Fast }, AircraftCommands.For(true));
+            Assert.IsEmpty(AircraftCommands.For(false), "No buttons while landing or departing");
+            var runways = new List<RunwayChoice> { new RunwayChoice(0, true, true) };
+            Assert.AreEqual(AircraftCommand.Taxi, AircraftCommands.TowerGround(GroundPhase.AtStand, runways, -1, false, true)[0].Command);
+            Assert.AreEqual(AircraftCommand.Cross, AircraftCommands.TowerGround(GroundPhase.HoldingAtCrossing, runways, -1, false, true)[0].Command);
+            Assert.AreEqual(AircraftCommand.TakeOff, AircraftCommands.TowerGround(GroundPhase.HoldingShort, runways, 0, true, true)[0].Command);
+            Assert.IsEmpty(AircraftCommands.TowerGround(GroundPhase.Taxiing, runways, -1, false, true), "No buttons while moving");
         }
 
         [Test]

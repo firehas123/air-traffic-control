@@ -359,74 +359,6 @@ namespace AirTrafficControl.Tests
         }
 
         [Test]
-        public void Runways_AndPads_ComeFromThePicture()
-        {
-            PictureLayout layout = Layout();
-            LevelData level = Fitted();
-            Assert.AreEqual(2, level.runways.Count);
-            Runway main = level.runways[0].ToRunway();
-            Assert.AreEqual(0f, main.LandingHeadingDegrees, 0.5f, "Main runway lands west to east");
-            Vector2 threshold = layout.Pixel(main.Threshold);
-            Assert.AreEqual(430.5f, threshold.x, 1f);
-            Assert.AreEqual(462f, threshold.y, 1f);
-            Runway cross = level.runways[1].ToRunway();
-            Assert.AreNotEqual(0f, Mathf.DeltaAngle(cross.LandingHeadingDegrees, 0f), "The crossing runway is at an angle");
-            Assert.AreEqual(GameMode.Draw, level.mode);
-            Assert.AreSame(layout, level.layout);
-            Assert.IsTrue(LandingRules.TryFindTouchdown(new List<Runway> { main }, new List<LandingPad>(),
-                new List<Vector2> { main.Threshold + new Vector2(-2f, 0.5f), main.Threshold + main.Direction * (main.TouchdownZoneStart + main.TouchdownZoneLength / 2f) },
-                LandingZoneKind.Runway, out _), "A line ending on the painted stripes lands");
-            LandingPadDefinition helipad = level.landingPads.Find(p => p.kind == LandingZoneKind.Helipad);
-            Assert.AreEqual(471.7f, layout.Pixel(helipad.centre).x, 1f);
-        }
-
-        [Test]
-        public void Gates_AreTwoApronStandsAndTheRemoteStand_WhichCrossesTheRunway()
-        {
-            LevelData level = Fitted();
-            Runway runway = level.runways[0].ToRunway();
-            Assert.AreEqual(3, level.ground.gates.Count);
-            GateDefinition remote = level.ground.gates[2];
-            Assert.Less(remote.position.y, runway.Centre.y, "Remote stand is south of the runway");
-            Vector2 crossing = remote.connector[remote.crossingIndex];
-            Assert.IsFalse(runway.Contains(crossing), "Waits clear of the runway (on the painted hold bars)");
-            Assert.Greater(remote.connector[remote.crossingIndex + 1].y, runway.Centre.y, "The next segment crosses it");
-            List<Vector2> main = level.ground.mainTaxiway;
-            foreach (Vector2 hold in new[] { main[0], main[main.Count - 1] })
-                Assert.IsFalse(runway.Contains(hold), $"Hold point {hold} is clear of the runway");
-            Assert.AreEqual(runway.Centre.y, level.ground.normalLineUp.y, 0.02f, "Line-up on the centreline");
-        }
-
-        [Test]
-        public void RemoteDeparture_StopsAtTheCrossing_ThenCrossesThePaintedRunway()
-        {
-            LevelData level = Fitted();
-            GateDefinition remote = level.ground.gates[2];
-            Runway runway = level.runways[0].ToRunway();
-            var g = new GroundMovement(remote.connector, remote.crossingIndex, level.ground.mainTaxiway, 0.35f, 0.6f,
-                                       remote.headingDegrees, false, level.ground.normalLineUp, level.ground.reversedLineUp,
-                                       level.ground.liftOffDistance);
-            g.Taxi();
-            for (float t = 0f; t < 10f; t += 1f / 60f) g.Step(1f / 60f, false);
-            Assert.AreEqual(GroundPhase.HoldingAtCrossing, g.Phase);
-
-            g.Cross();
-            bool wasOnRunway = false;
-            for (float t = 0f; t < 40f && g.Phase != GroundPhase.HoldingShort; t += 1f / 60f)
-            {
-                g.Step(1f / 60f, false);
-                wasOnRunway |= runway.Contains(g.Position);
-            }
-            Assert.IsTrue(wasOnRunway, "It crossed the runway");
-            Assert.AreEqual(GroundPhase.HoldingShort, g.Phase, "Then taxied on to the hold line");
-
-            g.TakeOff(runway);
-            for (float t = 0f; t < 30f && g.Phase != GroundPhase.Airborne; t += 1f / 60f)
-                g.Step(1f / 60f, false);
-            Assert.AreEqual(GroundPhase.Airborne, g.Phase);
-        }
-
-        [Test]
         public void CarrierLane_IsInTheOpenSeaBelowTheIsland()
         {
             PictureLayout layout = Layout();
@@ -439,10 +371,10 @@ namespace AirTrafficControl.Tests
         }
 
         [Test]
-        public void TheIslandLevelAsset_UsesTheDrawPicture_AndAircraftImages()
+        public void IslandDrawLevel1_UsesTheDrawPicture_AndAircraftImages()
         {
-            var level = AssetDatabase.LoadAssetAtPath<LevelData>("Assets/Levels/IslandPrototype.asset");
-            Assert.AreSame(Layout(), level.layout, "The test level is on 02_island_draw");
+            var level = AssetDatabase.LoadAssetAtPath<LevelData>("Assets/Levels/Draw/island-draw-01.asset");
+            Assert.AreSame(Layout(), level.layout, "Island Draw level 1 is on 02_island_draw");
             Assert.IsNotNull(level.mapArt.sprite);
             Assert.AreEqual(10f, level.mapArt.WorldRect.height, 0.01f);
             Assert.AreEqual(2, level.runways.Count);
@@ -486,7 +418,11 @@ namespace AirTrafficControl.Tests
             for (int i = 0; i < 5; i++)
                 foreach (LevelEntry level in catalog.maps[i].drawLevels)
                     Assert.IsNotNull(level.data, $"{level.id}: Draw levels of maps 1 to 5 are built (phase 2)");
-            Assert.IsTrue(catalog.maps[0].towerLevels.TrueForAll(l => l.data == null), "Tower comes in phase 3");
+            for (int i = 0; i < 5; i++)
+                foreach (LevelEntry level in catalog.maps[i].towerLevels)
+                    Assert.IsNotNull(level.data, $"{level.id}: Tower levels of maps 1 to 5 are built (phase 3)");
+            for (int i = 5; i < 7; i++)
+                Assert.IsTrue(catalog.maps[i].towerLevels.TrueForAll(l => l.data == null), "Maps 6 and 7 are not built yet");
         }
     }
 }

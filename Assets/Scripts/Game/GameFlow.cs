@@ -128,10 +128,7 @@ namespace AirTrafficControl
             BuildLevel(CurrentLevels[index].data);
         }
 
-        /// <summary>
-        /// Plays a level that is not in the catalog (for the PlayMode tests: the ground-control test level). Results are
-        /// not saved.
-        /// </summary>
+        /// <summary>Plays a level directly, outside the level select (for the PlayMode tests). Results are not saved.</summary>
         public void PlayLevelData(LevelData level)
         {
             LeaveLevel();
@@ -190,8 +187,11 @@ namespace AirTrafficControl
             var carrier = Add<CarrierSystem>("CarrierSystem");
             carrier.Initialise(level.carrier, worldCamera, shapeMaterial);
 
+            // Draw mode draws lines; Tower mode has no drawing (blueprint 16.1), so its planner is never connected to input.
+            bool tower = level.mode == GameMode.Tower;
             var planner = Add<PathPlanner>("PathPlanner");
-            planner.Initialise(input, landing, carrier);
+            if (!tower)
+                planner.Initialise(input, landing, carrier);
 
             hud = Add<HudView>("HudView");
             hud.Initialise();
@@ -202,11 +202,24 @@ namespace AirTrafficControl
             var feedback = Add<FeedbackSystem>("FeedbackSystem");
             feedback.Initialise();
 
-            // Hybrid controls (blueprint 15.4): option buttons beside a tapped aircraft, and ground control.
+            // Option buttons beside a tapped aircraft: Slow and Fast in Draw mode (blueprint 15.4); every Tower command in
+            // Tower mode (blueprint 16.1), with the runway letters on the map.
             var menu = Add<CommandMenu>("CommandMenu");
             menu.Initialise(worldCamera);
-            var groundControl = Add<GroundControl>("GroundControl");
-            groundControl.Initialise(input, menu, level.ground);
+            GroundControl groundControl = null;
+            TowerControl towerControl = null;
+            if (tower)
+            {
+                towerControl = Add<TowerControl>("TowerControl");
+                towerControl.Initialise(level, input, menu, landing, worldCamera);
+                var labels = Add<RunwayLabels>("RunwayLabels");
+                labels.Initialise(landing, level.layout, worldCamera);
+            }
+            else
+            {
+                groundControl = Add<GroundControl>("GroundControl");
+                groundControl.Initialise(input, menu);
+            }
 
             // Map rules of Draw mode (blueprint 16.2): City closures, Desert fuel and sandstorm, Mountain no-fly, Arctic ice.
             var mapRules = Add<MapRuleSystem>("MapRuleSystem");
@@ -214,7 +227,7 @@ namespace AirTrafficControl
 
             director = Add<LevelDirector>("LevelDirector");
             director.Initialise(level, worldCamera, landing, safety, input, planner, carrier, hud, shapeMaterial, aircraft, feedback, effects,
-                                groundControl, mapRules);
+                                groundControl, mapRules, towerControl);
             // Taps on the HUD or on the option buttons never reach the map.
             input.SetScreenBlocker(point => hud.IsOverInteractive(point) || menu.IsOverButton(point));
             director.Cleared += OnCleared;

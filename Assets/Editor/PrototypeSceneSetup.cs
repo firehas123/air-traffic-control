@@ -1,5 +1,5 @@
-// Sets up SampleScene for the M1 prototype. Safe to run again: it replaces its own objects
-// and keeps an existing level asset (Assets/Levels/IslandPrototype.asset).
+// Sets up SampleScene. Safe to run again: it replaces its own objects and keeps existing level assets (the Draw and
+// Tower levels under Assets/Levels), aircraft kinds and the map catalog.
 // Menu: Tools > Air Traffic Control > Set Up Prototype Scene
 // Command line (Unity closed):
 //   Unity -batchmode -quit -projectPath . -executeMethod PrototypeSceneSetup.Run -logFile -
@@ -14,7 +14,6 @@ public static class PrototypeSceneSetup
     const string ScenePath = "Assets/Scenes/SampleScene.unity";
     const string ShaderPath = "Assets/Shaders/UnlitVertexColor.shader";
     const string MaterialPath = "Assets/Materials/UnlitVertexColor.mat";
-    const string LevelPath = "Assets/Levels/IslandPrototype.asset";
     const string AircraftFolder = "Assets/Aircraft";
     const string RootName = "Game";
     const string OldRootName = "Prototype"; // the M1/M2 scene object
@@ -34,12 +33,13 @@ public static class PrototypeSceneSetup
                 Object.DestroyImmediate(existing);
         }
 
-        LevelData level = LoadOrCreateLevel();
+        EnsureAircraftKindsAndArt();
 
-        MapCatalog maps = LoadOrCreateMapCatalog(level);
+        MapCatalog maps = LoadOrCreateMapCatalog();
 
-        // Phase 2 (Draw mode): the 25 Draw levels of maps 1 to 5. Existing level assets are kept.
+        // Phase 2 (Draw mode) and phase 3 (Tower mode): 25 levels each on maps 1 to 5. Existing level assets are kept.
         DrawLevelsSetup.Run();
+        TowerLevelsSetup.Run();
 
         var root = new GameObject(RootName);
         var flow = root.AddComponent<GameFlow>();
@@ -77,9 +77,9 @@ public static class PrototypeSceneSetup
         ("spaceport", "Spaceport", 14, 8500, false, "Rocket launches close a no-fly column"),
     };
 
-    // Imports the painted images with good settings for the iPad, links each map picture to its measured layout, gives
-    // each aircraft kind its image, and puts the Island test level on the Island Draw picture (02_island_draw.png).
-    static void ApplyPaintedArt(LevelData level)
+    // Imports the painted images with good settings for the iPad, links each map picture to its measured layout, and gives
+    // each aircraft kind its image.
+    static void ApplyPaintedArt()
     {
         // Maps: full resolution (1536 x 1024, never scaled down), smooth filtering, ASTC 4x4 on iOS (the highest-quality
         // ASTC block), 102.4 pixels per unit so a picture is 10 units high, the game's world scale.
@@ -101,14 +101,6 @@ public static class PrototypeSceneSetup
                 EditorUtility.SetDirty(layout);
                 AssetDatabase.SaveAssetIfDirty(layout);
             }
-        }
-
-        // The test level moves to the Island Draw picture once; later runs keep values tuned in the Inspector.
-        var islandDraw = AssetDatabase.LoadAssetAtPath<PictureLayout>($"{LayoutsFolder}/02_island_draw.asset");
-        if (islandDraw != null && level.layout != islandDraw)
-        {
-            level.mapId = "island";
-            islandDraw.ApplyTo(level);
         }
 
         // Aircraft: 512-pixel images, mipmaps and trilinear filtering so they stay crisp when drawn small.
@@ -187,9 +179,9 @@ public static class PrototypeSceneSetup
 
     // Blueprint 16: the seven maps with both pictures and layouts, and five level ids per mode. The Draw levels of maps
     // 1 to 5 come from DrawLevelsSetup (phase 2); entries without data (Tower until phase 3, maps 6 and 7) make their
-    // buttons say "coming in the next update". IslandPrototype.asset stays as the ground-control test level. An existing catalog keeps its levels and values; pictures
-    // and layouts are filled in when missing.
-    static MapCatalog LoadOrCreateMapCatalog(LevelData islandTest)
+    // buttons say "coming in the next update". An existing catalog keeps its levels and values; pictures and layouts are
+    // filled in when missing.
+    static MapCatalog LoadOrCreateMapCatalog()
     {
         var catalog = AssetDatabase.LoadAssetAtPath<MapCatalog>(MapCatalogPath);
         if (catalog == null)
@@ -231,62 +223,16 @@ public static class PrototypeSceneSetup
     // Picture file names use short words: 07_mountain_tower.png for Mountain Valley.
     static string FileKey(string mapId) => mapId;
 
-    // Creates the Island prototype level with LevelData's default values, if it does not exist yet.
-    // An existing asset is kept, so edits made in the Inspector survive re-running this setup. It is
-    // saved again so that fields added to LevelData since it was created appear in the file.
-    static LevelData LoadOrCreateLevel()
+    // The six aircraft kinds with their agreed starting values (an existing asset is kept), and the painted art.
+    static void EnsureAircraftKindsAndArt()
     {
-        var level = AssetDatabase.LoadAssetAtPath<LevelData>(LevelPath);
-        if (level == null)
-        {
-            if (!AssetDatabase.IsValidFolder("Assets/Levels"))
-                AssetDatabase.CreateFolder("Assets", "Levels");
-            level = ScriptableObject.CreateInstance<LevelData>();
-            AssetDatabase.CreateAsset(level, LevelPath);
-        }
-
-        // During M2 the test level spawns every kind so the owner can try them (blueprint 14.4). A kind is added to
-        // the level when its asset is first created; kinds already in the asset (or removed from it) are left alone.
-        AddKind(level, "Airliner", AircraftSilhouette.Airliner);
-        AddKind(level, "JumboJet", AircraftSilhouette.JumboJet);
-        AddKind(level, "FighterJet", AircraftSilhouette.FighterJet);
-        AddKind(level, "Helicopter", AircraftSilhouette.Helicopter);
-        AddKind(level, "Drone", AircraftSilhouette.Drone);
-        AddKind(level, "HotAirBalloon", AircraftSilhouette.HotAirBalloon);
-
-        // Painted art (art rule of 20 Nov 2026): the Island map and the aircraft images.
-        ApplyPaintedArt(level);
-
-        // M3: the test level gets two gates and one runway crossing, so the owner can try ground control
-        // (blueprint 15.4). Gate A is on the apron north of the runway; gate B is a remote stand to the south,
-        // whose taxiway crosses the runway and stops at a crossing point first.
-        if (level.ground.gates.Count == 0)
-        {
-            level.ground.gates.Add(new GateDefinition
-            {
-                position = new Vector2(0.4f, 0.45f), headingDegrees = 270f,
-                connector = new System.Collections.Generic.List<Vector2> { new Vector2(0.4f, 0.45f), new Vector2(0.4f, -0.15f) },
-                crossingIndex = -1,
-            });
-            level.ground.gates.Add(new GateDefinition
-            {
-                position = new Vector2(1.6f, -1.75f), headingDegrees = 90f,
-                connector = new System.Collections.Generic.List<Vector2>
-                    { new Vector2(1.6f, -1.75f), new Vector2(1.6f, -1.32f), new Vector2(1.6f, -0.15f) },
-                crossingIndex = 1,
-            });
-        }
-
-        EditorUtility.SetDirty(level);
-        AssetDatabase.SaveAssetIfDirty(level);
-        return level;
-    }
-
-    static void AddKind(LevelData level, string fileName, AircraftSilhouette kind)
-    {
-        AircraftType type = LoadOrCreateAircraftType(fileName, kind, out bool created);
-        if ((created || level.aircraftTypes.Count == 0) && !level.aircraftTypes.Contains(type))
-            level.aircraftTypes.Add(type);
+        LoadOrCreateAircraftType("Airliner", AircraftSilhouette.Airliner, out _);
+        LoadOrCreateAircraftType("JumboJet", AircraftSilhouette.JumboJet, out _);
+        LoadOrCreateAircraftType("FighterJet", AircraftSilhouette.FighterJet, out _);
+        LoadOrCreateAircraftType("Helicopter", AircraftSilhouette.Helicopter, out _);
+        LoadOrCreateAircraftType("Drone", AircraftSilhouette.Drone, out _);
+        LoadOrCreateAircraftType("HotAirBalloon", AircraftSilhouette.HotAirBalloon, out _);
+        ApplyPaintedArt();
     }
 
     // Creates an aircraft kind with its agreed starting values (blueprint 13.1, 14.1), if it does not exist yet.

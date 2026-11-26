@@ -115,6 +115,89 @@ MonoBehaviour:
     - {x: 1330, y: 932}
     - {x: 1355, y: 915}
     - {x: 1355, y: 875}
+  - name: North west
+    points:
+    - {x: 215, y: 215}
+    - {x: 215, y: 145}
+    - {x: 235, y: 110}
+    - {x: 327, y: 108}
+    - {x: 397, y: 183}
+    - {x: 545, y: 183}
+  - name: North east
+    points:
+    - {x: 1315, y: 215}
+    - {x: 1315, y: 145}
+    - {x: 1297, y: 112}
+    - {x: 1215, y: 106}
+    - {x: 1125, y: 186}
+    - {x: 960, y: 185}
+  - name: NW north stub
+    points:
+    - {x: 397, y: 183}
+    - {x: 356.3, y: 221.5}
+  - name: NW west stub
+    points:
+    - {x: 265, y: 333}
+    - {x: 388, y: 333}
+  - name: NW east stub
+    points:
+    - {x: 625, y: 395}
+    - {x: 520, y: 395}
+  - name: NW south stub
+    points:
+    - {x: 614, y: 666}
+    - {x: 660.7, y: 621.8}
+  - name: NE north stub
+    points:
+    - {x: 1125, y: 186}
+    - {x: 1168.3, y: 227.4}
+  - name: NE east stub
+    points:
+    - {x: 1271, y: 328}
+    - {x: 1146, y: 328}
+  - name: NE west stub
+    points:
+    - {x: 905, y: 393}
+    - {x: 1010, y: 393}
+  - name: NE south stub
+    points:
+    - {x: 913, y: 666}
+    - {x: 866.2, y: 621.3}
+  - name: South row west
+    points:
+    - {x: 220, y: 665}
+    - {x: 614, y: 666}
+  - name: South row east
+    points:
+    - {x: 1268, y: 640}
+    - {x: 1240, y: 666}
+    - {x: 913, y: 666}
+  - name: South exit 1
+    points:
+    - {x: 289, y: 666}
+    - {x: 289, y: 768}
+  - name: South exit 2
+    points:
+    - {x: 614, y: 666}
+    - {x: 614, y: 768}
+  - name: South exit 3
+    points:
+    - {x: 913, y: 666}
+    - {x: 913, y: 768}
+  - name: South exit 4
+    points:
+    - {x: 1245, y: 666}
+    - {x: 1245, y: 768}
+  - name: Apron lane
+    points:
+    - {x: 545, y: 183}
+    - {x: 545, y: 315}
+    - {x: 610, y: 315}
+    - {x: 712, y: 315}
+    - {x: 812, y: 315}
+    - {x: 912, y: 315}
+    - {x: 965, y: 315}
+    - {x: 965, y: 185}
   holdLines:
   - point: {x: 215, y: 215}
     runway: Northwest
@@ -136,6 +219,42 @@ MonoBehaviour:
     kind: End B
   - point: {x: 772, y: 610}
     runway: Northwest
+    kind: Crossing
+  - point: {x: 374.4, y: 204.4}
+    runway: Northwest
+    kind: Crossing
+  - point: {x: 353, y: 333}
+    runway: Northwest
+    kind: Crossing
+  - point: {x: 554, y: 395}
+    runway: Northwest
+    kind: Crossing
+  - point: {x: 642.5, y: 639}
+    runway: Northwest
+    kind: Crossing
+  - point: {x: 1150.3, y: 210.2}
+    runway: Northeast
+    kind: Crossing
+  - point: {x: 1181, y: 328}
+    runway: Northeast
+    kind: Crossing
+  - point: {x: 976, y: 393}
+    runway: Northeast
+    kind: Crossing
+  - point: {x: 884.3, y: 638.6}
+    runway: Northeast
+    kind: Crossing
+  - point: {x: 289, y: 750}
+    runway: South
+    kind: Crossing
+  - point: {x: 614, y: 750}
+    runway: South
+    kind: Crossing
+  - point: {x: 913, y: 750}
+    runway: South
+    kind: Crossing
+  - point: {x: 1245, y: 750}
+    runway: South
     kind: Crossing
   crossings: []
   ruleAreas: []

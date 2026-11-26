@@ -38,6 +38,9 @@ namespace AirTrafficControl
         /// <summary>Label for the slow-draw button.</summary>
         public string SlowDrawLabel => SlowWhileDrawing ? "Slow draw on" : "Slow draw off";
 
+        /// <summary>Tower mode's label for the same switch: there is no drawing, time slows while the buttons are open.</summary>
+        public string SlowTapsLabel => SlowWhileDrawing ? "Slow time on" : "Slow time off";
+
         /// <summary>Label for the speed button, for example "Speed 1x".</summary>
         public string SpeedLabel => Fast ? "Speed 2x" : "Speed 1x";
     }

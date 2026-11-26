@@ -5,7 +5,7 @@ using UnityEngine;
 namespace AirTrafficControl
 {
     /// <summary>
-    /// Runs the Draw-mode map rules other than the Island wind (blueprint 16.2), on game time:
+    /// Runs the map rules other than the Island wind (blueprint 16.2), on game time, in both modes:
     /// City: one runway at a time closes (<see cref="RunwayClosureSchedule"/>), with a 5 s warning and a clear X.
     /// Desert: low-fuel aircraft with a visible timer (<see cref="FuelRules"/>) and a drifting sandstorm that closes the
     /// runways it covers (<see cref="Sandstorm"/>).
@@ -146,7 +146,12 @@ namespace AirTrafficControl
             rollingRunways.Clear();
             foreach (AircraftController other in AircraftController.Active)
             {
-                if (other == aircraft || other.IsCrashed || !other.IsLanding || other.LandingRunwayIndex < 0)
+                if (other == aircraft || other.IsCrashed || other.LandingRunwayIndex < 0)
+                    continue;
+                // Draw mode: every landing roll blocks its icy runway. Tower mode (blueprint 16.2, adapted): only an
+                // aircraft sliding after a Fast landing does; normal roll-outs are handled by the busy-runway rule.
+                bool blocks = level.mode == GameMode.Tower ? other.IsSliding && other.IsRollingOut : other.IsLanding;
+                if (!blocks)
                     continue;
                 rolling.Add(other);
                 rollingRunways.Add(other.LandingRunwayIndex);

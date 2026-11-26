@@ -43,12 +43,6 @@ namespace AirTrafficControl
                  "picture's left and right edges, never this area.")]
         public Rect keepVisiblePixels;
 
-        [Header("Ground control for the current Draw gameplay (blueprint 15.4), when the picture has it")]
-        [Tooltip("Name of the taxi route used as the main taxiway: its first point is the hold line for the first " +
-                 "runway's end A, its last point the hold line for end B. Empty when not used.")]
-        public string mainTaxiRoute;
-        public List<PictureGate> gates = new List<PictureGate>();
-
         // ---- Conversions ----
 
         public Vector2 World(Vector2 pixel) => CameraFraming.PixelToWorld(pixel, pictureSize, pixelsPerUnit);
@@ -154,48 +148,10 @@ namespace AirTrafficControl
                 new SpawnPoint(new Vector2(x, -3.4f), 165f),
             };
 
-            ApplyGround(level);
-        }
-
-        void ApplyGround(LevelData level)
-        {
-            PicturePath main = string.IsNullOrEmpty(mainTaxiRoute) ? null : FindRoute(mainTaxiRoute);
-            if (main == null || main.points.Count < 2 || runways.Count == 0)
-            {
-                level.ground.mainTaxiway = new List<Vector2>();
-                level.ground.gates = new List<GateDefinition>();
-                level.departuresToClear = 0;
-                return;
-            }
-
-            level.ground.mainTaxiway = main.points.ConvertAll(World);
-            level.ground.useLineUpPoints = true;
-            PictureRunway runway = runways[0];
-            // Line up on the centreline, level with each hold line.
-            level.ground.normalLineUp = ClosestOnCentreline(runway, main.points[0]);
-            level.ground.reversedLineUp = ClosestOnCentreline(runway, main.points[main.points.Count - 1]);
-            level.ground.liftOffDistance = Units(Vector2.Distance(runway.endA, runway.endB)) * 0.45f;
+            // The code-drawn ground of the old prototype is not used on a picture: Tower mode's ground control works on
+            // the picture's own taxi routes (TaxiNetwork).
+            level.ground.mainTaxiway = new List<Vector2>();
             level.ground.gates = new List<GateDefinition>();
-            foreach (PictureGate gate in gates)
-            {
-                if (gate.stand < 0 || gate.stand >= stands.Count || gate.connector.Count < 2)
-                    continue;
-                PictureStand stand = stands[gate.stand];
-                level.ground.gates.Add(new GateDefinition
-                {
-                    position = World(stand.position),
-                    headingDegrees = stand.headingDegrees,
-                    connector = gate.connector.ConvertAll(World),
-                    crossingIndex = gate.crossingIndex,
-                });
-            }
-        }
-
-        Vector2 ClosestOnCentreline(PictureRunway runway, Vector2 pixel)
-        {
-            Vector2 a = runway.endA, ab = runway.endB - runway.endA;
-            float t = Mathf.Clamp01(Vector2.Dot(pixel - a, ab) / Mathf.Max(1e-3f, ab.sqrMagnitude));
-            return World(a + ab * t);
         }
     }
 
@@ -301,18 +257,5 @@ namespace AirTrafficControl
             }
             return inside;
         }
-    }
-
-    /// <summary>A stand used as a departure gate, with its connector to the main taxiway (blueprint 15.4).</summary>
-    [Serializable]
-    public sealed class PictureGate
-    {
-        public int stand;
-
-        [Tooltip("From the stand to a point on the main taxiway, in pixels.")]
-        public List<Vector2> connector = new List<Vector2>();
-
-        [Tooltip("Index of the connector point where the aircraft stops for Cross; -1 when it does not cross a runway.")]
-        public int crossingIndex = -1;
     }
 }

@@ -20,6 +20,12 @@ namespace AirTrafficControl
         Sandstorm,
         Mountains,
         IcyRunway,
+
+        // Tower mode (blueprint 16.1, phase 3). Added at the end so saved flags keep their meaning.
+        TapForOrders,
+        GoAround,
+        Hold,
+        TaxiToStand,
     }
 
     /// <summary>
@@ -36,10 +42,18 @@ namespace AirTrafficControl
 
         float hintTimeLeft;
 
-        public FirstTimeHelp(int alreadySeen = 0)
+        public FirstTimeHelp(int alreadySeen = 0, bool tower = false)
         {
             Seen = alreadySeen;
+            Tower = tower;
+            FirstLesson = tower ? HelpHint.TapForOrders : HelpHint.DrawToLandingZone;
         }
+
+        /// <summary>Tower mode: the first lesson is to tap a plane and give it Land, not to draw (blueprint 16.1).</summary>
+        public bool Tower { get; }
+
+        /// <summary>The lesson that stays up until it is done: drawing a line (Draw mode) or a Land order (Tower mode).</summary>
+        public HelpHint FirstLesson { get; }
 
         /// <summary>Bit flags of the hints already shown, for saving.</summary>
         public int Seen { get; private set; }
@@ -69,16 +83,16 @@ namespace AirTrafficControl
         public void Tick(float realSeconds, bool aircraftInTheAir)
         {
             SeenChanged = false;
-            if (Current != HelpHint.None && Current != HelpHint.DrawToLandingZone)
+            if (Current != HelpHint.None && Current != FirstLesson)
             {
                 hintTimeLeft -= realSeconds;
                 if (hintTimeLeft <= 0f)
                     Current = HelpHint.None;
             }
 
-            if (Current == HelpHint.None && !HasSeen(HelpHint.DrawToLandingZone) && aircraftInTheAir)
-                Current = HelpHint.DrawToLandingZone;
-            if (Current == HelpHint.DrawToLandingZone && !aircraftInTheAir)
+            if (Current == HelpHint.None && !HasSeen(FirstLesson) && aircraftInTheAir)
+                Current = FirstLesson;
+            if (Current == FirstLesson && !aircraftInTheAir)
                 Current = HelpHint.None;
         }
 
@@ -90,6 +104,24 @@ namespace AirTrafficControl
             MarkSeen(HelpHint.DrawToLandingZone);
             Show(HelpHint.ClearedToLand, ShortHintSeconds);
         }
+
+        /// <summary>Tower mode: the player gave a Land order: the first lesson is learnt.</summary>
+        public void LandOrderGiven()
+        {
+            if (HasSeen(HelpHint.TapForOrders))
+                return;
+            MarkSeen(HelpHint.TapForOrders);
+            Show(HelpHint.ClearedToLand, ShortHintSeconds);
+        }
+
+        /// <summary>Tower mode (Island level 1): an arrival comes in to a busy runway, or went around by itself.</summary>
+        public void GoAroundUseful() => ShowOnce(HelpHint.GoAround, LongHintSeconds);
+
+        /// <summary>Tower mode (Island level 2): several arrivals wait for orders at once.</summary>
+        public void HoldUseful() => ShowOnce(HelpHint.Hold, LongHintSeconds);
+
+        /// <summary>Tower mode: an arrival has left the runway and waits for Taxi to stand.</summary>
+        public void ArrivalWaitingForStand() => ShowOnce(HelpHint.TaxiToStand, LongHintSeconds);
 
         public void WarningStarted() => ShowOnce(HelpHint.DangerRing, LongHintSeconds);
 
@@ -127,7 +159,7 @@ namespace AirTrafficControl
         // A later hint waits until the drawing lesson is done, so the first thing a new player learns is to draw.
         void ShowOnce(HelpHint hint, float seconds)
         {
-            if (HasSeen(hint) || !HasSeen(HelpHint.DrawToLandingZone))
+            if (HasSeen(hint) || !HasSeen(FirstLesson))
                 return;
             if (Current != HelpHint.None && Current != HelpHint.ClearedToLand)
                 return; // do not cut another hint short
@@ -145,6 +177,25 @@ namespace AirTrafficControl
         {
             Seen |= Bit(hint);
             SeenChanged = true;
+        }
+
+        /// <summary>The hint's line in the current mode.</summary>
+        public string TextNow(HelpHint hint) => Text(hint, Tower);
+
+        public static string Text(HelpHint hint, bool tower)
+        {
+            if (tower)
+            {
+                switch (hint)
+                {
+                    case HelpHint.DangerRing: return "Red ring: Go around, Hold or Slow to keep them apart";
+                    case HelpHint.WindChanging: return "Wind is changing: runways switch to their other end";
+                    case HelpHint.Taxi: return "Tap the plane at the stand, then Taxi";
+                    case HelpHint.RunwayClosing: return "Runway closing: its Land and Take off buttons go off";
+                    case HelpHint.Mountains: return "Mountains: planes can land only along the valley";
+                }
+            }
+            return Text(hint);
         }
 
         public static string Text(HelpHint hint)
@@ -165,6 +216,10 @@ namespace AirTrafficControl
                 case HelpHint.Sandstorm: return "Sandstorm: it closes every runway it covers";
                 case HelpHint.Mountains: return "Lines cannot cross the mountains";
                 case HelpHint.IcyRunway: return "Icy runways: land on Slow; Fast slides and blocks it";
+                case HelpHint.TapForOrders: return "Tap a plane, then Land on a runway";
+                case HelpHint.GoAround: return "Runway busy? Tap the plane, then Go around";
+                case HelpHint.Hold: return "Too busy? Tap one, then Hold: it circles until called";
+                case HelpHint.TaxiToStand: return "Landed: tap it, then Taxi to stand";
                 default: return null;
             }
         }

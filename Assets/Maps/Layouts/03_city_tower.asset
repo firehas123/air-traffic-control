@@ -138,6 +138,10 @@ MonoBehaviour:
     points:
     - {x: 840, y: 692}
     - {x: 840, y: 750}
+  - name: Diagonal crossing
+    points:
+    - {x: 485, y: 382}
+    - {x: 635, y: 425}
   holdLines:
   - point: {x: 191, y: 262}
     runway: North
@@ -194,6 +198,9 @@ MonoBehaviour:
     runway: Diagonal
     kind: Crossing
   crossings:
+  - point: {x: 555.9, y: 402.3}
+    runway: Diagonal
+    route: Diagonal crossing
   - point: {x: 792.9, y: 750}
     runway: Diagonal
     route: South loop

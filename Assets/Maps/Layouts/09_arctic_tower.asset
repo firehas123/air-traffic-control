@@ -91,6 +91,15 @@ MonoBehaviour:
     - {x: 1135, y: 668}
     - {x: 1135, y: 725}
     - {x: 1090, y: 770}
+  - name: Apron lane
+    points:
+    - {x: 875, y: 220}
+    - {x: 880, y: 355}
+    - {x: 947, y: 355}
+    - {x: 1032, y: 355}
+    - {x: 1075, y: 355}
+    - {x: 1117, y: 355}
+    - {x: 1202, y: 355}
   holdLines:
   - point: {x: 135, y: 570}
     runway: Main

@@ -108,7 +108,7 @@ namespace AirTrafficControl.Tests
             Assert.IsNotNull(Object.FindAnyObjectByType<HomeView>(), "Starts on the home screen");
             Assert.IsTrue(Object.FindAnyObjectByType<HomeView>().IsShown);
 
-            flow.ChooseMode(0, GameMode.Tower); // no Tower levels yet: a note, no level
+            flow.ChooseMode(5, GameMode.Tower); // Military Base: locked and not built yet, no level
             yield return null;
             Assert.IsNull(Object.FindAnyObjectByType<LevelDirector>());
 
@@ -134,49 +134,116 @@ namespace AirTrafficControl.Tests
             yield return null;
         }
 
+        static LevelData TowerLevel(string map, int number) => Load<LevelData>($"Assets/Levels/Tower/{map}-tower-0{number}.asset");
+
         [UnityTest]
-        public IEnumerator Departure_TaxisTakesOffAndIsCounted_WithoutErrors()
+        public IEnumerator TowerLevelsWithTheirMapRules_RunOnAllFiveMaps_WithoutErrors()
         {
             SceneManager.LoadScene("SampleScene");
             yield return null;
             yield return null;
             GameFlow flow = Object.FindAnyObjectByType<GameFlow>();
-            // Draw mode has no ground control (phase 2); the ground code is kept for Tower mode (phase 3) and tried on
-            // the old test level, IslandPrototype.asset.
-            flow.PlayLevelData(Load<LevelData>("Assets/Levels/IslandPrototype.asset"));
+
+            foreach (var (map, number) in new[] { ("island", 1), ("island", 2), ("city", 2), ("desert", 3), ("mountain", 2), ("arctic", 2) })
+            {
+                LevelData level = TowerLevel(map, number);
+                Assert.IsNotNull(level, $"{map} {number}");
+                flow.PlayLevelData(level);
+                yield return WaitRealSeconds(2.5f);
+                Assert.IsNotNull(Object.FindAnyObjectByType<TowerControl>(), $"{map}: Tower control runs");
+                Assert.IsNull(Object.FindAnyObjectByType<GroundControl>(), $"{map}: no Draw-mode buttons");
+                Assert.IsNotNull(Object.FindAnyObjectByType<RunwayLabels>(), $"{map}: runway letters");
+                Assert.Greater(AircraftController.Active.Count, 0, $"{map} {number}: arrivals are in the air");
+                foreach (AircraftController aircraft in AircraftController.Active)
+                    if (aircraft.IsControllableInAir)
+                    {
+                        Assert.IsTrue(aircraft.Motion.HasPath, $"{map}: an arrival flies its approach route");
+                        Assert.IsFalse(aircraft.LandingAllowed, $"{map}: no clearance until the player gives Land");
+                    }
+            }
+            flow.ShowLevels();
+            yield return null;
+            Assert.AreEqual(1f, Time.timeScale, 1e-5f);
+        }
+
+        [UnityTest]
+        public IEnumerator TowerIsland_LandTaxiToStandDepartAndGoAround_WithoutErrors()
+        {
+            SceneManager.LoadScene("SampleScene");
+            yield return null;
+            yield return null;
+            GameFlow flow = Object.FindAnyObjectByType<GameFlow>();
+            flow.PlayLevelData(TowerLevel("island", 1));
             yield return null;
             LevelDirector director = Object.FindAnyObjectByType<LevelDirector>();
-            Assert.AreEqual(3, director.Session.DeparturesToClear, "The test level asks for 3 departures");
+            TowerControl tower = Object.FindAnyObjectByType<TowerControl>();
+            Assert.AreEqual(2, director.Session.DeparturesToClear);
 
-            // Keep the sky clear of arrivals so nothing collides, and act as the player for the departures.
+            // Act as the player, one aircraft at a time so nothing collides: land one arrival and taxi it to a stand,
+            // then send one departure out; on the way try Go around and Hold.
+            Time.timeScale = 4f;
+            bool triedGoAround = false, triedHold = false, sawExit = false, sawStand = false, sawHoldLine = false;
+            AircraftController arrival = null;
             float end = Time.realtimeSinceStartup + 60f;
-            bool sawGate = false, sawCrossing = false, sawHoldLine = false;
-            while (Time.realtimeSinceStartup < end && director.Session.DepartureCount < 1)
+            while (Time.realtimeSinceStartup < end && (director.Session.LandedCount < 1 || director.Session.DepartureCount < 1)
+                   && director.Session.IsPlaying)
             {
                 foreach (AircraftController aircraft in new System.Collections.Generic.List<AircraftController>(AircraftController.Active))
                 {
                     if (aircraft.IsControllableInAir)
                     {
-                        aircraft.gameObject.SetActive(false);
-                        Object.Destroy(aircraft.gameObject);
+                        if (arrival == null && director.Session.LandedCount < 1)
+                            arrival = aircraft;
+                        if (aircraft != arrival)
+                        {
+                            aircraft.gameObject.SetActive(false);
+                            Object.Destroy(aircraft.gameObject);
+                            continue;
+                        }
+                        TowerControl.Flight flight = tower.FlightOf(aircraft);
+                        if (!triedGoAround)
+                        {
+                            Assert.IsTrue(tower.GoAround(aircraft));
+                            Assert.AreEqual(TowerControl.FlightState.GoingAround, flight.state);
+                            triedGoAround = true;
+                        }
+                        else if (!triedHold)
+                        {
+                            Assert.IsTrue(tower.Hold(aircraft));
+                            Assert.AreEqual(TowerControl.FlightState.Holding, flight.state);
+                            triedHold = true;
+                        }
+                        else if (flight.state != TowerControl.FlightState.Cleared)
+                        {
+                            Assert.IsTrue(tower.Land(aircraft, 0), "Land on runway A");
+                            Assert.IsTrue(aircraft.IsClearedToLand);
+                        }
                         continue;
                     }
                     if (aircraft.Ground == null)
                         continue;
                     switch (aircraft.Ground.Phase)
                     {
-                        case GroundPhase.AtGate: sawGate = true; aircraft.GiveGroundCommand(AircraftCommand.Taxi); break;
-                        case GroundPhase.HoldingAtCrossing: sawCrossing = true; aircraft.GiveGroundCommand(AircraftCommand.Cross); break;
-                        case GroundPhase.HoldingShort: sawHoldLine = true; aircraft.GiveGroundCommand(AircraftCommand.TakeOff); break;
+                        case GroundPhase.WaitingForStand: sawExit = true; Assert.IsTrue(tower.TaxiToStand(aircraft)); break;
+                        case GroundPhase.Parked: sawStand = true; break;
+                        case GroundPhase.AtStand:
+                            if (director.Session.LandedCount >= 1)
+                                tower.TaxiTo(aircraft, 0);
+                            break;
+                        case GroundPhase.HoldingAtCrossing: tower.Cross(aircraft); break;
+                        case GroundPhase.HoldingShort: sawHoldLine = true; tower.TakeOff(aircraft); break;
                     }
                 }
                 yield return null;
             }
+            Time.timeScale = 1f;
 
-            Assert.IsTrue(sawGate, "A departure appeared at a gate");
-            Assert.IsTrue(sawHoldLine, "It taxied to the hold line");
+            Assert.IsTrue(triedGoAround && triedHold, "Go around and Hold were given");
+            Assert.IsTrue(sawExit, "The arrival left the runway and waited for Taxi to stand");
+            Assert.GreaterOrEqual(director.Session.LandedCount, 1, "It parked at a stand and counted as landed");
+            Assert.IsTrue(sawHoldLine, "A departure taxied to the hold line");
             Assert.GreaterOrEqual(director.Session.DepartureCount, 1, "It took off, left the screen and was counted");
-            TestContext.WriteLine($"Crossing point used: {sawCrossing}");
+            TestContext.WriteLine($"Parked seen: {sawStand}");
             flow.ShowLevels();
             yield return null;
         }

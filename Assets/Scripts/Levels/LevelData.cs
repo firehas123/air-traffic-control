@@ -43,7 +43,7 @@ namespace AirTrafficControl
         [Header("Scenery (decoration only, it never affects play)")]
         public SceneryLayout scenery = new SceneryLayout();
 
-        [Header("Ground: taxiways and gates (drawn in M3 step 2, driven by ground control in step 3)")]
+        [Header("Code-drawn taxiways and gates: only for a level without a painted map (Tower mode uses the picture's taxi routes)")]
         public GroundLayout ground = new GroundLayout();
 
         [Header("Runways")]
@@ -66,8 +66,11 @@ namespace AirTrafficControl
         [Header("Map rule: wind (C1, Island)")]
         public WindRuleSettings wind = new WindRuleSettings();
 
-        [Header("Map rules of the other Draw maps (blueprint 16.2): City, Desert, Mountain Valley, Arctic")]
+        [Header("Map rules of the other maps (blueprint 16.2): City, Desert, Mountain Valley, Arctic")]
         public MapRuleSettings rules = new MapRuleSettings();
+
+        [Header("Tower mode (blueprint 16.1): approach routes, holds, ground movement")]
+        public TowerSettings tower = new TowerSettings();
 
         [Header("Aircraft")]
         [Tooltip("Kinds of aircraft this level spawns, picked at random for each new aircraft. Repeat a kind to make it more common.")]
@@ -119,8 +122,8 @@ namespace AirTrafficControl
     }
 
     /// <summary>
-    /// When departures appear at the gates. Only runway kinds depart (airliner, jumbo jet, fighter jet); the level
-    /// spawns as many as its departure goal (LevelData.departuresToClear), one at a free gate at a time.
+    /// When departures appear at the stands (Tower mode). Only runway kinds depart (airliner, jumbo jet, fighter jet); the
+    /// level spawns as many as its departure goal (LevelData.departuresToClear), one at a free stand at a time.
     /// </summary>
     [Serializable]
     public sealed class DepartureSettings

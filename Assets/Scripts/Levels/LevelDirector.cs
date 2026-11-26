@@ -36,6 +36,7 @@ namespace AirTrafficControl
         const float RespawnDelay = 1f;      // seconds after a landing
         const float BusyRetryDelay = 0.5f;  // seconds to wait when every spawn point is busy
         const float SpawnInset = 0.35f;     // aircraft appear this far inside the screen edge
+        const float TowerSpawnInset = 0.6f; // Tower mode: the whole aircraft is on screen when it appears
 
         LevelSession session = new LevelSession();
         readonly GameClock clock = new GameClock();
@@ -53,8 +54,11 @@ namespace AirTrafficControl
         FeedbackSystem feedback;
         EffectsSystem effects;
         GroundControl groundControl;
+        TowerControl tower;
         MapRuleSystem mapRules;
         int departuresSpawned;
+        int arrivalsSpawned;
+        bool towerMode;
         readonly List<AircraftType> departureKinds = new List<AircraftType>();
         HelpDemo helpDemo;
         FirstTimeHelp help;
@@ -84,8 +88,16 @@ namespace AirTrafficControl
                                InputAdapter inputAdapter, PathPlanner pathPlanner, CarrierSystem carrierSystem, HudView hudView,
                                Material shapeMaterial, AircraftSettings settings, FeedbackSystem feedbackSystem = null,
                                EffectsSystem effectsSystem = null, GroundControl groundControlSystem = null,
-                               MapRuleSystem mapRuleSystem = null)
+                               MapRuleSystem mapRuleSystem = null, TowerControl towerControl = null)
         {
+            tower = towerControl;
+            towerMode = tower != null;
+            if (tower != null)
+            {
+                tower.MenuOpened += OnMenuOpened;
+                tower.CommandGiven += OnCommandGiven;
+                tower.MissedApproach += OnMissedApproach;
+            }
             mapRules = mapRuleSystem;
             if (mapRules != null)
             {
@@ -104,7 +116,7 @@ namespace AirTrafficControl
             feedback = feedbackSystem;
 
             // First-time help (M2 step 5): what has been shown is saved on the device, offline.
-            help = new FirstTimeHelp(PlayerPrefs.GetInt(HelpSeenKey, 0));
+            help = new FirstTimeHelp(PlayerPrefs.GetInt(HelpSeenKey, 0), towerControl != null);
             helpDemo = new GameObject("HelpDemo").AddComponent<HelpDemo>();
             helpDemo.transform.SetParent(transform, false);
             helpDemo.Initialise(shapeMaterial);
@@ -143,7 +155,7 @@ namespace AirTrafficControl
             hud.HelpPressed += OnHelpPressed;
             input.SetScreenBlocker(hud.IsOverInteractive);
             hud.SetSpeedLabel(clock.SpeedLabel);
-            hud.SetSlowDrawLabel(clock.SlowDrawLabel);
+            hud.SetSlowDrawLabel(towerMode ? clock.SlowTapsLabel : clock.SlowDrawLabel);
             hud.SetWind(windRule.hasWind, windOn);
         }
 
@@ -165,6 +177,12 @@ namespace AirTrafficControl
             {
                 groundControl.MenuOpened -= OnMenuOpened;
                 groundControl.CommandGiven -= OnCommandGiven;
+            }
+            if (tower != null)
+            {
+                tower.MenuOpened -= OnMenuOpened;
+                tower.CommandGiven -= OnCommandGiven;
+                tower.MissedApproach -= OnMissedApproach;
             }
             if (hud != null)
             {
@@ -200,19 +218,22 @@ namespace AirTrafficControl
             ResetWind();
 
             nextSpawnIndex = 0;
+            arrivalsSpawned = 0;
             for (int i = 0; i < level.aircraftInAir; i++)
             {
+                if (towerMode && level.landingsToClear > 0 && i >= level.landingsToClear)
+                    break;
                 if (!TrySpawnNow())
                     StartCoroutine(SpawnWhenClear(BusyRetryDelay)); // more aircraft than clear spawn points
             }
 
-            // Departures (blueprint 15.4): only runway kinds, from the level's gates, as many as the goal needs.
+            // Departures (Tower mode, blueprint 16.1): only runway kinds, from free stands, as many as the goal needs.
             departuresSpawned = 0;
             departureKinds.Clear();
             foreach (AircraftType kind in level.aircraftTypes)
                 if (kind != null && kind.landsOn == LandingZoneKind.Runway)
                     departureKinds.Add(kind);
-            if (level.departuresToClear > 0 && level.ground.gates.Count > 0)
+            if (level.departuresToClear > 0 && tower != null)
                 StartCoroutine(DepartureLoop());
         }
 
@@ -235,36 +256,20 @@ namespace AirTrafficControl
 
         bool TrySpawnDeparture()
         {
-            GateDefinition gate = null;
-            foreach (GateDefinition candidate in level.ground.gates)
-            {
-                bool taken = false;
-                foreach (AircraftController other in AircraftController.Active)
-                    if (Vector2.Distance(other.transform.position, candidate.position) < 0.5f)
-                        taken = true;
-                if (!taken && candidate.connector.Count >= 2)
-                {
-                    gate = candidate;
-                    break;
-                }
-            }
-            if (gate == null)
-                return false;
-
-            AircraftType kind = departureKinds.Count > 0 ? departureKinds[kindPicker.Next(departureKinds.Count)] : PickKind();
-            float airSpeed = aircraftSettings.speed * kind.speedMultiplier;
-            GroundLayout layout = level.ground;
-            var ground = new GroundMovement(gate.connector, gate.crossingIndex, layout.mainTaxiway,
-                                            layout.taxiSpeed, airSpeed, gate.headingDegrees, landing.IsReversed,
-                                            layout.useLineUpPoints ? layout.normalLineUp : (Vector2?)null,
-                                            layout.useLineUpPoints ? layout.reversedLineUp : (Vector2?)null,
-                                            layout.liftOffDistance);
-            var motion = new AircraftMotion(gate.position, gate.headingDegrees, airSpeed, aircraftSettings.turnRate);
-            AircraftController aircraft = AircraftController.SpawnAtGate(kind, motion, ground, worldCamera, landing, material,
-                                                                         aircraftSettings.colors, aircraftSettings.edgeMargin);
+            AircraftType kind = departureKinds.Count > 0 ? departureKinds[kindPicker.Next(departureKinds.Count)] : PickRunwayKind();
+            AircraftController aircraft = tower.SpawnDeparture(kind, aircraftSettings, material);
+            if (aircraft == null)
+                return false; // every stand is taken
             aircraft.Departed += OnAircraftDeparted;
             mapRules?.OnSpawned(aircraft);
             return true;
+        }
+
+        AircraftType PickRunwayKind()
+        {
+            if (defaultKind == null)
+                defaultKind = AircraftType.CreateDefaultAirliner();
+            return defaultKind;
         }
 
         void OnAircraftDeparted(AircraftController aircraft)
@@ -276,15 +281,24 @@ namespace AirTrafficControl
                 OnLevelCleared();
         }
 
-        void OnMenuOpened(AircraftController aircraft, AircraftCommand[] commands)
+        void OnMenuOpened(AircraftController aircraft, IReadOnlyList<CommandOption> options)
         {
-            if (commands.Length > 0 && (commands[0] == AircraftCommand.Slow || commands[0] == AircraftCommand.Fast))
+            if (!towerMode && options.Count > 0 && (options[0].Command == AircraftCommand.Slow || options[0].Command == AircraftCommand.Fast))
                 help.SpeedButtonsShown();
         }
 
         void OnCommandGiven(AircraftController aircraft, AircraftCommand command)
         {
             feedback?.LineConnected(); // the same short click confirms a command
+            if (command == AircraftCommand.Land)
+                help.LandOrderGiven();
+        }
+
+        // Island level 1 teaches Go around (blueprint 16.1): an arrival went around by itself, without a clearance.
+        void OnMissedApproach(AircraftController aircraft)
+        {
+            if (level.tower.teachGoAround && session.IsPlaying)
+                help.GoAroundUseful();
         }
 
         void OnWarningStarted(AircraftController aircraft)
@@ -343,11 +357,14 @@ namespace AirTrafficControl
                         continue;
                     switch (aircraft.Ground.Phase)
                     {
-                        case GroundPhase.AtGate: help.DepartureAtGate(); break;
+                        case GroundPhase.AtStand: help.DepartureAtGate(); break;
                         case GroundPhase.HoldingShort: help.DepartureAtHoldLine(); break;
                         case GroundPhase.HoldingAtCrossing: help.DepartureAtCrossing(); break;
+                        case GroundPhase.WaitingForStand: help.ArrivalWaitingForStand(); break;
                     }
                 }
+                if (towerMode)
+                    UpdateTowerHelp();
             }
 
             help.Tick(Time.unscaledDeltaTime, anyAirborne && session.IsPlaying);
@@ -358,11 +375,11 @@ namespace AirTrafficControl
             }
 
             HelpHint hint = session.IsPlaying ? help.Current : HelpHint.None;
-            hud.SetHint(FirstTimeHelp.Text(hint));
+            hud.SetHint(help.TextNow(hint));
 
             Vector2? from = null;
             Vector2 to = Vector2.zero;
-            if (hint == HelpHint.DrawToLandingZone && demoAircraft != null)
+            if (hint == HelpHint.DrawToLandingZone && demoAircraft != null && !towerMode)
             {
                 Vector2? zone = landing.ZonePoint(demoAircraft.Type.landsOn);
                 if (zone.HasValue)
@@ -372,6 +389,28 @@ namespace AirTrafficControl
                 }
             }
             helpDemo.Show(from, to);
+        }
+
+        // Tower mode's teaching moments (Island levels 1 and 2): Go around when an arrival comes in to a busy runway, Hold when
+        // several arrivals wait for orders at once. Mountain Valley explains its rule once.
+        void UpdateTowerHelp()
+        {
+            int waiting = 0;
+            foreach (AircraftController aircraft in AircraftController.Active)
+            {
+                TowerControl.Flight flight = tower.FlightOf(aircraft);
+                if (flight == null || !aircraft.IsControllableInAir)
+                    continue;
+                if (flight.state == TowerControl.FlightState.Approaching)
+                    waiting++;
+                if (level.tower.teachGoAround && flight.target.IsRunway && landing.IsRunwayBusyShownAt(flight.target.Runway)
+                    && aircraft.Motion.SecondsToEndOfPath < 8f)
+                    help.GoAroundUseful();
+            }
+            if (level.tower.teachHold && waiting >= 2)
+                help.HoldUseful();
+            if (level.tower.valleyOnly)
+                help.MountainsAhead();
         }
 
         static bool AnyAirborneFighter()
@@ -388,6 +427,9 @@ namespace AirTrafficControl
             if (session.IsPlaying)
             {
                 feedback?.TouchedDown();
+                // Tower mode: the arrival counts once it is parked, but the next one enters as soon as this one is down.
+                if (towerMode && (level.landingsToClear <= 0 || arrivalsSpawned < level.landingsToClear))
+                    StartCoroutine(SpawnWhenClear(RespawnDelay));
             }
         }
 
@@ -412,7 +454,8 @@ namespace AirTrafficControl
 
             // C4: slow time while the player is drawing an aircraft's line, and while option buttons are open
             // (blueprint 15.4). The Slow draw switch turns both off.
-            bool drawing = drawingFor != null || (groundControl != null && groundControl.IsMenuOpen && session.IsPlaying);
+            bool drawing = drawingFor != null || (groundControl != null && groundControl.IsMenuOpen && session.IsPlaying)
+                           || (tower != null && tower.IsMenuOpen && session.IsPlaying);
             if (drawing != clock.Drawing)
             {
                 clock.Drawing = drawing;
@@ -465,7 +508,7 @@ namespace AirTrafficControl
         void OnSlowDrawPressed()
         {
             clock.SlowWhileDrawing = !clock.SlowWhileDrawing;
-            hud.SetSlowDrawLabel(clock.SlowDrawLabel);
+            hud.SetSlowDrawLabel(towerMode ? clock.SlowTapsLabel : clock.SlowDrawLabel);
             ApplyClock();
         }
 
@@ -631,8 +674,8 @@ namespace AirTrafficControl
             hud.SetGoal(session.LandedCount, session.LandingsToClear, session.DepartureCount, session.DeparturesToClear);
             if (cleared)
                 OnLevelCleared();
-            else if (session.IsPlaying)
-                StartCoroutine(SpawnWhenClear(RespawnDelay));
+            else if (session.IsPlaying && !towerMode)
+                StartCoroutine(SpawnWhenClear(RespawnDelay)); // Tower mode sends the next arrival at touchdown
         }
 
         /// <summary>Stops the level and removes its aircraft, before the level is left.</summary>
@@ -680,6 +723,9 @@ namespace AirTrafficControl
 
         bool TrySpawnNow()
         {
+            if (towerMode)
+                return TrySpawnArrivalOnApproach();
+
             aircraftPositions.Clear();
             foreach (AircraftController other in AircraftController.Active)
                 aircraftPositions.Add(other.transform.position);
@@ -704,6 +750,58 @@ namespace AirTrafficControl
             aircraft.Landed += OnAircraftLanded;
             aircraft.TouchedDown += OnTouchedDown;
             mapRules?.OnSpawned(aircraft);
+            return true;
+        }
+
+        readonly List<int> approachChoices = new List<int>();
+        readonly List<Vector2> approachPositions = new List<Vector2>();
+
+        // Tower mode: an arrival at the screen edge on one of the fixed approach routes to an open runway end (blueprint
+        // 16.1). Never more arrivals than the landing goal. Helicopters, drones and balloons use any entry and fly to their pad.
+        bool TrySpawnArrivalOnApproach()
+        {
+            if (level.landingsToClear > 0 && arrivalsSpawned >= level.landingsToClear)
+                return true; // nothing more to send
+            List<TowerApproach> approaches = level.tower.approaches;
+            if (approaches.Count == 0)
+                return false;
+            AircraftType type = PickKind();
+            Rect view = CameraFraming.CurrentView(worldCamera);
+
+            approachChoices.Clear();
+            for (int i = 0; i < approaches.Count; i++)
+            {
+                TowerApproach a = approaches[i];
+                bool fits = type.landsOn != LandingZoneKind.Runway
+                            || (a.endB == landing.IsReversed && tower.CanLandOn(a.runway));
+                if (fits)
+                    approachChoices.Add(i);
+            }
+            if (approachChoices.Count == 0)
+                for (int i = 0; i < approaches.Count; i++)
+                    approachChoices.Add(i); // every runway closed: it comes in anyway and goes around until one opens
+
+            aircraftPositions.Clear();
+            foreach (AircraftController other in AircraftController.Active)
+                aircraftPositions.Add(other.transform.position);
+            approachPositions.Clear();
+            foreach (int i in approachChoices)
+                approachPositions.Add(SpawnRules.ClampToView(approaches[i].entry, view, TowerSpawnInset));
+            int start = approachChoices.Count > 0 ? kindPicker.Next(approachChoices.Count) : 0;
+            int pick = SpawnRules.ChooseClearPoint(approachPositions, aircraftPositions, start);
+            if (pick < 0)
+                return false;
+
+            TowerApproach approach = approaches[approachChoices[pick]];
+            float speed = aircraftSettings.speed * type.speedMultiplier;
+            var motion = new AircraftMotion(approachPositions[pick], approach.headingDegrees, speed, aircraftSettings.turnRate);
+            AircraftController aircraft = AircraftController.Spawn(type, motion, worldCamera, landing, material,
+                                                                   aircraftSettings.colors, aircraftSettings.edgeMargin);
+            arrivalsSpawned++;
+            aircraft.Landed += OnAircraftLanded;
+            aircraft.TouchedDown += OnTouchedDown;
+            mapRules?.OnSpawned(aircraft);
+            tower.AddArrival(aircraft, approach);
             return true;
         }
     }

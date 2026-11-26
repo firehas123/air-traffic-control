@@ -5,10 +5,9 @@ using UnityEngine;
 namespace AirTrafficControl
 {
     /// <summary>
-    /// Hybrid controls (blueprint 15.4), the game side: a tap on an aircraft opens its option buttons (Slow / Fast in
-    /// the air; Taxi, Cross or Take off on the ground), and the chosen command is given to that aircraft. Also keeps
-    /// taxiing aircraft queued behind each other every frame. Input stays in <see cref="InputAdapter"/> and the buttons
-    /// in <see cref="CommandMenu"/>.
+    /// Draw mode's tap buttons (blueprint 15.4): a tap on an aircraft in the air opens Slow and Fast beside it, and the
+    /// chosen speed is given to that aircraft. Draw mode has no ground control (phase 2); Tower mode's buttons are in
+    /// <see cref="TowerControl"/>. Input stays in <see cref="InputAdapter"/> and the buttons in <see cref="CommandMenu"/>.
     /// </summary>
     public sealed class GroundControl : MonoBehaviour
     {
@@ -17,27 +16,23 @@ namespace AirTrafficControl
 
         InputAdapter input;
         CommandMenu menu;
-        float queueSpacing = 0.75f;
-        readonly List<Vector2> others = new List<Vector2>();
-        AircraftCommand[] openCommands = new AircraftCommand[0];
+        List<CommandOption> openOptions = new List<CommandOption>();
 
-        /// <summary>Raised when buttons open for an aircraft, with the commands shown (for first-time help).</summary>
-        public event Action<AircraftController, AircraftCommand[]> MenuOpened;
+        /// <summary>Raised when buttons open for an aircraft, with the options shown (for first-time help).</summary>
+        public event Action<AircraftController, IReadOnlyList<CommandOption>> MenuOpened;
 
         /// <summary>Raised when a command has been given.</summary>
         public event Action<AircraftController, AircraftCommand> CommandGiven;
 
         public bool IsMenuOpen => menu != null && menu.IsOpen;
 
-        public void Initialise(InputAdapter inputAdapter, CommandMenu commandMenu, GroundLayout ground)
+        public void Initialise(InputAdapter inputAdapter, CommandMenu commandMenu)
         {
             input = inputAdapter;
             menu = commandMenu;
-            if (ground != null)
-                queueSpacing = ground.queueSpacing;
             input.Tapped += OnTapped;
             input.DragStarted += OnDragStarted;
-            menu.CommandChosen += OnCommandChosen;
+            menu.OptionChosen += OnOptionChosen;
         }
 
         void OnDestroy()
@@ -48,96 +43,57 @@ namespace AirTrafficControl
                 input.DragStarted -= OnDragStarted;
             }
             if (menu != null)
-                menu.CommandChosen -= OnCommandChosen;
+                menu.OptionChosen -= OnOptionChosen;
         }
 
-        public static AircraftCommand[] CommandsFor(AircraftController aircraft) =>
-            AircraftCommands.For(aircraft.IsControllableInAir && !aircraft.IsLanding,
-                                 aircraft.Ground != null ? aircraft.Ground.Phase : (GroundPhase?)null);
+        public static List<CommandOption> OptionsFor(AircraftController aircraft) =>
+            AircraftCommands.DrawOptions(aircraft != null && aircraft.IsControllableInAir && !aircraft.IsLanding,
+                                         aircraft != null ? aircraft.SpeedSetting : AircraftSpeed.Normal);
 
         void OnTapped(Vector2 world)
         {
             AircraftController aircraft = AircraftController.FindNearestForTap(world, TapRadius);
-            if (aircraft == null)
+            List<CommandOption> options = OptionsFor(aircraft);
+            if (aircraft == null || options.Count == 0)
             {
                 menu.Close(); // a tap elsewhere closes the buttons
                 return;
             }
-            AircraftCommand[] commands = CommandsFor(aircraft);
-            if (commands.Length == 0)
-            {
-                menu.Close();
-                return;
-            }
-            openCommands = commands;
-            menu.Open(aircraft, commands, aircraft.SpeedSetting);
-            MenuOpened?.Invoke(aircraft, commands);
+            openOptions = options;
+            menu.Open(aircraft, options);
+            MenuOpened?.Invoke(aircraft, options);
         }
 
         // Drawing a line somewhere also closes any open buttons.
         void OnDragStarted(Vector2 world) => menu.Close();
 
-        void OnCommandChosen(AircraftController aircraft, AircraftCommand command)
+        void OnOptionChosen(AircraftController aircraft, CommandOption option)
         {
-            if (aircraft == null)
+            if (aircraft == null || !aircraft.IsControllableInAir)
                 return;
-            bool done;
-            switch (command)
-            {
-                case AircraftCommand.Slow:
-                    aircraft.ToggleSpeed(AircraftSpeed.Slow);
-                    done = true;
-                    break;
-                case AircraftCommand.Fast:
-                    aircraft.ToggleSpeed(AircraftSpeed.Fast);
-                    done = true;
-                    break;
-                default:
-                    done = aircraft.GiveGroundCommand(command);
-                    break;
-            }
-            if (done)
-                CommandGiven?.Invoke(aircraft, command);
+            if (option.Command == AircraftCommand.Slow)
+                aircraft.ToggleSpeed(AircraftSpeed.Slow);
+            else if (option.Command == AircraftCommand.Fast)
+                aircraft.ToggleSpeed(AircraftSpeed.Fast);
+            else
+                return;
+            CommandGiven?.Invoke(aircraft, option.Command);
         }
 
         void Update()
         {
-            // Close the buttons if the aircraft no longer offers them (it landed, crashed, or moved on).
+            // Close the buttons if the aircraft no longer offers them (it landed or crashed).
             if (menu.IsOpen)
             {
-                AircraftController target = menu.Target;
-                if (target == null || !SameCommands(CommandsFor(target), openCommands))
+                List<CommandOption> now = OptionsFor(menu.Target);
+                if (menu.Target == null || now.Count == 0)
                     menu.Close();
-            }
-
-            // Queueing: a taxiing aircraft waits while another ground aircraft is close in front of it.
-            IReadOnlyList<AircraftController> all = AircraftController.Active;
-            foreach (AircraftController aircraft in all)
-            {
-                GroundMovement ground = aircraft.Ground;
-                if (ground == null)
-                    continue;
-                if (!ground.IsTaxiing)
+                else if (!AircraftCommands.Same(now, openOptions))
                 {
-                    aircraft.GroundBlocked = false;
-                    continue;
+                    openOptions = now;
+                    menu.Refresh(now);
                 }
-                others.Clear();
-                foreach (AircraftController other in all)
-                    if (other != aircraft && (other.Ground != null || other.RunwayUse == RunwayUse.LineUp))
-                        others.Add(other.transform.position);
-                aircraft.GroundBlocked = TaxiQueue.IsBlocked(ground.Position, ground.HeadingVector, others, queueSpacing);
             }
-        }
-
-        static bool SameCommands(AircraftCommand[] a, AircraftCommand[] b)
-        {
-            if (a.Length != b.Length)
-                return false;
-            for (int i = 0; i < a.Length; i++)
-                if (a[i] != b[i])
-                    return false;
-            return true;
         }
     }
 }

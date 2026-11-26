@@ -96,12 +96,15 @@ namespace AirTrafficControl
         GameObject slowIcon;
         GameObject fastIcon;
 
-        // Ground control (blueprint 15.4): a departure from a gate, then its climb out of the screen.
+        // Tower mode ground control (blueprint 16.1): a departure from its stand, then its climb out of the screen; or an
+        // arrival after touchdown, rolling out, leaving the runway and taxiing to a stand.
         GroundMovement ground;
         GameObject waitingRing;
         bool departing;
         float climbTime;
         float rollDuration = RollDuration;
+        bool parkedReported;
+        float parkedTime;
 
         // Carrier (blueprint 13.2, 14.2): the connection, and the dashed tether from the end of the line to the deck.
         CarrierApproach carrierApproach;
@@ -131,6 +134,39 @@ namespace AirTrafficControl
 
         /// <summary>The runway it touched down on (index in the level's list), or -1 (in the air, on a pad or the carrier).</summary>
         public int LandingRunwayIndex { get; private set; } = -1;
+
+        /// <summary>
+        /// Tower mode (blueprint 16.1): false until the tower clears it to land, so an approach that reaches a runway without
+        /// a clearance does not land. Always true in Draw mode, where a line that ends on a zone lands.
+        /// </summary>
+        public bool LandingAllowed { get; set; } = true;
+
+        /// <summary>
+        /// Tower mode: called at touchdown on a runway; returns the ground movement that rolls it out, takes it off the
+        /// runway at the next exit and later to a stand. Null in Draw mode (a landed aircraft is done).
+        /// </summary>
+        public Func<AircraftController, Touchdown, GroundMovement> TowerTouchdown { get; set; }
+
+        /// <summary>Tower mode: an arrival parked at its stand stays this long (passengers off), then it is removed.</summary>
+        public float ParkedSeconds { get; set; } = 2f;
+
+        /// <summary>The runway it is using now (landing roll, leaving it, crossing, lining up, take-off), or -1.</summary>
+        public int RunwayInUse
+        {
+            get
+            {
+                if (isCrashed)
+                    return -1;
+                if (isLanding)
+                    return !settlesOntoPad && !landsOnCarrierDeck ? LandingRunwayIndex : -1;
+                return ground != null && ground.UsesRunway ? (ground.RunwayIndex >= 0 ? ground.RunwayIndex : LandingRunwayIndex) : -1;
+            }
+        }
+
+        /// <summary>True while it rolls out on a runway after touchdown (and, in Tower mode, while it leaves the runway).</summary>
+        public bool IsRollingOut =>
+            !isCrashed && ((isLanding && !settlesOntoPad && !landsOnCarrierDeck)
+                           || (ground != null && (ground.Phase == GroundPhase.Rollout || ground.Phase == GroundPhase.Vacating)));
 
         public float CollisionRadius => Type != null ? Type.collisionRadius : AircraftType.AirlinerCollisionRadius;
 
@@ -175,6 +211,8 @@ namespace AirTrafficControl
                     return RunwayUse.None;
                 switch (ground.Phase)
                 {
+                    case GroundPhase.Rollout: return RunwayUse.Landing;
+                    case GroundPhase.Vacating: return RunwayUse.Crossing; // at taxi speed, leaving the runway
                     case GroundPhase.Crossing: return RunwayUse.Crossing;
                     case GroundPhase.LiningUp: return RunwayUse.LineUp;
                     case GroundPhase.TakeOffRoll: return RunwayUse.TakeOff;
@@ -217,10 +255,10 @@ namespace AirTrafficControl
         }
 
         /// <summary>
-        /// A departure parked at a gate (blueprint 15.4). It waits for Taxi; it is on the ground, so it cannot be drawn
-        /// for and does not collide until it lifts off.
+        /// A departure parked at a stand (Tower mode, blueprint 16.1). It waits for Taxi; it is on the ground, so it does not
+        /// collide in the air until it lifts off.
         /// </summary>
-        public static AircraftController SpawnAtGate(AircraftType type, AircraftMotion motion, GroundMovement groundMovement,
+        public static AircraftController SpawnAtStand(AircraftType type, AircraftMotion motion, GroundMovement groundMovement,
                                                      Camera camera, LandingSystem landing, Material material, AircraftColors colors,
                                                      float edgeMargin)
         {
@@ -455,23 +493,17 @@ namespace AirTrafficControl
             ShowStatus();
         }
 
-        /// <summary>Taxi, Cross or Take off for a departure on the ground. Returns false if it does not apply now.</summary>
-        public bool GiveGroundCommand(AircraftCommand command)
+        /// <summary>Tower mode: shows the ring again after a command changed what the ground movement is doing.</summary>
+        public void RefreshStatus() => ShowStatus();
+
+        /// <summary>
+        /// Tower mode: draws the path ahead faintly while the aircraft has no landing clearance (its fixed approach route),
+        /// and clearly once it is cleared. Draw mode always draws the player's line clearly.
+        /// </summary>
+        public void SetPathFaint(bool faint)
         {
-            if (ground == null || isCrashed)
-                return false;
-            bool done;
-            switch (command)
-            {
-                case AircraftCommand.Taxi: done = ground.Taxi(); break;
-                case AircraftCommand.Cross: done = ground.Cross(); break;
-                case AircraftCommand.TakeOff:
-                    done = landing != null && landing.Runways.Count > 0 && ground.TakeOff(landing.Runways[0]);
-                    break;
-                default: done = false; break;
-            }
-            ShowStatus();
-            return done;
+            Color c = new Color(1f, 1f, 1f, faint ? 0.3f : 0.85f);
+            pathLine.startColor = pathLine.endColor = c;
         }
 
         GameObject CreateChild(string name, Mesh mesh, Material material, int sortingOrder)
@@ -623,6 +655,8 @@ namespace AirTrafficControl
 
         void ShowStatus()
         {
+            if (needsLineRing == null)
+                return;
             bool flying = !isCrashed && !isLanding && ground == null && !departing;
             needsLineRing.SetActive(flying && !IsClearedToLand);
             clearedRing.SetActive(flying && IsClearedToLand);
@@ -642,16 +676,44 @@ namespace AirTrafficControl
         // the air, flying straight out of the screen in the runway direction.
         void UpdateGround(float deltaTime)
         {
-            if (landing != null)
-                ground.SetActiveEnd(landing.IsReversed);
             GroundPhase before = ground.Phase;
             ground.Step(deltaTime, GroundBlocked);
             ApplyGroundTransform();
             if (ground.Phase != before)
                 ShowStatus();
 
-            if (ground.Phase == GroundPhase.TakeOffRoll)
-                visuals.Altitude = 0f;
+            // Touchdown: the shadow closes in under the aircraft.
+            visuals.Altitude = Mathf.Max(0f, visuals.Altitude - deltaTime * 2f);
+
+            if (IsSliding && ground.Phase == GroundPhase.Rollout)
+            {
+                // Sliding on ice (Arctic, Fast landing): the nose swings from side to side while it skids down the runway.
+                float yaw = 14f * Mathf.Sin(Time.time * 9f);
+                transform.rotation = Quaternion.Euler(0f, 0f, ground.HeadingDegrees + yaw);
+                statusRoot.rotation = Quaternion.identity;
+            }
+            else if (ground.Phase != GroundPhase.Rollout)
+            {
+                IsSliding = false;
+            }
+
+            if (ground.Phase == GroundPhase.Parked)
+            {
+                // An arrival at its stand: it counts as landed now, and leaves the stand a moment later.
+                if (!parkedReported)
+                {
+                    parkedReported = true;
+                    parkedTime = 0f;
+                    Landed?.Invoke(this);
+                }
+                parkedTime += deltaTime;
+                if (parkedTime >= ParkedSeconds)
+                {
+                    gameObject.SetActive(false);
+                    Destroy(gameObject);
+                }
+                return;
+            }
 
             if (ground.Phase == GroundPhase.Airborne)
             {
@@ -768,7 +830,7 @@ namespace AirTrafficControl
                     StartLanding(graceTouchdown.Value);
                     return;
                 }
-                if (landing != null && landing.TryLand(Motion.Path, Type.landsOn, out Touchdown touchdown))
+                if (LandingAllowed && landing != null && landing.TryLand(Motion.Path, Type.landsOn, out Touchdown touchdown))
                 {
                     StartLanding(touchdown);
                     return;
@@ -806,8 +868,18 @@ namespace AirTrafficControl
             warningRing.SetActive(false);
             ShowStatus();
 
-            TouchedDown?.Invoke(this);
             settlesOntoPad = !touchdown.IsRunway;
+            if (touchdown.IsRunway && TowerTouchdown != null)
+            {
+                // Tower mode: roll out, leave the runway at the next exit and wait for Taxi to stand.
+                isLanding = false;
+                ground = TowerTouchdown(this, touchdown);
+                ApplyGroundTransform();
+                ShowStatus();
+                TouchedDown?.Invoke(this);
+                return;
+            }
+            TouchedDown?.Invoke(this);
             visuals.Settling = settlesOntoPad;
             if (settlesOntoPad)
             {

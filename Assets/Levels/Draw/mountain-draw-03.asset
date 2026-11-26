@@ -187,6 +187,22 @@ MonoBehaviour:
     ice:
       enabled: 0
       fastSlideFactor: 2
+  tower:
+    approaches: []
+    holdFixes: []
+    finalLength: 0.9
+    turnRateDegrees: 50
+    minTurnRadius: 0.35
+    goAroundSeconds: 10
+    holdRadius: 0.75
+    rollDistance: 2.4
+    taxiSpeed: 0.7
+    queueSpacing: 0.75
+    parkedSeconds: 2
+    valleyOnly: 0
+    valleyMaxAngle: 30
+    teachGoAround: 0
+    teachHold: 0
   aircraftTypes:
   - {fileID: 11400000, guid: 78932e9696c3e4f5db8166115bd9f27c, type: 2}
   - {fileID: 11400000, guid: ba844492ef7b944a6949d6b6fa12b6fd, type: 2}

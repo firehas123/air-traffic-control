@@ -23,6 +23,8 @@ namespace AirTrafficControl
         readonly List<AircraftController> onRunway = new List<AircraftController>();
         readonly List<RunwayOccupant> occupants = new List<RunwayOccupant>();
         readonly List<Vector2Int> runwayCollisions = new List<Vector2Int>();
+        readonly List<int> usedRunways = new List<int>();
+        bool[] busy = new bool[0];
         LandingSystem landing;
 
         /// <summary>Lets the busy-runway rule (blueprint 15.4) flash the runway's edge lights.</summary>
@@ -92,12 +94,13 @@ namespace AirTrafficControl
             }
         }
 
-        // Busy runway (blueprint 15.4): a landing or a take-off that meets another aircraft on the runway is a
-        // collision. Taxiing aircraft never collide: they are not on the runway and they queue.
+        // Busy runway (blueprint 15.4, 16.1): a landing or a take-off that meets another aircraft on a runway or where two
+        // runways cross is a collision. Taxiing aircraft never collide: they are not on the runway and they queue.
         void CheckRunway()
         {
             onRunway.Clear();
             occupants.Clear();
+            usedRunways.Clear();
             foreach (AircraftController aircraft in AircraftController.Active)
             {
                 RunwayUse use = aircraft.RunwayUse;
@@ -105,22 +108,18 @@ namespace AirTrafficControl
                     continue;
                 onRunway.Add(aircraft);
                 occupants.Add(new RunwayOccupant(aircraft.transform.position, aircraft.CollisionRadius, use));
+                usedRunways.Add(aircraft.RunwayInUse);
             }
 
             RunwayBusy = RunwayRules.IsBusy(occupants);
             if (landing != null)
             {
-                // Each runway's edge lights flash while that runway is busy.
+                // Each runway's edge lights flash while that runway is busy; an aircraft in an intersection makes both busy.
+                if (busy.Length < landing.Runways.Count)
+                    busy = new bool[landing.Runways.Count];
+                RunwayRules.BusyRunways(landing.Runways, occupants, usedRunways, busy);
                 for (int r = 0; r < landing.Runways.Count; r++)
-                {
-                    bool busy = false;
-                    foreach (AircraftController aircraft in onRunway)
-                    {
-                        int index = aircraft.LandingRunwayIndex >= 0 ? aircraft.LandingRunwayIndex : landing.RunwayAt(aircraft.transform.position);
-                        busy |= index == r;
-                    }
-                    landing.SetRunwayBusy(r, busy);
-                }
+                    landing.SetRunwayBusy(r, busy[r]);
             }
 
             RunwayRules.FindCollisions(occupants, runwayCollisions);

@@ -97,19 +97,6 @@ namespace AirTrafficControl.Tests
     public class SessionLengthTests
     {
         [Test]
-        public void GroundControlTestLevel_IsEstimatedToTake60To120Seconds()
-        {
-            // C3: levels last 60 to 120 seconds. IslandPrototype is now only the ground-control test level (the 25 Draw
-            // levels are checked in DrawLevelDataTests). Checks the numbers in the level asset at 1x speed.
-            var level = AssetDatabase.LoadAssetAtPath<LevelData>("Assets/Levels/IslandPrototype.asset");
-            Assert.IsNotNull(level, "Run Tools > Air Traffic Control > Set Up Prototype Scene first");
-
-            float seconds = SessionLengthEstimate.Seconds(level, 0.6f);
-            TestContext.WriteLine($"Estimated time to clear: {seconds:F0} s");
-            Assert.That(seconds, Is.InRange(50f, 120f), $"Estimated {seconds:F0} s");
-        }
-
-        [Test]
         public void MoreAircraftInTheAir_ClearsFaster()
         {
             LevelData level = ScriptableObject.CreateInstance<LevelData>();

@@ -1,0 +1,225 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 504e8ed608b2f4118819fc640587bacf, type: 3}
+  m_Name: desert-tower-02
+  m_EditorClassIdentifier: AirTrafficControl::AirTrafficControl.LevelData
+  mapId: desert
+  mode: 1
+  layout: {fileID: 11400000, guid: 59bfa23cb1eb44efb8d0f686b92fecb5, type: 2}
+  landingsToClear: 6
+  departuresToClear: 3
+  result:
+    twoStarSeconds: 130
+    threeStarsNeedNoWarnings: 1
+    coinsPerLanding: 5
+    coinsPerDeparture: 5
+    coinsPerStar: 10
+  mapArt:
+    sprite: {fileID: 21300000, guid: 8fb6c1e2a32bbc4999960395bbfcaaef, type: 3}
+    pixelsPerUnit: 102.4
+    keepVisible:
+      serializedVersion: 2
+      x: -6.6210938
+      y: -4.375
+      width: 13.300781
+      height: 9.082031
+  islandCentre: {x: 1, y: -0.8}
+  islandRadii: {x: 3.8, y: 2.1}
+  departures:
+    firstDepartureAfterSeconds: 5
+    secondsBetweenDepartures: 14
+  scenery:
+    palms:
+    - {x: -2.3, y: -1.3}
+    - {x: -2.05, y: -2.05}
+    - {x: -0.8, y: -2.3}
+    - {x: 0.6, y: -2.35}
+    - {x: 2.6, y: -2.25}
+    - {x: 3.9, y: -1.6}
+    - {x: 4.25, y: -0.9}
+    - {x: -2.6, y: -0.45}
+    - {x: -0.35, y: 0.9}
+    - {x: 2.8, y: 0.7}
+    rocks: 12
+    terminalCentre: {x: 0.9, y: 0.98}
+    terminalSize: {x: 1.6, y: 0.3}
+    towerPosition: {x: 1.95, y: 0.98}
+    apronCentre: {x: 1.05, y: 0.45}
+    apronSize: {x: 2.3, y: 0.62}
+    parkedPlanes:
+    - {x: 1.3, y: 0.45}
+    - {x: 1.9, y: 0.45}
+    windsockPosition: {x: -1.05, y: -1.5}
+  ground:
+    mainTaxiway: []
+    gates: []
+    useLineUpPoints: 0
+    normalLineUp: {x: 0, y: 0}
+    reversedLineUp: {x: 0, y: 0}
+    liftOffDistance: 0
+    taxiSpeed: 0.35
+    queueSpacing: 0.75
+  runways:
+  - centre: {x: -0.004882574, y: -2.836914}
+    landingHeadingDegrees: 0
+    length: 12.457031
+    width: 0.6347656
+    touchdownZoneStart: 0.087890625
+    touchdownZoneLength: 0.72753906
+    landingWidth: 0
+  - centre: {x: -1.5625, y: -0.14526367}
+    landingHeadingDegrees: -46.58522
+    length: 10.671107
+    width: 0.52734375
+    touchdownZoneStart: 0.068359375
+    touchdownZoneLength: 0.64941406
+    landingWidth: 0
+  - centre: {x: 1.4753418, y: -0.14648438}
+    landingHeadingDegrees: -133.73506
+    length: 10.74491
+    width: 0.52734375
+    touchdownZoneStart: 0.07324219
+    touchdownZoneLength: 0.6298828
+    landingWidth: 0
+  landingPads:
+  - kind: 1
+    centre: {x: -6.1835938, y: 0.018554628}
+    radius: 0.5234375
+    drawH: 0
+  - kind: 2
+    centre: {x: 6.1416016, y: -0.0039064884}
+    radius: 0.6513671
+    drawH: 0
+  carrier:
+    hasCarrier: 0
+    picture: {fileID: 0}
+    pictureShipFraction: 0.95
+    firstShipAfterSeconds: 10
+    minSecondsBetweenShips: 40
+    maxSecondsBetweenShips: 60
+    secondsToCross: 20
+    laneY: -4.1
+    highestLaneY: 10
+    shipLength: 2.6
+    shipWidth: 0.7
+    deckLength: 2.1
+    deckWidth: 0.5
+    touchdownZoneStart: 0.1
+    touchdownZoneLength: 0.7
+  wind:
+    hasWind: 0
+    onAtStart: 1
+    minSecondsBetweenChanges: 25
+    maxSecondsBetweenChanges: 40
+    warningSeconds: 5
+    landingGraceSeconds: 1.5
+    indicatorPosition: {x: 6.195964, y: 4.4}
+  rules:
+    closures:
+      enabled: 0
+      firstWarningAfterSeconds: 12
+      warningSeconds: 5
+      minClosedSeconds: 10
+      maxClosedSeconds: 15
+      minOpenSeconds: 10
+      maxOpenSeconds: 18
+    fuel:
+      enabled: 1
+      lowFuelEvery: 3
+      minFuelSeconds: 36
+      maxFuelSeconds: 46
+      slowestKind: 0.5
+    sandstorm:
+      enabled: 0
+      radius: 1.3
+      speed: 0.2
+      firstStormAfterSeconds: 4
+      minSecondsBetweenStorms: 6
+      maxSecondsBetweenStorms: 12
+      warningSeconds: 5
+    noFly:
+      enabled: 0
+      areas: []
+    ice:
+      enabled: 0
+      fastSlideFactor: 2
+  tower:
+    approaches:
+    - runway: 0
+      endB: 0
+      entry: {x: -6.03737, y: -4.15}
+      headingDegrees: 0
+    - runway: 0
+      endB: 1
+      entry: {x: 6.095964, y: -1.4000001}
+      headingDegrees: 180
+    - runway: 1
+      endB: 0
+      entry: {x: -6.03737, y: 1.5999999}
+      headingDegrees: 330
+    - runway: 1
+      endB: 1
+      entry: {x: 4.46263, y: -4.4}
+      headingDegrees: 120
+    - runway: 2
+      endB: 0
+      entry: {x: 6.095964, y: 1.3499999}
+      headingDegrees: 210
+    - runway: 2
+      endB: 1
+      entry: {x: -4.53737, y: -4.4}
+      headingDegrees: 60
+    holdFixes:
+    - {x: -5.33737, y: 2.45}
+    - {x: 0.029296875, y: 2.45}
+    - {x: 5.3959637, y: 2.45}
+    - {x: 5.3959637, y: -0.625}
+    - {x: 5.3959637, y: -3.7}
+    - {x: 0.029296875, y: -3.7}
+    - {x: -5.33737, y: -3.7}
+    - {x: -5.33737, y: -0.625}
+    finalLength: 0.9
+    turnRateDegrees: 50
+    minTurnRadius: 0.35
+    goAroundSeconds: 10
+    holdRadius: 0.75
+    rollDistance: 2.4
+    exitSpeed: 0.5
+    taxiSpeed: 0.42
+    slideStopSeconds: 2.5
+    queueSpacing: 0.75
+    parkedSeconds: 2
+    valleyOnly: 0
+    valleyMaxAngle: 30
+    teachGoAround: 0
+    teachHold: 0
+  aircraftTypes:
+  - {fileID: 11400000, guid: 78932e9696c3e4f5db8166115bd9f27c, type: 2}
+  - {fileID: 11400000, guid: 78932e9696c3e4f5db8166115bd9f27c, type: 2}
+  - {fileID: 11400000, guid: ba844492ef7b944a6949d6b6fa12b6fd, type: 2}
+  - {fileID: 11400000, guid: b84439bb6b5f54cd388ca53a4d425ee0, type: 2}
+  - {fileID: 11400000, guid: c695963f6f1434ea188a4cef672c35ec, type: 2}
+  - {fileID: 11400000, guid: 9ff925c54a46d495898c672c3a023d55, type: 2}
+  aircraftInAir: 3
+  spawnPoints:
+  - position: {x: -6.03737, y: -4.15}
+    headingDegrees: 0
+  - position: {x: 6.095964, y: -1.4000001}
+    headingDegrees: 180
+  - position: {x: -6.03737, y: 1.5999999}
+    headingDegrees: 330
+  - position: {x: 4.46263, y: -4.4}
+    headingDegrees: 120
+  - position: {x: 6.095964, y: 1.3499999}
+    headingDegrees: 210
+  - position: {x: -4.53737, y: -4.4}
+    headingDegrees: 60
