@@ -66,6 +66,9 @@ namespace AirTrafficControl
         [Header("Map rule: wind (C1, Island)")]
         public WindRuleSettings wind = new WindRuleSettings();
 
+        [Header("Map rules of the other Draw maps (blueprint 16.2): City, Desert, Mountain Valley, Arctic")]
+        public MapRuleSettings rules = new MapRuleSettings();
+
         [Header("Aircraft")]
         [Tooltip("Kinds of aircraft this level spawns, picked at random for each new aircraft. Repeat a kind to make it more common.")]
         public List<AircraftType> aircraftTypes = new List<AircraftType>();
@@ -253,6 +256,12 @@ namespace AirTrafficControl
         [Tooltip("Whether this level has the carrier at all.")]
         public bool hasCarrier = true;
 
+        [Tooltip("The painted carrier (Assets/Art/Maps/15_carrier.png, bow to the right). Without it the ship is drawn in code.")]
+        public Sprite picture;
+
+        [Tooltip("Part of the picture's width that is the ship (15_carrier.png: 1459 of 1536 pixels). The ship is drawn Ship Length long.")]
+        [Range(0.1f, 1f)] public float pictureShipFraction = 0.95f;
+
         [Tooltip("Seconds into the level before the first ship. Kept short in the test level so the owner sees it early.")]
         [Min(0f)] public float firstShipAfterSeconds = 10f;
 
@@ -338,6 +347,10 @@ namespace AirTrafficControl
         [Tooltip("Length of the highlighted touchdown zone. The landing arrows are drawn inside it.")]
         public float touchdownZoneLength = Runway.DefaultTouchdownZoneLength;
 
-        public Runway ToRunway() => new Runway(centre, landingHeadingDegrees, length, width, touchdownZoneStart, touchdownZoneLength);
+        [Tooltip("Width of the area a line must end in to land. 0 = the runway's width. Draw mode widens narrow painted " +
+                 "runways so a finger can hit them.")]
+        [Min(0f)] public float landingWidth;
+
+        public Runway ToRunway() => new Runway(centre, landingHeadingDegrees, length, width, touchdownZoneStart, touchdownZoneLength, landingWidth);
     }
 }

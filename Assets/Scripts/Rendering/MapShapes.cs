@@ -90,7 +90,7 @@ namespace AirTrafficControl
         {
             float x0 = -runway.Length / 2f + runway.TouchdownZoneStart - 0.06f;
             float x1 = x0 + runway.TouchdownZoneLength + 0.12f;
-            float y = runway.Width / 2f + 0.06f;
+            float y = runway.LandingWidth / 2f + 0.06f; // shows the whole area a line can end in
             const float t = 0.07f;
             return new MeshBuilder()
                 .Bar(new Vector2(x0, -y), new Vector2(x1, -y), t, Glow)

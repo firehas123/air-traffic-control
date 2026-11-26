@@ -106,11 +106,28 @@ namespace AirTrafficControl
                                           settings.touchdownZoneStart, settings.touchdownZoneLength);
             schedule.ShipStarted();
 
-            shipView = MeshBuilder.CreateObject("Carrier", MapShapes.CreateCarrierHullMesh(CurrentPass.ShipLength, CurrentPass.ShipWidth),
+            // The painted carrier (15_carrier.png, bow to the right) when the level has it; otherwise the code-drawn hull.
+            bool painted = settings.picture != null && AircraftController.SpriteMaterial != null;
+            shipView = MeshBuilder.CreateObject("Carrier",
+                painted ? new Mesh { name = "PaintedCarrier" } : MapShapes.CreateCarrierHullMesh(CurrentPass.ShipLength, CurrentPass.ShipWidth),
                 material, HullSortingOrder, CurrentPass.Centre, CurrentPass.HeadingDegrees);
             shipView.transform.SetParent(transform, true);
+            if (painted)
+            {
+                var image = new GameObject("Image");
+                image.transform.SetParent(shipView.transform, false);
+                var renderer = image.AddComponent<SpriteRenderer>();
+                renderer.sprite = settings.picture;
+                renderer.sharedMaterial = AircraftController.SpriteMaterial;
+                renderer.sortingOrder = HullSortingOrder;
+                float pictureWidth = Mathf.Max(0.001f, settings.picture.bounds.size.x * Mathf.Clamp(settings.pictureShipFraction, 0.1f, 1f));
+                float scale = CurrentPass.ShipLength / pictureWidth;
+                image.transform.localScale = new Vector3(scale, scale, 1f);
+            }
 
-            GameObject deck = MeshBuilder.CreateObject("Deck", MapShapes.CreateRunwayMesh(CurrentPass.DeckLocal), material,
+            // On the painted ship only the touchdown zone and arrows are drawn on its deck.
+            GameObject deck = MeshBuilder.CreateObject("Deck",
+                painted ? MapShapes.CreateRunwayOverlayMesh(CurrentPass.DeckLocal) : MapShapes.CreateRunwayMesh(CurrentPass.DeckLocal), material,
                 DeckSortingOrder, Vector2.zero, 0f);
             deck.transform.SetParent(shipView.transform, false);
 

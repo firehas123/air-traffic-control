@@ -53,6 +53,7 @@ namespace AirTrafficControl
         FeedbackSystem feedback;
         EffectsSystem effects;
         GroundControl groundControl;
+        MapRuleSystem mapRules;
         int departuresSpawned;
         readonly List<AircraftType> departureKinds = new List<AircraftType>();
         HelpDemo helpDemo;
@@ -82,8 +83,16 @@ namespace AirTrafficControl
         public void Initialise(LevelData levelData, Camera camera, LandingSystem landingSystem, AirspaceSafety airspaceSafety,
                                InputAdapter inputAdapter, PathPlanner pathPlanner, CarrierSystem carrierSystem, HudView hudView,
                                Material shapeMaterial, AircraftSettings settings, FeedbackSystem feedbackSystem = null,
-                               EffectsSystem effectsSystem = null, GroundControl groundControlSystem = null)
+                               EffectsSystem effectsSystem = null, GroundControl groundControlSystem = null,
+                               MapRuleSystem mapRuleSystem = null)
         {
+            mapRules = mapRuleSystem;
+            if (mapRules != null)
+            {
+                mapRules.FuelRanOut += OnFuelRanOut;
+                mapRules.RunwayConflict += OnRunwayConflict;
+                mapRules.LineBlocked += OnLineBlocked;
+            }
             effects = effectsSystem;
             groundControl = groundControlSystem;
             if (groundControl != null)
@@ -146,6 +155,12 @@ namespace AirTrafficControl
                 safety.WarningStarted -= OnWarningStarted;
             }
             if (planner != null) planner.LineConnected -= OnLineConnected;
+            if (mapRules != null)
+            {
+                mapRules.FuelRanOut -= OnFuelRanOut;
+                mapRules.RunwayConflict -= OnRunwayConflict;
+                mapRules.LineBlocked -= OnLineBlocked;
+            }
             if (groundControl != null)
             {
                 groundControl.MenuOpened -= OnMenuOpened;
@@ -181,6 +196,7 @@ namespace AirTrafficControl
             if (carrier != null)
                 carrier.ResetForNewAttempt(unchecked(attempt * 15485863 + Environment.TickCount));
             hud.SetCarrierCountdown(0);
+            mapRules?.ResetForNewAttempt(unchecked(attempt * 2654435 + Environment.TickCount));
             ResetWind();
 
             nextSpawnIndex = 0;
@@ -247,6 +263,7 @@ namespace AirTrafficControl
             AircraftController aircraft = AircraftController.SpawnAtGate(kind, motion, ground, worldCamera, landing, material,
                                                                          aircraftSettings.colors, aircraftSettings.edgeMargin);
             aircraft.Departed += OnAircraftDeparted;
+            mapRules?.OnSpawned(aircraft);
             return true;
         }
 
@@ -310,6 +327,16 @@ namespace AirTrafficControl
                     help.WindChangeComing();
                 if (carrier != null && carrier.CanConnectNow && AnyAirborneFighter())
                     help.CarrierReachable();
+                if (mapRules != null && anyAirborne)
+                {
+                    if (mapRules.ClosureWarning) help.RunwayClosingSoon();
+                    if (mapRules.StormNearRunway) help.SandstormComing();
+                    if (mapRules.HasNoFly) help.MountainsAhead();
+                    if (mapRules.HasIce) help.IcyRunways();
+                    foreach (AircraftController aircraft in AircraftController.Active)
+                        if (aircraft.IsControllableInAir && aircraft.FuelSecondsLeft.HasValue)
+                            help.LowFuelAircraft();
+                }
                 foreach (AircraftController aircraft in AircraftController.Active)
                 {
                     if (aircraft.Ground == null || aircraft.IsCrashed)
@@ -371,6 +398,7 @@ namespace AirTrafficControl
             UpdateHelp();
             hud.SetTime(session.ElapsedSeconds);
             UpdateWind(Time.deltaTime);
+            UpdateMapRules(Time.deltaTime);
 
             // Matching landing zones glow while the player draws (blueprint 13.1).
             AircraftController drawingFor = session.IsPlaying && planner != null ? planner.DrawingFor : null;
@@ -390,6 +418,48 @@ namespace AirTrafficControl
                 clock.Drawing = drawing;
                 ApplyClock();
             }
+        }
+
+        // City closures and the Desert sandstorm (blueprint 16.2). When a runway opens or closes, every aircraft's
+        // clearance is checked again, with the same grace period as the wind (14.3).
+        void UpdateMapRules(float deltaTime)
+        {
+            string warning = wind != null && windOn && wind.IsWarning && session.IsPlaying ? $"Wind changing in {wind.WholeSecondsUntilChange}" : null;
+            if (mapRules != null && session.IsPlaying)
+            {
+                if (mapRules.Tick(deltaTime))
+                    ChangeLandingZones(mapRules.ApplyRunwayStates, level.wind.landingGraceSeconds);
+                else
+                    mapRules.ApplyRunwayStates();
+                warning = warning ?? mapRules.WarningText;
+            }
+            hud.SetRuleWarning(warning);
+        }
+
+        void OnLineBlocked()
+        {
+            help.MountainsAhead();
+        }
+
+        // Desert: a low-fuel aircraft's timer ran out. The level ends like a collision.
+        void OnFuelRanOut(AircraftController aircraft)
+        {
+            if (!session.RecordCollision())
+                return;
+            aircraft.Crash();
+            feedback?.Collision();
+            effects?.Collision(aircraft.transform.position);
+            EndAttempt();
+            LevelOutcome outcome = Outcome(false, "Out of fuel");
+            StartCoroutine(ShowEndPanel(CrashPauseSeconds, () => Failed?.Invoke(outcome)));
+        }
+
+        // Arctic: a touchdown on an icy runway another aircraft is still rolling or sliding on.
+        void OnRunwayConflict(AircraftController landed, AircraftController rolling)
+        {
+            landed.Crash();
+            rolling.Crash();
+            OnCollided(landed, rolling);
         }
 
         void OnSlowDrawPressed()
@@ -443,17 +513,32 @@ namespace AirTrafficControl
                 SetLandingDirection(wind.Reversed);
 
             bool warning = wind.IsWarning;
-            hud.SetWindWarning(warning ? wind.WholeSecondsUntilChange : 0);
             float pulse = warning ? 1f + 0.15f * Mathf.Abs(Mathf.Sin(Time.time * 6f)) : 1f;
             windIndicator.localScale = Vector3.one * pulse;
         }
 
-        // Turns the runway, points the wind indicator, and rechecks every aircraft's clearance: a line that
-        // ended in the old touchdown zone no longer lands, and one that ends in the new zone now does.
-        // Turns the runway, points the wind indicator, and rechecks every aircraft's clearance. A line that ends in
-        // the new touchdown zone is cleared. A cleared aircraft whose line ends at the old end loses its clearance,
-        // unless it would reach touchdown within the grace period (blueprint 14.3): then it still lands there.
+        // Turns the runways, points the wind indicator, and rechecks every aircraft's clearance (see ChangeLandingZones).
         void SetLandingDirection(bool reversed)
+        {
+            ChangeLandingZones(() =>
+            {
+                if (landing.IsReversed != reversed)
+                    landing.SetReversed(reversed);
+                if (windIndicator != null && landing.Runways.Count > 0)
+                {
+                    windIndicator.rotation = Quaternion.Euler(0f, 0f, landing.Runways[0].LandingHeadingDegrees);
+                    windIndicator.localScale = Vector3.one;
+                }
+            }, level.wind.landingGraceSeconds);
+        }
+
+        /// <summary>
+        /// Changes the landing zones (wind, a runway closing or opening) and rechecks every aircraft's clearance. A line
+        /// that ends in an open touchdown zone after the change is cleared. A cleared aircraft whose zone went away loses
+        /// its clearance, unless it would reach touchdown within the grace period (blueprint 14.3): then it still lands
+        /// there. Carrier connections are left alone.
+        /// </summary>
+        void ChangeLandingZones(Action change, float grace)
         {
             landingBeforeWindChange.Clear();
             foreach (AircraftController aircraft in AircraftController.Active)
@@ -463,19 +548,10 @@ namespace AirTrafficControl
                     landingBeforeWindChange[aircraft] = before;
             }
 
-            if (landing.IsReversed != reversed)
-                landing.SetReversed(reversed);
+            change();
 
-            if (windIndicator != null && landing.Runways.Count > 0)
-            {
-                windIndicator.rotation = Quaternion.Euler(0f, 0f, landing.Runways[0].LandingHeadingDegrees);
-                windIndicator.localScale = Vector3.one;
-            }
-
-            float grace = level.wind.landingGraceSeconds;
             foreach (AircraftController aircraft in AircraftController.Active)
             {
-                // Wind affects runways only (blueprint 14.3): carrier connections are left alone.
                 if (!aircraft.IsAirborne || !aircraft.Motion.HasPath || aircraft.IsInWindGrace || aircraft.IsConnectedToCarrier)
                     continue;
 
@@ -517,11 +593,11 @@ namespace AirTrafficControl
             StartCoroutine(ShowEndPanel(ClearedPauseSeconds, () => Cleared?.Invoke(outcome)));
         }
 
-        LevelOutcome Outcome(bool cleared) => new LevelOutcome(
+        LevelOutcome Outcome(bool cleared, string failTitle = null) => new LevelOutcome(
             cleared,
             LevelResult.Stars(cleared, session.ElapsedSeconds, session.WarningCount, level.result),
             session.ElapsedSeconds, session.LandedCount, session.LandingsToClear,
-            session.DepartureCount, session.DeparturesToClear, session.ClosestGap, session.WarningCount);
+            session.DepartureCount, session.DeparturesToClear, session.ClosestGap, session.WarningCount, failTitle);
 
         void EndAttempt()
         {
@@ -627,6 +703,7 @@ namespace AirTrafficControl
                                                                    aircraftSettings.colors, aircraftSettings.edgeMargin);
             aircraft.Landed += OnAircraftLanded;
             aircraft.TouchedDown += OnTouchedDown;
+            mapRules?.OnSpawned(aircraft);
             return true;
         }
     }

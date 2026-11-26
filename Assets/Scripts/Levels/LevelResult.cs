@@ -65,8 +65,9 @@ namespace AirTrafficControl
     public readonly struct LevelOutcome
     {
         public LevelOutcome(bool cleared, int stars, float seconds, int landed, int landingTarget,
-                            int departed, int departureTarget, float closestGap, int warnings = 0)
+                            int departed, int departureTarget, float closestGap, int warnings = 0, string failTitle = null)
         {
+            FailTitle = failTitle;
             Warnings = warnings;
             Cleared = cleared;
             Stars = stars;
@@ -89,5 +90,11 @@ namespace AirTrafficControl
 
         /// <summary>Danger warnings during the attempt (XP: a bonus for a level with none).</summary>
         public int Warnings { get; }
+
+        /// <summary>
+        /// Why a failed attempt ended when it was not a collision, as the result screen's title (for example "Out of
+        /// fuel", Desert rule). Null for a collision or a cleared level.
+        /// </summary>
+        public string FailTitle { get; }
     }
 }

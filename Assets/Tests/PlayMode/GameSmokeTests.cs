@@ -13,6 +13,82 @@ namespace AirTrafficControl.Tests
     /// </summary>
     public class GameSmokeTests
     {
+        static T Load<T>(string path) where T : Object
+        {
+#if UNITY_EDITOR
+            return UnityEditor.AssetDatabase.LoadAssetAtPath<T>(path);
+#else
+            return null;
+#endif
+        }
+
+        static LevelData DrawLevel(string map, int number) => Load<LevelData>($"Assets/Levels/Draw/{map}-draw-0{number}.asset");
+
+        [UnityTest]
+        public IEnumerator DrawLevelsWithTheirMapRules_RunOnAllFiveMaps_WithoutErrors()
+        {
+            SceneManager.LoadScene("SampleScene");
+            yield return null;
+            yield return null;
+            GameFlow flow = Object.FindAnyObjectByType<GameFlow>();
+
+            // Level 2 of each map has its rule; Desert 3 adds the sandstorm and Island 5 the carrier.
+            foreach (var (map, number) in new[] { ("island", 2), ("island", 5), ("city", 2), ("desert", 3), ("mountain", 2), ("arctic", 2) })
+            {
+                LevelData level = DrawLevel(map, number);
+                Assert.IsNotNull(level, $"{map} {number}");
+                flow.PlayLevelData(level);
+                yield return WaitRealSeconds(2.5f);
+                Assert.Greater(AircraftController.Active.Count, 0, $"{map} {number}: aircraft are in the air");
+                Assert.IsNotNull(Object.FindAnyObjectByType<MapRuleSystem>(), $"{map} {number}: map rules run");
+                foreach (AircraftController aircraft in AircraftController.Active)
+                    Assert.AreEqual(level.rules.noFly.enabled, aircraft.Motion.NoFly != null, $"{map}: no-fly given to aircraft");
+            }
+            flow.ShowLevels();
+            yield return null;
+            Assert.AreEqual(1f, Time.timeScale, 1e-5f);
+        }
+
+        [UnityTest]
+        public IEnumerator Desert_RunningOutOfFuel_EndsTheLevel()
+        {
+            SceneManager.LoadScene("SampleScene");
+            yield return null;
+            yield return null;
+            GameFlow flow = Object.FindAnyObjectByType<GameFlow>();
+            flow.PlayLevelData(DrawLevel("desert", 2));
+            yield return null;
+            LevelDirector director = Object.FindAnyObjectByType<LevelDirector>();
+            string failTitle = null;
+            director.Failed += outcome => failTitle = outcome.FailTitle;
+
+            // The second aircraft is the first low-fuel one; keep only it, so nothing collides, and drain its tank.
+            AircraftController lowFuel = null;
+            float end = Time.realtimeSinceStartup + 10f;
+            while (lowFuel == null && Time.realtimeSinceStartup < end)
+            {
+                foreach (AircraftController aircraft in AircraftController.Active)
+                    if (aircraft.FuelSecondsLeft.HasValue)
+                        lowFuel = aircraft;
+                yield return null;
+            }
+            Assert.IsNotNull(lowFuel, "A low-fuel aircraft with a timer appears");
+            Assert.IsNotNull(lowFuel.GetComponentInChildren<FuelGaugeView>(), "Its fuel timer is visible");
+            foreach (AircraftController aircraft in new System.Collections.Generic.List<AircraftController>(AircraftController.Active))
+                if (aircraft != lowFuel)
+                {
+                    aircraft.gameObject.SetActive(false);
+                    Object.Destroy(aircraft.gameObject);
+                }
+            lowFuel.SetLowFuel(0.3f, null);
+            yield return WaitRealSeconds(1.5f);
+
+            Assert.IsFalse(director.Session.IsPlaying, "Running out of fuel ends the attempt");
+            Assert.AreEqual("Out of fuel", failTitle);
+            flow.ShowLevels();
+            yield return null;
+        }
+
         static IEnumerator WaitRealSeconds(float seconds)
         {
             float end = Time.realtimeSinceStartup + seconds;
@@ -42,8 +118,7 @@ namespace AirTrafficControl.Tests
             Assert.Greater(AircraftController.Active.Count, 0, "Aircraft are in the air");
             Assert.IsNotNull(Object.FindAnyObjectByType<IslandScenery>(), "The island scenery is built");
 
-            // Long enough for the first carrier (10 s in the test level) and the scenery to animate.
-            yield return WaitRealSeconds(12f);
+            yield return WaitRealSeconds(4f);
             Assert.IsNotNull(Object.FindAnyObjectByType<LevelDirector>());
 
             flow.ShowLevels();
@@ -66,8 +141,9 @@ namespace AirTrafficControl.Tests
             yield return null;
             yield return null;
             GameFlow flow = Object.FindAnyObjectByType<GameFlow>();
-            flow.ChooseMode(0, GameMode.Draw);
-            flow.Play(0);
+            // Draw mode has no ground control (phase 2); the ground code is kept for Tower mode (phase 3) and tried on
+            // the old test level, IslandPrototype.asset.
+            flow.PlayLevelData(Load<LevelData>("Assets/Levels/IslandPrototype.asset"));
             yield return null;
             LevelDirector director = Object.FindAnyObjectByType<LevelDirector>();
             Assert.AreEqual(3, director.Session.DeparturesToClear, "The test level asks for 3 departures");

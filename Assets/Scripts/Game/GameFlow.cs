@@ -128,6 +128,20 @@ namespace AirTrafficControl
             BuildLevel(CurrentLevels[index].data);
         }
 
+        /// <summary>
+        /// Plays a level that is not in the catalog (for the PlayMode tests: the ground-control test level). Results are
+        /// not saved.
+        /// </summary>
+        public void PlayLevelData(LevelData level)
+        {
+            LeaveLevel();
+            home.Hide();
+            levelSelect.Hide();
+            currentIndex = -1;
+            BuildLevel(level);
+            director.Cleared -= OnCleared; // not a catalog level: nothing to record
+        }
+
         void BuildLevel(LevelData level)
         {
             Camera worldCamera = Camera.main;
@@ -194,8 +208,13 @@ namespace AirTrafficControl
             var groundControl = Add<GroundControl>("GroundControl");
             groundControl.Initialise(input, menu, level.ground);
 
+            // Map rules of Draw mode (blueprint 16.2): City closures, Desert fuel and sandstorm, Mountain no-fly, Arctic ice.
+            var mapRules = Add<MapRuleSystem>("MapRuleSystem");
+            mapRules.Initialise(level, landing, planner, worldCamera, shapeMaterial);
+
             director = Add<LevelDirector>("LevelDirector");
-            director.Initialise(level, worldCamera, landing, safety, input, planner, carrier, hud, shapeMaterial, aircraft, feedback, effects, groundControl);
+            director.Initialise(level, worldCamera, landing, safety, input, planner, carrier, hud, shapeMaterial, aircraft, feedback, effects,
+                                groundControl, mapRules);
             // Taps on the HUD or on the option buttons never reach the map.
             input.SetScreenBlocker(point => hud.IsOverInteractive(point) || menu.IsOverButton(point));
             director.Cleared += OnCleared;
@@ -266,7 +285,10 @@ namespace AirTrafficControl
 
         void OnFailed(LevelOutcome outcome)
         {
-            hud.ShowCollision(outcome);
+            if (outcome.FailTitle != null)
+                hud.ShowFailed(outcome.FailTitle, outcome);
+            else
+                hud.ShowCollision(outcome);
         }
 
         void Persist()

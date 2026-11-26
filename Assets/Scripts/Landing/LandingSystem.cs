@@ -17,6 +17,10 @@ namespace AirTrafficControl
         readonly List<Transform> runwayViews = new List<Transform>();
         readonly List<GameObject> runwayGlows = new List<GameObject>();
         readonly List<RunwayLights> runwayLights = new List<RunwayLights>();
+        readonly List<RunwayState> runwayStates = new List<RunwayState>();
+        readonly List<RunwayClosedMark> closedMarks = new List<RunwayClosedMark>();
+        readonly List<GameObject> runwayOverlays = new List<GameObject>();
+        readonly List<Runway> openRunways = new List<Runway>();
 
         readonly List<LandingPad> pads = new List<LandingPad>();
         readonly List<GameObject> padGlows = new List<GameObject>();
@@ -49,6 +53,15 @@ namespace AirTrafficControl
                     MapShapes.RunwaySortingOrder, runway.Centre, runway.LandingHeadingDegrees);
                 view.transform.SetParent(transform, true);
                 runwayViews.Add(view.transform);
+                runwayOverlays.Add(view);
+                runwayStates.Add(RunwayState.Open);
+
+                // The clear X of a closed runway (City and Desert rules, blueprint 16.2). Not a child of the view, so the
+                // overlay can be hidden while the X shows.
+                var mark = new GameObject("ClosedMark").AddComponent<RunwayClosedMark>();
+                mark.transform.SetParent(transform, false);
+                mark.Initialise(runway, material);
+                closedMarks.Add(mark);
 
                 GameObject glow = MeshBuilder.CreateObject("Glow", MapShapes.CreateTouchdownZoneGlowMesh(runway), material,
                     MapShapes.GlowSortingOrder, Vector2.zero, 0f);
@@ -57,7 +70,8 @@ namespace AirTrafficControl
                 runwayGlows.Add(glow);
 
                 var lights = new GameObject("Lights").AddComponent<RunwayLights>();
-                lights.transform.SetParent(view.transform, false);
+                lights.transform.SetParent(transform, false);
+                lights.transform.SetPositionAndRotation(runway.Centre, Quaternion.Euler(0f, 0f, runway.LandingHeadingDegrees));
                 lights.Initialise(runway, material);
                 runwayLights.Add(lights);
             }
@@ -99,17 +113,49 @@ namespace AirTrafficControl
         }
 
         /// <summary>
-        /// A point in the middle of the first zone of <paramref name="kind"/>: the runway's current touchdown zone,
+        /// Closes or opens a runway, or marks it as closing soon (City and Desert rules, blueprint 16.2). A line cannot
+        /// land on a closed runway; its touchdown zone and arrows are hidden and a clear X covers it. A runway that is
+        /// closing soon still takes landings; its X blinks.
+        /// </summary>
+        public void SetRunwayState(int index, RunwayState state)
+        {
+            if (index < 0 || index >= runwayStates.Count)
+                return;
+            runwayStates[index] = state;
+            closedMarks[index].SetState(state);
+            runwayOverlays[index].SetActive(state != RunwayState.Closed);
+        }
+
+        public RunwayState StateOf(int index) => index >= 0 && index < runwayStates.Count ? runwayStates[index] : RunwayState.Open;
+
+        public bool IsOpen(int index) => StateOf(index) != RunwayState.Closed;
+
+        /// <summary>Index of the runway the touchdown is on (either landing direction), or -1.</summary>
+        public int IndexOf(Runway runway)
+        {
+            for (int i = 0; i < normalRunways.Count; i++)
+                if (Vector2.Distance(normalRunways[i].Centre, runway.Centre) < 1e-3f
+                    && Mathf.Abs(Mathf.DeltaAngle(normalRunways[i].LandingHeadingDegrees, runway.LandingHeadingDegrees)) % 180f < 0.5f)
+                    return i;
+            return -1;
+        }
+
+        /// <summary>
+        /// A point in the middle of the first open zone of <paramref name="kind"/>: a runway's current touchdown zone,
         /// or the pad's centre. Null if the level has none. Used by the first-time help demo.
         /// </summary>
         public Vector2? ZonePoint(LandingZoneKind kind)
         {
             if (kind == LandingZoneKind.Runway)
             {
-                if (runways.Count == 0)
-                    return null;
-                Runway runway = runways[0];
-                return runway.Threshold + runway.Direction * (runway.TouchdownZoneStart + runway.TouchdownZoneLength / 2f);
+                for (int i = 0; i < runways.Count; i++)
+                {
+                    if (!IsOpen(i))
+                        continue;
+                    Runway runway = runways[i];
+                    return runway.Threshold + runway.Direction * (runway.TouchdownZoneStart + runway.TouchdownZoneLength / 2f);
+                }
+                return null;
             }
             foreach (LandingPad pad in pads)
                 if (pad.Kind == kind)
@@ -118,8 +164,18 @@ namespace AirTrafficControl
         }
 
         /// <summary>True if the line lands for an aircraft that uses zones of <paramref name="kind"/>.</summary>
+        /// <remarks>Closed runways are left out (blueprint 16.2: lines cannot end on a closed runway).</remarks>
         public bool TryLand(IReadOnlyList<Vector2> line, LandingZoneKind kind, out Touchdown touchdown) =>
-            LandingRules.TryFindTouchdown(runways, pads, line, kind, out touchdown);
+            LandingRules.TryFindTouchdown(OpenRunways(), pads, line, kind, out touchdown);
+
+        IReadOnlyList<Runway> OpenRunways()
+        {
+            openRunways.Clear();
+            for (int i = 0; i < runways.Count; i++)
+                if (IsOpen(i))
+                    openRunways.Add(runways[i]);
+            return openRunways;
+        }
 
         /// <summary>Flashes every runway's edge lights while it is busy (blueprint 15.4).</summary>
         public void SetRunwayBusy(bool busy)
@@ -128,7 +184,25 @@ namespace AirTrafficControl
                 lights.SetBusy(busy);
         }
 
+        /// <summary>Flashes one runway's edge lights while it is busy.</summary>
+        public void SetRunwayBusy(int index, bool busy)
+        {
+            if (index >= 0 && index < runwayLights.Count)
+                runwayLights[index].SetBusy(busy);
+        }
+
         public bool IsRunwayBusyShown => runwayLights.Count > 0 && runwayLights[0].IsBusy;
+
+        public bool IsRunwayBusyShownAt(int index) => index >= 0 && index < runwayLights.Count && runwayLights[index].IsBusy;
+
+        /// <summary>Index of the runway whose surface contains the point (with a small margin), or -1.</summary>
+        public int RunwayAt(Vector2 point, float margin = 0.1f)
+        {
+            for (int i = 0; i < runways.Count; i++)
+                if (runways[i].Contains(point, margin))
+                    return i;
+            return -1;
+        }
 
         /// <summary>Makes the zones of <paramref name="kind"/> glow, or none when it is null (blueprint 13.1).</summary>
         public void SetHighlight(LandingZoneKind? kind)
@@ -137,8 +211,8 @@ namespace AirTrafficControl
                 return;
             highlighted = kind;
 
-            foreach (GameObject glow in runwayGlows)
-                glow.SetActive(kind == LandingZoneKind.Runway);
+            for (int i = 0; i < runwayGlows.Count; i++)
+                runwayGlows[i].SetActive(kind == LandingZoneKind.Runway && IsOpen(i));
             for (int i = 0; i < pads.Count; i++)
                 padGlows[i].SetActive(kind == pads[i].Kind);
         }

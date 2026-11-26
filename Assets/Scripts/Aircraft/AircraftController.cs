@@ -113,6 +113,25 @@ namespace AirTrafficControl
         public AircraftMotion Motion { get; private set; }
         public AircraftType Type { get; private set; }
 
+        // Desert rule (blueprint 16.2): a low-fuel aircraft's timer, in game seconds. Null when it has plenty of fuel.
+        float fuelAtStart;
+        FuelGaugeView fuelGauge;
+
+        /// <summary>Game seconds of fuel left, or null when this aircraft is not low on fuel.</summary>
+        public float? FuelSecondsLeft { get; private set; }
+
+        /// <summary>Raised once when a low-fuel aircraft's timer reaches zero before it touched down.</summary>
+        public event Action<AircraftController> RanOutOfFuel;
+
+        /// <summary>Arctic rule (blueprint 16.2): icy runways. Null on other maps.</summary>
+        public IceSettings Ice { get; set; }
+
+        /// <summary>True while it slides on an icy runway after landing on Fast.</summary>
+        public bool IsSliding { get; private set; }
+
+        /// <summary>The runway it touched down on (index in the level's list), or -1 (in the air, on a pad or the carrier).</summary>
+        public int LandingRunwayIndex { get; private set; } = -1;
+
         public float CollisionRadius => Type != null ? Type.collisionRadius : AircraftType.AirlinerCollisionRadius;
 
         /// <summary>All aircraft currently in the scene, including landing and crashed ones.</summary>
@@ -359,6 +378,48 @@ namespace AirTrafficControl
             return renderer;
         }
 
+        /// <summary>
+        /// Makes this a low-fuel aircraft (Desert rule, blueprint 16.2) with a visible timer of <paramref name="seconds"/>
+        /// game seconds. It must touch down before the timer runs out.
+        /// </summary>
+        public void SetLowFuel(float seconds, Material material)
+        {
+            if (seconds <= 0f || isCrashed || isLanding)
+                return;
+            fuelAtStart = seconds;
+            FuelSecondsLeft = seconds;
+            if (fuelGauge == null)
+            {
+                fuelGauge = new GameObject("FuelGauge").AddComponent<FuelGaugeView>();
+                fuelGauge.transform.SetParent(statusRoot, false);
+                float r = StatusRingFactor * Type.size;
+                fuelGauge.transform.localPosition = new Vector3(-r * 0.95f, r * 0.95f, 0f);
+                fuelGauge.Initialise(material, StatusSortingOrder + 3);
+            }
+            fuelGauge.Show(seconds, 1f);
+        }
+
+        void UpdateFuel(float deltaTime)
+        {
+            if (!FuelSecondsLeft.HasValue)
+                return;
+            float left = Mathf.Max(0f, FuelSecondsLeft.Value - deltaTime);
+            FuelSecondsLeft = left;
+            fuelGauge.Show(left, fuelAtStart > 0f ? left / fuelAtStart : 0f);
+            if (left <= 0f)
+            {
+                FuelSecondsLeft = null;
+                RanOutOfFuel?.Invoke(this);
+            }
+        }
+
+        void HideFuel()
+        {
+            FuelSecondsLeft = null;
+            if (fuelGauge != null)
+                fuelGauge.gameObject.SetActive(false);
+        }
+
         static Mesh SpeedIcon(Vector2 at, int chevrons)
         {
             var b = new MeshBuilder().Ellipse(at, new Vector2(0.13f, 0.13f), 20, new Color(0.08f, 0.14f, 0.2f, 0.9f));
@@ -503,6 +564,7 @@ namespace AirTrafficControl
 
         void StartCarrierLanding()
         {
+            HideFuel();
             isLanding = true;
             landsOnCarrierDeck = true;
             TouchedDown?.Invoke(this);
@@ -545,6 +607,7 @@ namespace AirTrafficControl
                 return;
             isCrashed = true;
             crashTime = 0f;
+            HideFuel();
             graceTouchdown = null;
             DropCarrierConnection();
             Motion.ClearPath(); // also ends any stroke being drawn for this aircraft
@@ -671,6 +734,10 @@ namespace AirTrafficControl
                 return;
             }
 
+            UpdateFuel(Time.deltaTime);
+            if (isCrashed)
+                return; // ran out of fuel: the level ends
+
             if (carrierApproach != null)
             {
                 bool wasTethered = carrierApproach.State == CarrierApproachState.Tethered;
@@ -725,8 +792,14 @@ namespace AirTrafficControl
         {
             isLanding = true;
             rollTime = 0f;
-            // Fast lands sooner but rolls further, so the runway stays busy for longer (blueprint 15.4).
+            // Fast lands sooner but rolls further, so the runway stays busy for longer (blueprint 15.4). On an icy runway
+            // (Arctic, blueprint 16.2) an aircraft landing on Fast slides: its roll lasts the slide factor times longer.
             rollDuration = RollDuration * (normalSpeed > 0f ? Motion.Speed / normalSpeed : 1f);
+            HideFuel();
+            float slide = touchdown.IsRunway ? IceRules.RollFactor(Ice, SpeedSetting) : 1f;
+            IsSliding = slide > 1f;
+            rollDuration *= slide;
+            LandingRunwayIndex = touchdown.IsRunway && landing != null ? landing.IndexOf(touchdown.Runway) : -1;
             graceTouchdown = null;
             touchdownPoint = Motion.Path[Motion.Path.Count - 1];
             pathLine.positionCount = 0;
@@ -770,6 +843,13 @@ namespace AirTrafficControl
             {
                 float rolled = Motion.Speed * rollDuration * (t - t * t / 2f); // even deceleration to zero
                 transform.position = touchdownPoint + rollDirection * rolled;
+                if (IsSliding)
+                {
+                    // Sliding on ice: the nose swings from side to side while it skids down the runway.
+                    float yaw = 14f * (1f - t) * Mathf.Sin(rollTime * 9f);
+                    transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(rollDirection.y, rollDirection.x) * Mathf.Rad2Deg + yaw);
+                    statusRoot.rotation = Quaternion.identity;
+                }
             }
             transform.localScale = Vector3.one * Mathf.Lerp(1f, RollEndScale, t);
             visuals.Altitude = 1f - t; // the shadow closes in under the aircraft as it lands

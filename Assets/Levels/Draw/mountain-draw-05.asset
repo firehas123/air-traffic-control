@@ -1,0 +1,208 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 504e8ed608b2f4118819fc640587bacf, type: 3}
+  m_Name: mountain-draw-05
+  m_EditorClassIdentifier: AirTrafficControl::AirTrafficControl.LevelData
+  mapId: mountain
+  mode: 0
+  layout: {fileID: 11400000, guid: 43ab6708af9c425298fca545d820b63b, type: 2}
+  landingsToClear: 13
+  departuresToClear: 0
+  result:
+    twoStarSeconds: 95
+    threeStarsNeedNoWarnings: 1
+    coinsPerLanding: 5
+    coinsPerDeparture: 5
+    coinsPerStar: 10
+  mapArt:
+    sprite: {fileID: 21300000, guid: 576fdbdef242f20ea80224693daa30aa, type: 3}
+    pixelsPerUnit: 102.4
+    keepVisible:
+      serializedVersion: 2
+      x: -5.0585938
+      y: -1.7382812
+      width: 9.716797
+      height: 3.2226562
+  islandCentre: {x: 1, y: -0.8}
+  islandRadii: {x: 3.8, y: 2.1}
+  departures:
+    firstDepartureAfterSeconds: 6
+    secondsBetweenDepartures: 15
+  scenery:
+    palms:
+    - {x: -2.3, y: -1.3}
+    - {x: -2.05, y: -2.05}
+    - {x: -0.8, y: -2.3}
+    - {x: 0.6, y: -2.35}
+    - {x: 2.6, y: -2.25}
+    - {x: 3.9, y: -1.6}
+    - {x: 4.25, y: -0.9}
+    - {x: -2.6, y: -0.45}
+    - {x: -0.35, y: 0.9}
+    - {x: 2.8, y: 0.7}
+    rocks: 12
+    terminalCentre: {x: 0.9, y: 0.98}
+    terminalSize: {x: 1.6, y: 0.3}
+    towerPosition: {x: 1.95, y: 0.98}
+    apronCentre: {x: 1.05, y: 0.45}
+    apronSize: {x: 2.3, y: 0.62}
+    parkedPlanes:
+    - {x: 1.3, y: 0.45}
+    - {x: 1.9, y: 0.45}
+    windsockPosition: {x: -1.05, y: -1.5}
+  ground:
+    mainTaxiway: []
+    gates: []
+    useLineUpPoints: 0
+    normalLineUp: {x: 0, y: 0}
+    reversedLineUp: {x: 0, y: 0}
+    liftOffDistance: 0
+    taxiSpeed: 0.35
+    queueSpacing: 0.75
+  runways:
+  - centre: {x: -0.04394555, y: -0.078125}
+    landingHeadingDegrees: 0
+    length: 5.5019526
+    width: 0.30273438
+    touchdownZoneStart: 0.0390625
+    touchdownZoneLength: 0.9
+    landingWidth: 0.5
+  - centre: {x: 1.2158203, y: 0.025390506}
+    landingHeadingDegrees: -62.21935
+    length: 2.593899
+    width: 0.26367188
+    touchdownZoneStart: 0.029296875
+    touchdownZoneLength: 0.9
+    landingWidth: 0.5
+  landingPads:
+  - kind: 1
+    centre: {x: -4.5703125, y: -1.239258}
+    radius: 0.34
+    drawH: 1
+  - kind: 2
+    centre: {x: 4.2167974, y: 0.98339856}
+    radius: 0.34
+    drawH: 0
+  carrier:
+    hasCarrier: 0
+    picture: {fileID: 21300000, guid: e157a0122dcca584abc5e144ff17fba7, type: 3}
+    pictureShipFraction: 0.95
+    firstShipAfterSeconds: 15
+    minSecondsBetweenShips: 40
+    maxSecondsBetweenShips: 60
+    secondsToCross: 20
+    laneY: -4.1
+    highestLaneY: 10
+    shipLength: 2.6
+    shipWidth: 0.61
+    deckLength: 2.1
+    deckWidth: 0.5
+    touchdownZoneStart: 0.1
+    touchdownZoneLength: 0.7
+  wind:
+    hasWind: 0
+    onAtStart: 1
+    minSecondsBetweenChanges: 25
+    maxSecondsBetweenChanges: 40
+    warningSeconds: 5
+    landingGraceSeconds: 1.5
+    indicatorPosition: {x: 5.258203, y: 1.284375}
+  rules:
+    closures:
+      enabled: 0
+      firstWarningAfterSeconds: 12
+      warningSeconds: 5
+      minClosedSeconds: 10
+      maxClosedSeconds: 15
+      minOpenSeconds: 10
+      maxOpenSeconds: 18
+    fuel:
+      enabled: 0
+      lowFuelEvery: 3
+      minFuelSeconds: 36
+      maxFuelSeconds: 46
+      slowestKind: 0.5
+    sandstorm:
+      enabled: 0
+      radius: 0.95
+      speed: 0.2
+      firstStormAfterSeconds: 4
+      minSecondsBetweenStorms: 6
+      maxSecondsBetweenStorms: 12
+      warningSeconds: 5
+    noFly:
+      enabled: 1
+      areas:
+      - name: North mountains
+        points:
+        - {x: -7.5, y: 5}
+        - {x: 7.5, y: 5}
+        - {x: 7.5, y: 3.046875}
+        - {x: 6.5625, y: 3.0664062}
+        - {x: 5.625, y: 2.7636719}
+        - {x: 4.6875, y: 2.9394531}
+        - {x: 3.75, y: 2.7441406}
+        - {x: 2.8125, y: 3.0859375}
+        - {x: 1.875, y: 3.0566406}
+        - {x: 0.9375, y: 3.1152344}
+        - {x: 0, y: 2.9882812}
+        - {x: -0.9375, y: 3.4765625}
+        - {x: -1.875, y: 3.5546875}
+        - {x: -2.8125, y: 3.4570312}
+        - {x: -3.75, y: 3.3496094}
+        - {x: -4.6875, y: 3.3203125}
+        - {x: -5.625, y: 2.9492188}
+        - {x: -6.5625, y: 2.8125}
+        - {x: -7.5, y: 3.0761719}
+      - name: South mountains
+        points:
+        - {x: -7.5, y: -2.890625}
+        - {x: -6.5625, y: -2.8417969}
+        - {x: -5.625, y: -3.1054688}
+        - {x: -4.6875, y: -3.2617188}
+        - {x: -3.75, y: -3.3300781}
+        - {x: -2.8125, y: -3.0175781}
+        - {x: -1.875, y: -2.9394531}
+        - {x: -0.9375, y: -3.125}
+        - {x: 0, y: -3.3203125}
+        - {x: 0.9375, y: -3.4277344}
+        - {x: 1.875, y: -3.3496094}
+        - {x: 2.8125, y: -3.1347656}
+        - {x: 3.75, y: -3.1933594}
+        - {x: 4.6875, y: -3.3398438}
+        - {x: 5.625, y: -3.0957031}
+        - {x: 6.5625, y: -2.7832031}
+        - {x: 7.5, y: -2.7539062}
+        - {x: 7.5, y: -5}
+        - {x: -7.5, y: -5}
+    ice:
+      enabled: 0
+      fastSlideFactor: 2
+  aircraftTypes:
+  - {fileID: 11400000, guid: 78932e9696c3e4f5db8166115bd9f27c, type: 2}
+  - {fileID: 11400000, guid: 78932e9696c3e4f5db8166115bd9f27c, type: 2}
+  - {fileID: 11400000, guid: ba844492ef7b944a6949d6b6fa12b6fd, type: 2}
+  - {fileID: 11400000, guid: b84439bb6b5f54cd388ca53a4d425ee0, type: 2}
+  - {fileID: 11400000, guid: 81585f62e792d4ee79f1220d35cd7695, type: 2}
+  - {fileID: 11400000, guid: c695963f6f1434ea188a4cef672c35ec, type: 2}
+  - {fileID: 11400000, guid: 9ff925c54a46d495898c672c3a023d55, type: 2}
+  - {fileID: 11400000, guid: 9ff925c54a46d495898c672c3a023d55, type: 2}
+  aircraftInAir: 4
+  spawnPoints:
+  - position: {x: -6.5, y: 1.1}
+    headingDegrees: -8
+  - position: {x: 6.5, y: 1.1}
+    headingDegrees: 188
+  - position: {x: -6.5, y: -1.5}
+    headingDegrees: 8
+  - position: {x: 6.5, y: -1.5}
+    headingDegrees: 172

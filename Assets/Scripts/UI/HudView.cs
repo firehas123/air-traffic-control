@@ -147,7 +147,7 @@ namespace AirTrafficControl
             RectTransform warning = CreateBox("WindWarning", root, PillColor);
             warning.anchorMin = warning.anchorMax = warning.pivot = new Vector2(0.5f, 1f);
             warning.anchoredPosition = new Vector2(0f, -110f);
-            warning.sizeDelta = new Vector2(420f, 64f);
+            warning.sizeDelta = new Vector2(520f, 64f);
             windWarningText = CreateText("Text", warning, 32, ButtonColor, FontStyle.Bold);
             windWarning = warning.gameObject;
             windWarning.SetActive(false);
@@ -241,14 +241,22 @@ namespace AirTrafficControl
         }
 
         /// <summary>Shows "Wind changing in N", or hides it when <paramref name="secondsLeft"/> is 0 or less.</summary>
-        public void SetWindWarning(int secondsLeft)
+        public void SetWindWarning(int secondsLeft) => SetRuleWarning(secondsLeft > 0 ? $"Wind changing in {secondsLeft}" : null);
+
+        /// <summary>
+        /// The map rule's countdown, top centre (blueprint 16.2): for example "Runway closing in 4" or "Wind changing in 3".
+        /// Hidden when <paramref name="text"/> is null.
+        /// </summary>
+        public void SetRuleWarning(string text)
         {
-            bool show = secondsLeft > 0;
+            bool show = !string.IsNullOrEmpty(text);
             if (windWarning.activeSelf != show)
                 windWarning.SetActive(show);
-            if (show)
-                windWarningText.text = $"Wind changing in {secondsLeft}";
+            if (show && windWarningText.text != text)
+                windWarningText.text = text;
         }
+
+        public string RuleWarningText => windWarning.activeSelf ? windWarningText.text : null;
 
         /// <summary>Shows one line of first-time help at the bottom, or hides it when <paramref name="text"/> is null.</summary>
         public void SetHint(string text)
@@ -268,6 +276,15 @@ namespace AirTrafficControl
                 carrierCountdown.SetActive(show);
             if (show)
                 carrierCountdownText.text = $"Carrier leaving in {secondsLeft}";
+        }
+
+        /// <summary>The attempt ended for another reason than a collision, for example "Out of fuel" (Desert rule).</summary>
+        public void ShowFailed(string title, LevelOutcome outcome)
+        {
+            ShowEnd(title, AlertRed,
+                    $"after {LevelSession.FormatTime(outcome.Seconds)}. You had {GoalText(outcome)}.", "Retry", false, false);
+            foreach (Image star in endStars)
+                star.gameObject.SetActive(false);
         }
 
         public void ShowCollision(LevelOutcome outcome)

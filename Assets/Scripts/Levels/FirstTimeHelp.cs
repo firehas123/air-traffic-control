@@ -13,6 +13,13 @@ namespace AirTrafficControl
         Taxi,
         TakeOff,
         Cross,
+
+        // Map rules of Draw mode (blueprint 16.2), each explained once. Added at the end so saved flags keep their meaning.
+        RunwayClosing,
+        LowFuel,
+        Sandstorm,
+        Mountains,
+        IcyRunway,
     }
 
     /// <summary>
@@ -102,6 +109,21 @@ namespace AirTrafficControl
         /// <summary>A departure is waiting at a crossing point for the first time.</summary>
         public void DepartureAtCrossing() => ShowOnce(HelpHint.Cross, LongHintSeconds);
 
+        /// <summary>City: a runway is about to close for the first time.</summary>
+        public void RunwayClosingSoon() => ShowOnce(HelpHint.RunwayClosing, LongHintSeconds);
+
+        /// <summary>Desert: the first low-fuel aircraft is in the air.</summary>
+        public void LowFuelAircraft() => ShowOnce(HelpHint.LowFuel, LongHintSeconds);
+
+        /// <summary>Desert: the first sandstorm is closing in on a runway.</summary>
+        public void SandstormComing() => ShowOnce(HelpHint.Sandstorm, LongHintSeconds);
+
+        /// <summary>Mountain Valley: the first level with no-fly mountains.</summary>
+        public void MountainsAhead() => ShowOnce(HelpHint.Mountains, LongHintSeconds);
+
+        /// <summary>Arctic: the first level with icy runways.</summary>
+        public void IcyRunways() => ShowOnce(HelpHint.IcyRunway, LongHintSeconds);
+
         // A later hint waits until the drawing lesson is done, so the first thing a new player learns is to draw.
         void ShowOnce(HelpHint hint, float seconds)
         {
@@ -138,6 +160,11 @@ namespace AirTrafficControl
                 case HelpHint.Taxi: return "Tap the plane at the gate, then Taxi";
                 case HelpHint.TakeOff: return "Runway clear? Tap the plane, then Take off";
                 case HelpHint.Cross: return "Runway clear? Tap the plane, then Cross";
+                case HelpHint.RunwayClosing: return "A runway is closing: lines cannot end on the X";
+                case HelpHint.LowFuel: return "Low fuel: land it before its timer runs out";
+                case HelpHint.Sandstorm: return "Sandstorm: it closes every runway it covers";
+                case HelpHint.Mountains: return "Lines cannot cross the mountains";
+                case HelpHint.IcyRunway: return "Icy runways: land on Slow; Fast slides and blocks it";
                 default: return null;
             }
         }

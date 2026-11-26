@@ -109,7 +109,19 @@ namespace AirTrafficControl
 
             RunwayBusy = RunwayRules.IsBusy(occupants);
             if (landing != null)
-                landing.SetRunwayBusy(RunwayBusy);
+            {
+                // Each runway's edge lights flash while that runway is busy.
+                for (int r = 0; r < landing.Runways.Count; r++)
+                {
+                    bool busy = false;
+                    foreach (AircraftController aircraft in onRunway)
+                    {
+                        int index = aircraft.LandingRunwayIndex >= 0 ? aircraft.LandingRunwayIndex : landing.RunwayAt(aircraft.transform.position);
+                        busy |= index == r;
+                    }
+                    landing.SetRunwayBusy(r, busy);
+                }
+            }
 
             RunwayRules.FindCollisions(occupants, runwayCollisions);
             foreach (Vector2Int pair in runwayCollisions)

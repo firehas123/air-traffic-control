@@ -38,6 +38,9 @@ public static class PrototypeSceneSetup
 
         MapCatalog maps = LoadOrCreateMapCatalog(level);
 
+        // Phase 2 (Draw mode): the 25 Draw levels of maps 1 to 5. Existing level assets are kept.
+        DrawLevelsSetup.Run();
+
         var root = new GameObject(RootName);
         var flow = root.AddComponent<GameFlow>();
         var serialized = new SerializedObject(flow);
@@ -182,9 +185,9 @@ public static class PrototypeSceneSetup
         return settings;
     }
 
-    // Blueprint 16: the seven maps with both pictures and layouts, and five level ids per mode. Until phases 2 and 3
-    // only Island Draw has level data (all five reuse the test level); the other entries have ids but no data yet,
-    // so their buttons say "coming in the next update". An existing catalog keeps its levels and values; pictures
+    // Blueprint 16: the seven maps with both pictures and layouts, and five level ids per mode. The Draw levels of maps
+    // 1 to 5 come from DrawLevelsSetup (phase 2); entries without data (Tower until phase 3, maps 6 and 7) make their
+    // buttons say "coming in the next update". IslandPrototype.asset stays as the ground-control test level. An existing catalog keeps its levels and values; pictures
     // and layouts are filled in when missing.
     static MapCatalog LoadOrCreateMapCatalog(LevelData islandTest)
     {
@@ -209,7 +212,7 @@ public static class PrototypeSceneSetup
                         {
                             id = MapInfo.LevelId(m.id, mode, n),
                             title = $"{m.name} {mode} {n}",
-                            data = m.id == "island" && mode == GameMode.Draw ? islandTest : null,
+                            data = null, // Draw levels: DrawLevelsSetup; Tower levels: phase 3
                         });
                 catalog.maps.Add(entry);
             }

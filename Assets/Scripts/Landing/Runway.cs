@@ -14,8 +14,9 @@ namespace AirTrafficControl
 
         public Runway(Vector2 centre, float landingHeadingDegrees, float length, float width,
                       float touchdownZoneStart = DefaultTouchdownZoneStart,
-                      float touchdownZoneLength = DefaultTouchdownZoneLength)
+                      float touchdownZoneLength = DefaultTouchdownZoneLength, float landingWidth = 0f)
         {
+            LandingWidth = Mathf.Max(Mathf.Max(0.01f, width), landingWidth);
             Centre = centre;
             LandingHeadingDegrees = Mathf.Repeat(landingHeadingDegrees, 360f);
             Length = Mathf.Max(0.01f, length);
@@ -28,6 +29,12 @@ namespace AirTrafficControl
         public float LandingHeadingDegrees { get; }
         public float Length { get; }
         public float Width { get; }
+
+        /// <summary>
+        /// Width of the area a line must end in to land, at least <see cref="Width"/>. Draw mode makes it wider than a
+        /// narrow painted runway (blueprint 16, 26 Nov 2026) so a finger can hit it; the zone glow shows it while drawing.
+        /// </summary>
+        public float LandingWidth { get; }
 
         /// <summary>Distance from the threshold to where the touchdown zone starts.</summary>
         public float TouchdownZoneStart { get; }
@@ -49,7 +56,7 @@ namespace AirTrafficControl
         public Vector2 Threshold => Centre - Direction * (Length / 2f);
 
         /// <summary>Same runway, landing the opposite way. Used later by the Island wind rule (C1).</summary>
-        public Runway Reversed() => new Runway(Centre, LandingHeadingDegrees + 180f, Length, Width, TouchdownZoneStart, TouchdownZoneLength);
+        public Runway Reversed() => new Runway(Centre, LandingHeadingDegrees + 180f, Length, Width, TouchdownZoneStart, TouchdownZoneLength, LandingWidth);
 
         /// <summary>
         /// Position in runway coordinates: x along the landing direction, y to its left,
@@ -80,7 +87,7 @@ namespace AirTrafficControl
             Vector2 local = ToLocal(world);
             float intoZone = local.x + Length / 2f - TouchdownZoneStart;
             return intoZone >= inset && intoZone <= TouchdownZoneLength - inset
-                   && Mathf.Abs(local.y) <= Width / 2f - inset;
+                   && Mathf.Abs(local.y) <= LandingWidth / 2f - inset;
         }
     }
 }

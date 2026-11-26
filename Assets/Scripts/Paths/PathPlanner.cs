@@ -32,6 +32,15 @@ namespace AirTrafficControl
         PathRecorder recorder;
         AircraftController selected;
 
+        /// <summary>
+        /// Mountain Valley (blueprint 16.2): no-fly areas. A line cannot enter them: the stroke stops at the last point
+        /// before the mountain, and the line keeps exactly what was drawn up to there. Null on other maps.
+        /// </summary>
+        public NoFlyZones NoFly { get; set; }
+
+        /// <summary>Raised when a line is stopped at a no-fly area, with the point where the finger went in.</summary>
+        public event System.Action<Vector2> LineBlocked;
+
         /// <summary>True while the player is drawing an aircraft's line (used to slow time, C4).</summary>
         public bool IsDrawing => selected != null && recorder != null && recorder.IsRecording;
 
@@ -92,6 +101,14 @@ namespace AirTrafficControl
             if (!selected.IsAirborne)
             {
                 EndStroke();
+                return;
+            }
+
+            if (NoFly != null && recorder.Points.Count > 0 && NoFly.SegmentEnters(recorder.Points[recorder.Points.Count - 1], worldPosition))
+            {
+                // The line would enter a mountain: it ends where it is (C5: the aircraft flies on from its end).
+                EndStroke();
+                LineBlocked?.Invoke(worldPosition);
                 return;
             }
 

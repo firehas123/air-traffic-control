@@ -483,8 +483,9 @@ namespace AirTrafficControl.Tests
                         Assert.AreEqual(MapInfo.LevelId(map.id, mode, n + 1), map.Levels(mode)[n].id);
                 }
             }
-            foreach (LevelEntry level in catalog.maps[0].drawLevels)
-                Assert.IsNotNull(level.data, "Island Draw plays the test level until phase 2");
+            for (int i = 0; i < 5; i++)
+                foreach (LevelEntry level in catalog.maps[i].drawLevels)
+                    Assert.IsNotNull(level.data, $"{level.id}: Draw levels of maps 1 to 5 are built (phase 2)");
             Assert.IsTrue(catalog.maps[0].towerLevels.TrueForAll(l => l.data == null), "Tower comes in phase 3");
         }
     }

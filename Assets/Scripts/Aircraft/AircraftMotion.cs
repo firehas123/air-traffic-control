@@ -30,6 +30,17 @@ namespace AirTrafficControl
         float distanceAlong;  // how far along the line the aircraft is
         bool following;
         float? turnBackHeading;
+        float? noFlyHeading;
+        float noFlyTurnSign = 1f; // +1 counter-clockwise, -1 clockwise: always the way that turns away from the mountain
+
+        /// <summary>
+        /// Mountain Valley (blueprint 16.2): no-fly areas. With no path the aircraft turns back at them as it does at the
+        /// screen edge (C5). Null on maps without them.
+        /// </summary>
+        public NoFlyZones NoFly { get; set; }
+
+        /// <summary>How far ahead a no-fly area is seen: enough to turn round before it, at least 1 unit.</summary>
+        public float NoFlyLookAhead => Mathf.Max(1f, 2.4f * TurnRadius);
 
         public AircraftMotion(Vector2 position, float headingDegrees, float speed, float turnRateDegrees)
         {
@@ -145,8 +156,20 @@ namespace AirTrafficControl
 
             float desiredHeading = HeadingDegrees;
             UpdateTurnBack(turnBackBounds);
+            // A mountain ahead comes first: it is close, while the screen edge has a margin. It turns away from the
+            // mountain, never the short way round through it.
+            if (UpdateNoFlyTurnBack(turnBackBounds))
+            {
+                float maxStep = TurnRateDegrees * deltaTime;
+                float remaining = Mathf.Repeat((noFlyHeading.Value - HeadingDegrees) * noFlyTurnSign, 360f);
+                HeadingDegrees = Mathf.Repeat(HeadingDegrees + noFlyTurnSign * Mathf.Min(maxStep, remaining), 360f);
+                Position += HeadingVector * (Speed * deltaTime);
+                return;
+            }
             if (turnBackHeading.HasValue)
+            {
                 desiredHeading = turnBackHeading.Value;
+            }
 
             float maxTurn = TurnRateDegrees * deltaTime;
             HeadingDegrees = Mathf.Repeat(Mathf.MoveTowardsAngle(HeadingDegrees, desiredHeading, maxTurn), 360f);
@@ -157,6 +180,7 @@ namespace AirTrafficControl
         {
             distanceAlong += distance;
             turnBackHeading = null;
+            noFlyHeading = null;
 
             float length = PathLength;
             if (distanceAlong >= length)
@@ -207,6 +231,39 @@ namespace AirTrafficControl
             float offLine = Vector2.Distance(Position, a + ab * t);
             if (offLine > OnLineTolerance)
                 throw new PathAlteredException($"Aircraft is {offLine} units off the drawn line on segment {segment}.");
+        }
+
+        // Like the screen edge: once a no-fly area is seen ahead, turn towards the heading mirrored off its edge (also
+        // pointed back inwards near the screen edge). The turn is finished before anything else steers; once the aircraft
+        // faces the target, look again (in a corner there may be another mountain ahead). Returns true while turning.
+        bool UpdateNoFlyTurnBack(Rect bounds)
+        {
+            if (NoFly == null || NoFly.Count == 0)
+            {
+                noFlyHeading = null;
+                return false;
+            }
+            // A turn once started is finished, so it never fights the screen-edge turn (they may turn opposite ways).
+            if (noFlyHeading.HasValue && Mathf.Abs(Mathf.DeltaAngle(HeadingDegrees, noFlyHeading.Value)) >= 1f)
+                return true;
+
+            float? ahead = NoFly.TurnBackHeading(Position, HeadingDegrees, NoFlyLookAhead, out Vector2 outward);
+            if (!ahead.HasValue)
+            {
+                noFlyHeading = null;
+            }
+            else
+            {
+                float radians = ahead.Value * Mathf.Deg2Rad;
+                var direction = new Vector2(Mathf.Cos(radians), Mathf.Sin(radians));
+                PointInwards(ref direction.x, Position.x, bounds.xMin, bounds.xMax);
+                PointInwards(ref direction.y, Position.y, bounds.yMin, bounds.yMax);
+                noFlyHeading = Mathf.Repeat(Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg, 360f);
+                Vector2 d = HeadingVector;
+                float cross = d.x * outward.y - d.y * outward.x;
+                noFlyTurnSign = Mathf.Abs(cross) > 1e-3f ? Mathf.Sign(cross) : (Mathf.DeltaAngle(HeadingDegrees, noFlyHeading.Value) >= 0f ? 1f : -1f);
+            }
+            return noFlyHeading.HasValue;
         }
 
         /// <summary>
